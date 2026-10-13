@@ -1,5 +1,5 @@
 //
-//  JobDiscoveryView.swift
+//  AplJobDiscoveryPage.swift
 //  SIRIUS
 //
 //  Created by Mac-LAB on 9/8/26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct JobDiscoveryPage: View {
+struct AplJobDiscoveryPage: View {
     
     @State private var jobDetailsScreen = false
     
@@ -119,5 +119,5 @@ struct JobDiscoveryPage: View {
 }
 
 #Preview{
-    JobDiscoveryPage()
+    AplJobDiscoveryPage()
 }

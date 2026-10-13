@@ -7,60 +7,75 @@
 
 import SwiftUI
 
-struct NavigationBar: View {
-    
-    @Binding var selectedTab: AplNavigationTab
+// Anything that can drive the bottom bar: a tab's label (rawValue) and SF Symbol (iconTypes).
+// AplNavigationTab and EmpNavigationTab already have both, so conforming them costs nothing.
+protocol SiriusNavigationTab: Hashable, CaseIterable, Identifiable where AllCases: RandomAccessCollection {
+    var rawValue: String { get }
+    var iconTypes: String { get }
+}
+
+extension AplNavigationTab: SiriusNavigationTab {}
+extension EmpNavigationTab: SiriusNavigationTab {}
+
+// MARK: Reusable Nav Bar
+// Dark-blue capsule bar with a light pill behind the selected tab.
+// Works for any tab enum conforming to SiriusNavigationTab.
+struct NavigationBar<Tab: SiriusNavigationTab>: View {
+    @Binding var selectedTab: Tab
     @Namespace private var animation
     
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(AplNavigationTab.allCases, id: \.self) { tab in
+        HStack(spacing: 0) {
+            ForEach(Tab.allCases) { tab in
                 let isActive = selectedTab == tab
                 
                 Button {
-                    withAnimation(.spring(duration: 0.3, bounce: 0.3))
-                    {
+                    withAnimation(.spring(duration: 0.3, bounce: 0.3)) {
                         selectedTab = tab
                     }
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: tab.iconTypes)
                             .font(.system(size: 15, weight: .regular))
+                            .frame(height: 22)
                         
                         Text(tab.rawValue)
                             .font(.system(size: 8, weight: .regular))
                     }
-                    .foregroundColor(isActive ? Color.black : Color.white)
-                    .frame(maxWidth: 66, maxHeight: 50)
-                    .padding(.vertical, 5)
-                    .background{
-                        if isActive {RoundedRectangle (
-                                cornerRadius: 10
-                            )
-                        .fill(
-                            Color(
-                                red: 232/255,
-                                green: 240/255,
-                                blue: 255/255
-                            )
-                        )
-                        .matchedGeometryEffect(id: "activePill", in: animation)
-                            
+                    .foregroundStyle(isActive ? Color.black : Color.white)
+                    .frame(width: 66, height: 50)
+                    .background {
+                        if isActive {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.siriusHover)
+                                .matchedGeometryEffect(id: "siriusActivePill", in: animation)
                         }
                     }
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(tab.rawValue)
+                
+                if tab.id != Tab.allCases.last?.id {
+                    Spacer(minLength: 0)
+                }
             }
         }
-        .frame(maxWidth: 270, maxHeight: 50)
+        .frame(width: 270, height: 50)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(
-                    Color(
-                        red: 0/255,
-                        green: 61/255,
-                        blue: 92/255
-                    )
-                )
+                .fill(Color.siriusNavy)
         )
     }
+}
+
+// MARK: Apl Nav Bar
+#Preview("Applicant") {
+    NavigationBar(selectedTab: .constant(AplNavigationTab.home))
+        .appBg()
+}
+
+// MARK: Emp Nav Bar
+#Preview("Employer") {
+    NavigationBar(selectedTab: .constant(EmpNavigationTab.home))
+        .appBg()
 }

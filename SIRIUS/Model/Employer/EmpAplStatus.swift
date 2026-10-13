@@ -43,4 +43,5 @@ struct EmpApplicant: Identifiable, Equatable {
     var coreLanguages: [String]
     var matchPercentage: Int
     var status: EmpAplStatus = .toReview
+    var jobPosition: String = "Junior Software Developer"
 }

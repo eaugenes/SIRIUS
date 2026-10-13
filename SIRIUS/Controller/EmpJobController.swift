@@ -13,6 +13,7 @@ final class EmpJobController: ObservableObject {
     
     @Published var jobs: [Job]
     @Published var selectedTab: JobListTab = .active
+    @Published var postError: String?
     
     init(jobs: [Job] = EmpJobController.sampleJobs) {
         self.jobs = jobs
@@ -24,6 +25,52 @@ final class EmpJobController: ObservableObject {
         case .active: return jobs.filter { $0.isActive }
         case .inactive: return jobs.filter { !$0.isActive }
         }
+    }
+    
+    // MARK: - Job Posting form
+    
+    // Validates the raw form input from the Job Posting screen, then posts the job.
+    // Returns true when the job was created (the view can then close the form).
+    func submitJob(
+        companyID: String,
+        position: String,
+        description: String,
+        program: String,
+        yearsOfExperience: Int,
+        coreLanguages: String,
+        workSetup: WorkSetup,
+        preferredLocation: String,
+        maxHireText: String
+    ) -> Bool {
+        let trimmedPosition = position.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedMaxHire = maxHireText.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if trimmedPosition.isEmpty {
+            postError = "Please enter the job position."
+            return false
+        }
+        if program.isEmpty {
+            postError = "Please select a program."
+            return false
+        }
+        guard let maxHire = Int(trimmedMaxHire), maxHire > 0 else {
+            postError = "Maximum hire must be a number greater than 0."
+            return false
+        }
+        
+        postJob(
+            companyID: companyID,
+            position: trimmedPosition,
+            description: description.trimmingCharacters(in: .whitespacesAndNewlines),
+            program: program,
+            yearsOfExperience: yearsOfExperience,
+            coreLanguages: coreLanguages,
+            workSetup: workSetup,
+            preferredLocation: preferredLocation.trimmingCharacters(in: .whitespacesAndNewlines),
+            maxHire: maxHire
+        )
+        postError = nil
+        return true
     }
     
     // MARK: - CRUD
@@ -75,7 +122,7 @@ final class EmpJobController: ObservableObject {
         jobs.removeAll { $0.jobID == job.jobID }
     }
     
-    // MARK: - Sample data
+    // MARK: - Sample data (matches the Figma "Manage Jobs" screens)
     
     private static let may18: Date = {
         DateComponents(calendar: Calendar.current, year: 2026, month: 5, day: 18).date ?? Date()
@@ -83,7 +130,7 @@ final class EmpJobController: ObservableObject {
     
     static let sampleJobs: [Job] = {
         var list: [Job] = []
-        for index in 0..<10 {
+        for index in 0..<15 {
             list.append(
                 Job(
                     jobID: "sample-\(index)",
@@ -98,7 +145,7 @@ final class EmpJobController: ObservableObject {
                     maxHire: 3,
                     applicantCount: 42,
                     datePosted: may18,
-                    isActive: index < 5          // first 5 Active, last 5 Inactive
+                    isActive: index < 10          // first 10 Active, last 5 Inactive
                 )
             )
         }

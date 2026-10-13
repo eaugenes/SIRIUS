@@ -9,10 +9,10 @@ import SwiftUI
 
 // "−  1  +" stepper used for Years of Experience and Maximum Hire
 struct AppStepper: View {
-    
     let title: String
     @Binding var value: Int
     var range: ClosedRange<Int> = 0...50
+    var borderColor: Color = .gray
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -41,7 +41,7 @@ struct AppStepper: View {
             .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.gray, lineWidth: 1)
+                    .strokeBorder(borderColor, lineWidth: 1)
             )
         }
     }
@@ -52,7 +52,7 @@ struct AppStepper: View {
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(Color.black.opacity(isEnabled ? 1 : 0.3))
                 .frame(width: 44, height: 35)
-                .background(Color.gray.opacity(0.18))
+                .background(Color.siriusFill)
         }
         .disabled(!isEnabled)
     }

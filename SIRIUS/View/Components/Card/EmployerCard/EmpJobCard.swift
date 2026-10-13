@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct EmpJobCard: View {
-    
     let job: Job
     
     private var postedText: String {
@@ -17,32 +16,34 @@ struct EmpJobCard: View {
     
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(job.jobPos)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color.black)
+                    .lineLimit(1)
                 
-                Text("\(job.applicantCount) Applicants")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.black)
-                
-                Text("Posted on \(postedText)")
-                    .font(.system(size: 9, weight: .light))
-                    .foregroundStyle(Color.black)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("\(job.applicantCount) Applicants")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.black)
+                    
+                    Text("Posted on \(postedText)")
+                        .font(.system(size: 8))
+                        .foregroundStyle(Color.siriusTextSecondary)
+                }
             }
             
             Spacer()
             
-            Image(systemName: "chevron.right")
-                .font(.system(size: 18, weight: .regular))
+            Image(systemName: "chevron.forward")
+                .font(.system(size: 20, weight: .regular))
                 .foregroundStyle(Color.black)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(width: 350)
+        .padding(.horizontal, 16)
+        .frame(width: 338, height: 65)
         .background(Color.white)
         .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.3), radius: 4, x: 2, y: 3)
+        .shadow(color: Color.black.opacity(0.25), radius: 2, x: 4, y: 4)
         .contentShape(Rectangle())
     }
 }

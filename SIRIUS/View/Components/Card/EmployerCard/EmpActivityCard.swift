@@ -9,45 +9,50 @@ import SwiftUI
 
 // One "Recent Activity" row: icon, title, job position, time
 struct EmpActivityCard: View {
-    
     let activity: EmpActivity
     
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(alignment: .center, spacing: 18) {
             Image(systemName: activity.icon)
-                .font(.system(size: 18))
+                .font(.system(size: 15))
                 .foregroundStyle(Color.white)
-                .frame(width: 46, height: 46)
+                .frame(width: 45, height: 45)
                 .background(Circle().fill(Color.siriusNavy))
+                .shadow(color: Color.black.opacity(0.25), radius: 1, x: 0, y: 4)
             
-            VStack(alignment: .leading, spacing: 3) {
-                Text(activity.title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.black)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(activity.title)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Color.black)
+                        .lineLimit(1)
+                    
+                    Spacer(minLength: 6)
+                    
+                    Text(activity.timeAgo)
+                        .font(.system(size: 10, weight: .light))
+                        .foregroundStyle(Color.black)
+                }
                 
                 Text(activity.jobPosition)
-                    .font(.system(size: 12))
+                    .font(.system(size: 13, weight: .light))
                     .foregroundStyle(Color.black)
+                    .lineLimit(1)
             }
-            
-            Spacer()
-            
-            Text(activity.timeAgo)
-                .font(.system(size: 10))
-                .foregroundStyle(Color.black)
-                .frame(maxHeight: .infinity, alignment: .top)
-                .padding(.top, 2)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 10)
-        .frame(width: 350, height: 66)
+        .padding(.leading, 12)
+        .padding(.trailing, 14)
+        .frame(width: 335, height: 64)
         .background(Color.white)
         .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.3), radius: 4, x: 2, y: 3)
+        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 4)
     }
 }
 
 #Preview {
-    EmpActivityCard(activity: EmpInfoController.sampleActivity[0])
-        .appBg()
+    VStack(spacing: 14) {
+        EmpActivityCard(activity: EmpInfoController.sampleActivity[0])
+        EmpActivityCard(activity: EmpInfoController.sampleActivity[1])
+    }
+    .appBg()
 }

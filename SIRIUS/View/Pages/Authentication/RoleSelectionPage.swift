@@ -75,7 +75,7 @@ struct RoleSelectionPage: View {
             .navigationDestination(isPresented: $nextScreen) {
                 if selectedRole == .applicant {
                     AplSignUpPage()
-                }  else if selectedRole == .applicant {
+                }  else if selectedRole == .employer {
                     EmpSignUpPage()
                 }
             }

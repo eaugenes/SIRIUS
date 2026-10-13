@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct AppTextField: View {
     
@@ -15,12 +16,18 @@ struct AppTextField: View {
     var isSecure: Bool = false          // for SecureField
     var isMultiline: Bool = false       // for multi-line text (e.g. Description/s)
     
+    // Optional styling (defaults keep every existing call site unchanged)
+    var titleColor: Color = .black                      // white on dark panels (e.g. Schedule Interview)
+    var borderColor: Color = .gray                      // Job Posting uses Color.siriusPanel
+    var multilineHeight: CGFloat = 100                  // About Company / Job Description / Message
+    var keyboardType: UIKeyboardType = .default         // .numberPad for numbers, .emailAddress for emails
+    
     var body: some View {
         VStack(alignment: .leading) {
             Text(title)
                 .font(.system(size: 13))
                 .fontWeight(.medium)
-                .foregroundStyle(Color.black)
+                .foregroundStyle(titleColor)
                 .padding(2)
             
             if isMultiline {
@@ -36,39 +43,38 @@ struct AppTextField: View {
                             .foregroundStyle(Color.gray)
                             .padding(.horizontal, 11)
                             .padding(.vertical, 14)
-                            .allowsHitTesting(true)
+                            .allowsHitTesting(false)        // let taps reach the TextEditor underneath
                     }
                 }
-                .frame(width: 300, height: 100)
+                .frame(width: 300, height: multilineHeight)
                 .background(Color.white)
                 .cornerRadius(10)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(Color.gray, lineWidth: 1)
+                        .strokeBorder(borderColor, lineWidth: 1)
                 )
             } else if isSecure {           // For Password
                 SecureField(placeholder, text: $text)
                     .font(.system(size: 12))
                     .padding(10)
                     .frame(width: 300, height: 35)
-                    .border(Color.gray, width: 2)
                     .background(Color.white)
                     .cornerRadius(10)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(Color.gray, lineWidth: 1)
+                            .strokeBorder(borderColor, lineWidth: 1)
                     )
             } else {                // For Any Type of TextField
                 TextField(placeholder, text: $text)
                     .font(.system(size: 12))
+                    .keyboardType(keyboardType)
                     .padding(10)
                     .frame(width: 300, height: 35)
-                    .border(Color.gray, width: 2)
                     .background(Color.white)
                     .cornerRadius(10)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(Color.gray, lineWidth: 1)
+                            .strokeBorder(borderColor, lineWidth: 1)
                     )
             }
             
@@ -76,19 +82,10 @@ struct AppTextField: View {
     }
 }
 
-
-//Text("Username")
-//    .font(.system(size: 13))
-//    .fontWeight(.medium)
-//
-//TextField("Enter your username", text: $logInUsername)
-//    .font(.system(size: 12))
-//    .padding(10)
-//    .frame(width: 300, height: 35)
-//    .border(Color.gray, width: 2)
-//    .background(Color.white)
-//    .cornerRadius(10)
-//    .overlay(
-//        RoundedRectangle(cornerRadius: 10)
-//            .strokeBorder(Color.gray, lineWidth: 2)
-//    )
+#Preview {
+    VStack {
+        AppTextField(title: "Username", placeholder: "Enter your username", text: .constant(""))
+        AppTextField(title: "About Company", placeholder: "Enter company about", text: .constant(""), isMultiline: true)
+    }
+    .appBg()
+}

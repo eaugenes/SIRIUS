@@ -22,7 +22,7 @@ enum JobListTab: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 }
 
-struct Job: Identifiable {
+struct Job: Identifiable, Hashable{
     var jobID: String
     var companyID: String
     var jobPos: String

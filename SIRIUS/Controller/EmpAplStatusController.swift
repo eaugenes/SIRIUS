@@ -25,9 +25,23 @@ final class EmpAplStatusController: ObservableObject {
     
     // MARK: - Filtering / counts
     
+    // All applicants for the selected All / To Review / Interview / Hired tab
     var filteredApplicants: [EmpApplicant] {
-        guard let status = selectedFilter.status else { return applicants }
-        return applicants.filter { $0.status == status }
+        filteredApplicants(forPosition: nil)
+    }
+    
+    // Same as above, limited to one job opening when a position is given
+    // (used when the employer opens a job from Manage Jobs).
+    func filteredApplicants(forPosition position: String?) -> [EmpApplicant] {
+        var list = applicants
+        
+        if let position {
+            list = list.filter { $0.jobPosition == position }
+        }
+        if let status = selectedFilter.status {
+            list = list.filter { $0.status == status }
+        }
+        return list
     }
     
     var totalCount: Int { applicants.count }
@@ -49,6 +63,10 @@ final class EmpAplStatusController: ObservableObject {
     
     func toggleSelection(_ applicant: EmpApplicant) {
         selectedApplicantID = isSelected(applicant) ? nil : applicant.id
+    }
+    
+    func clearSelection() {
+        selectedApplicantID = nil
     }
     
     // MARK: - Remove
@@ -76,7 +94,12 @@ final class EmpAplStatusController: ObservableObject {
         guard let target = interviewTarget else { return }
         
         interviews.append(
-            Interview(applicantID: target.id, date: date, location: location, message: message)
+            Interview(
+                applicantID: target.id,
+                date: date,
+                location: location.trimmingCharacters(in: .whitespacesAndNewlines),
+                message: message.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
         )
         
         if let index = applicants.firstIndex(where: { $0.id == target.id }) {
@@ -87,14 +110,17 @@ final class EmpAplStatusController: ObservableObject {
         selectedApplicantID = nil
     }
     
-    // MARK: - Sample data
+    // MARK: - Sample data (matches the Figma "Manage Applicants" screens)
+    
+    private static let languages = ["Python", "JavaScript", "C++"]
     
     static let sampleApplicants: [EmpApplicant] = [
-        EmpApplicant(name: "Debbie Gutierrez", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: ["Python", "JavaScript", "C++"], matchPercentage: 95, status: .toReview),
-        EmpApplicant(name: "Althea Goose", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: ["Python", "JavaScript", "C++"], matchPercentage: 90, status: .toReview),
-        EmpApplicant(name: "Luis Slurpia", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: ["Python", "JavaScript", "C++"], matchPercentage: 85, status: .interview),
-        EmpApplicant(name: "Kyle Buendia", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: ["Python", "JavaScript", "C++"], matchPercentage: 92, status: .toReview),
-        EmpApplicant(name: "Mary Gardenia", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: ["Python", "JavaScript", "C++"], matchPercentage: 88, status: .hired),
-        EmpApplicant(name: "Mico Comartin", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: ["Python", "JavaScript", "C++"], matchPercentage: 90, status: .toReview)
+        EmpApplicant(name: "Franck Almareno", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: languages, matchPercentage: 95, status: .toReview),
+        EmpApplicant(name: "Debbie Gutierrez", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: languages, matchPercentage: 93, status: .toReview),
+        EmpApplicant(name: "Althea Goose", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: languages, matchPercentage: 90, status: .toReview),
+        EmpApplicant(name: "Luis Slurpia", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: languages, matchPercentage: 85, status: .interview),
+        EmpApplicant(name: "Kyle Buendia", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: languages, matchPercentage: 92, status: .hired),
+        EmpApplicant(name: "Mary Gardenia", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: languages, matchPercentage: 88, status: .interview),
+        EmpApplicant(name: "Mico Comartin", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: languages, matchPercentage: 90, status: .hired)
     ]
 }
