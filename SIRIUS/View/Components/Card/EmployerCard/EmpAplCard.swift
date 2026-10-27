@@ -16,6 +16,12 @@ struct EmpAplCard: View {
     var onSelect: () -> Void
     var onSchedule: () -> Void
     var onRemove: () -> Void
+    var onOpen: () -> Void = {}             // tap on the card: show applicant details
+    var onHire: () -> Void = {}             // shown for applicants in the Interview stage
+    var animationDelay: Double = 0          // staggers the fill animation between cards
+    
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var fillProgress: Double = 0     // 0...1, animated up to the applicant's fill level
     
     private let cardWidth: CGFloat = 354
     private let cardHeight: CGFloat = 74
@@ -26,28 +32,37 @@ struct EmpAplCard: View {
         actionSize * 2 + actionSpacing * 2
     }
     
-    private var experienceText: String {
-        applicant.yearsExperience == 1
-            ? "1 year work experience"
-            : "\(applicant.yearsExperience) years work experience"
-    }
+    private var experienceText: String { applicant.experienceText }
     
     var body: some View {
         ZStack(alignment: .leading) {
             // Action buttons stay pinned to the right edge, hidden until selected
             HStack(spacing: actionSpacing) {
-                Button(action: onSchedule) {
-                    Image(systemName: "envelope")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Color.black)
-                        .frame(width: actionSize, height: actionSize)
-                        .background(Color.white)
-                        .cornerRadius(10)
-                        .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
+                if applicant.status == .interview {
+                    Button(action: onHire) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 22))
+                            .foregroundStyle(Color.black)
+                            .frame(width: actionSize, height: actionSize)
+                            .background(Color.white)
+                            .cornerRadius(10)
+                            .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
+                    }
+                    .accessibilityLabel("Hire applicant")
+                } else {
+                    Button(action: onSchedule) {
+                        Image(systemName: "envelope")
+                            .font(.system(size: 22))
+                            .foregroundStyle(Color.black)
+                            .frame(width: actionSize, height: actionSize)
+                            .background(Color.white)
+                            .cornerRadius(10)
+                            .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
+                    }
+                    .disabled(applicant.status != .toReview)        // only "To Review" applicants get invited
+                    .opacity(applicant.status == .toReview ? 1 : 0.4)
+                    .accessibilityLabel("Schedule interview")
                 }
-                .disabled(applicant.status != .toReview)        // only "To Review" applicants get invited
-                .opacity(applicant.status == .toReview ? 1 : 0.4)
-                .accessibilityLabel("Schedule interview")
                 
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
@@ -66,7 +81,7 @@ struct EmpAplCard: View {
             
             card
                 .offset(x: isSelected ? -slideDistance : 0)
-                .onTapGesture(perform: onSelect)
+                .onTapGesture { isSelected ? onSelect() : onOpen() }
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 20)
                         .onEnded { value in
@@ -123,18 +138,40 @@ struct EmpAplCard: View {
         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 4)
     }
     
-    // Green bar that fills according to the match percentage
+    // Fill level is a visual category (100% = full, 80-99% = two thirds, 60-79% = one third),
+    // not the exact percentage. Green from 80%, orange from 60%. Replays every time the card appears.
+    private var fillTarget: Double { MatchTier.fillFraction(for: applicant.matchPercentage) }
+    
+    private var fillColor: Color {
+        applicant.matchPercentage >= 80
+            ? Color.siriusMatchBar
+            : Color(red: 243/255, green: 121/255, blue: 0/255)
+    }
+    
     private var matchIndicator: some View {
         let height: CGFloat = 58
-        let fraction = CGFloat(min(max(applicant.matchPercentage, 0), 100)) / 100
         
         return ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 10).fill(Color.siriusMatchBar.opacity(0.2))
-            RoundedRectangle(cornerRadius: 10).fill(Color.siriusMatchBar).frame(height: height * fraction)
+            RoundedRectangle(cornerRadius: 10).fill(fillColor.opacity(0.2))
+            RoundedRectangle(cornerRadius: 10).fill(fillColor).frame(height: height * fillProgress)
         }
         .frame(width: 12, height: height)
         .shadow(color: Color.black.opacity(0.25), radius: 1.5, x: 0, y: 3)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(applicant.matchPercentage) percent match")
+        .onAppear { playFill() }
+        .onChange(of: fillTarget) { _, _ in playFill() }
+    }
+    
+    private func playFill() {
+        guard !reduceMotion else {
+            fillProgress = fillTarget
+            return
+        }
+        fillProgress = 0
+        withAnimation(.easeOut(duration: 0.9).delay(animationDelay)) {
+            fillProgress = fillTarget
+        }
     }
 }
 

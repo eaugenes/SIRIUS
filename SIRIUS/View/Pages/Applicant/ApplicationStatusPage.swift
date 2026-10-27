@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ApplicationStatusPage: View {
     
-    @StateObject private var controller = AplApplicationsController()
+    @EnvironmentObject private var controller: AplApplicationsController
     
     var body: some View {
         VStack{
@@ -51,6 +51,11 @@ struct ApplicationStatusPage: View {
                         Text("No applications found")
                             .foregroundColor(.white.opacity(0.8))
                             .padding(.top, 8)
+                        Text("You are applied automatically to jobs that match you at 60% or more.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.7))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
                     }
                     .frame(maxWidth: .infinity)
                     Spacer()
@@ -61,6 +66,7 @@ struct ApplicationStatusPage: View {
                                 JobApplicationCard(application: app)
                             }
                         }
+                        .padding(.bottom, 100)          // room for the bottom bar
                     }
                 }
             }
@@ -72,4 +78,5 @@ struct ApplicationStatusPage: View {
 
 #Preview {
     ApplicationStatusPage()
+        .environmentObject(AplApplicationsController(board: JobBoard()))
 }

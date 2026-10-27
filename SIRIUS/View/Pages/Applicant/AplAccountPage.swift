@@ -9,97 +9,74 @@ import SwiftUI
 
 struct AplAccountPage: View {
     
+    @EnvironmentObject private var applicantController: AplInfoController
+    
     @State private var logInScreen = false
     @State private var editAccountScreen = false
+    
+    private var applicant: Applicant { applicantController.applicant }
+    
+    private var experienceText: String {
+        let years = applicant.yrExp
+        if years == 1 { return "1 year" }
+        return years == years.rounded() ? "\(Int(years)) years" : String(format: "%.1f years", years)
+    }
+    
+    private func value(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "—" : trimmed
+    }
     
     var body: some View {
         NavigationStack{
             VStack{
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 80))
+                Group {
+                    if let picture = applicant.profilePicture {
+                        Image(uiImage: picture)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 80, height: 80)
+                            .clipShape(Circle())
+                    } else {
+                        Image(systemName: "person.crop.circle.fill")
+                            .font(.system(size: 80))
+                    }
+                }
                 
-                Text("Cherry Mauren Buendia")
+                Text(value(applicant.fullName))
                     .font(.title)
                     .fontWeight(.bold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                 
-                Text("@cherrymauren")
+                Text("@\(applicant.username)")
                     .font(.caption)
                     .fontWeight(.bold)
                     .foregroundColor(.secondary)
             }
             
-            
             VStack{
                 VStack{
-                    HStack{
-                        Text("Date of Birth")
-                        
-                        Spacer()
-                        
-                        Text("January 1, 2000")
-                    }
-                    
+                    row("Date of Birth", value(applicant.birthDate))
                     Divider()
-                    
-                    HStack{
-                        Text("Location")
-                        
-                        Spacer()
-                        
-                        Text("Lucena City")
-                    }
-                    
+                    row("Location", value(applicant.location))
                     Divider()
-                    
-                    HStack{
-                        Text("Contact Number")
-                        
-                        Spacer()
-                        
-                        Text("09123456789")
-                    }
-                    
+                    row("Contact Number", value(applicant.contactNumber))
                     Divider()
-                    
-                    HStack{
-                        Text("Location")
-                        
-                        Spacer()
-                        
-                        Text("Lucena City")
-                    }
-                    
+                    row("Email", value(applicant.email))
                     Divider()
-                    
-                    HStack{
-                        Text("Educational Attainment")
-                        
-                        Spacer()
-                        
-                        Text("BS Computer Science")
-                    }
-                    
+                    row("Educational Attainment", value(applicant.program))
                     Divider()
-                    
-                    HStack{
-                        Text("Work Experience")
-                        
-                        Spacer()
-                        
-                        Text("2 years")
-                    }
-                    
+                    row("Work Experience", experienceText)
                     Divider()
-                    
                     HStack(alignment: .top){
                         Text("Core Languages")
-                        
                         Spacer()
-                        
                         VStack(alignment: .trailing){
-                            Text("Python")
-                            Text("JavaScript")
-                            Text("C++")
+                            ForEach(applicant.coreLang, id: \.self) { language in
+                                Text(language)
+                            }
+                            if applicant.coreLang.isEmpty { Text("—") }
                         }
                     }
                     
@@ -108,7 +85,6 @@ struct AplAccountPage: View {
                     } label: {
                         HStack{
                             Spacer()
-                            
                             Image(systemName: "pencil.line")
                                 .font(.system(size: 20))
                                 .padding(5)
@@ -125,6 +101,7 @@ struct AplAccountPage: View {
                                 .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 10)
                         }
                     }
+                    .accessibilityLabel("Edit profile")
                     .padding(.top, 10)
                 }
                 .padding(.horizontal, 20)
@@ -140,6 +117,7 @@ struct AplAccountPage: View {
                 )
                 
                 Button{
+                    applicantController.signOut()
                     logInScreen = true
                 } label: {
                     Text("Sign Out")
@@ -159,13 +137,23 @@ struct AplAccountPage: View {
             .navigationDestination(isPresented: $logInScreen) {
                 LogInPage()
             }
-            /*.navigationDestination(isPresented: $editAccountScreen) {
-                EditAccountView()
-            }*/
+            .navigationDestination(isPresented: $editAccountScreen) {
+                AplEditProfilePage()
+            }
+        }
+    }
+    
+    private func row(_ title: String, _ text: String) -> some View {
+        HStack{
+            Text(title)
+            Spacer()
+            Text(text)
+                .multilineTextAlignment(.trailing)
         }
     }
 }
 
 #Preview {
     AplAccountPage()
+        .environmentObject(AplInfoController(applicant: AplInfoController.blankApplicant()))
 }

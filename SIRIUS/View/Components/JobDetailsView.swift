@@ -7,324 +7,210 @@
 
 import SwiftUI
 
+// Applicant-side job details. Shows the real job, the applicant's match breakdown,
+// and whether they were applied automatically (60% minimum). There is no Apply button.
 struct JobDetailsView: View {
     
-    @State private var backScreen = false
+    let listing: AplJobListing
+    
+    @Environment(\.dismiss) private var dismiss
+    
+    private var job: Job { listing.job }
+    private var breakdown: MatchBreakdown { listing.breakdown }
+    
+    private let navy = Color(red: 0/255, green: 61/255, blue: 92/255)
+    
+    private var yearsText: String {
+        let years = job.requiredYrExp
+        if years <= 0 { return "No minimum" }
+        let number = years == years.rounded() ? String(Int(years)) : String(format: "%.1f", years)
+        return years == 1 ? "1 year" : "\(number) years"
+    }
+    
+    private var statusText: String {
+        if listing.hasApplied { return "Applied automatically" }
+        if breakdown.isEligible { return "Eligible: you will be applied automatically" }
+        return "Below the \(MatchRules.autoApplyThreshold)% minimum: not applied"
+    }
     
     var body: some View {
-        NavigationStack{
-            VStack{
-                HStack{
-                    Button{
-                        backScreen = true
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20))
-                            .foregroundStyle(Color.black)
-                    }
-                    .padding(.bottom, 20)
-                    
-                    Spacer()
-                        .frame(maxWidth: 350)
+        VStack{
+            HStack{
+                Button{
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Color.black)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(Color.white))
                 }
+                .accessibilityLabel("Back")
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
+            
+            VStack(alignment: .leading){
+                Text(job.jobPos)
+                    .font(.system(size: 20))
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 
-                VStack(alignment: .leading){
-                    Text("Junior Software Developer")
-                        .font(.system(size: 20))
-                        .fontWeight(.bold)
-                        .foregroundStyle(.white)
-                    
-                    Text("OpeniT Philippines, Inc.")
-                        .font(.system(size: 12))
-                        .fontWeight(.medium)
-                        .foregroundStyle(.white)
-                        .padding(.bottom, 6)
-                    
-                    HStack{
-                        HStack{
-                            Text("₱18,000 -  ₱25,000")
-                                .font(.system(size: 8))
-                                .fontWeight(.regular)
-                                .foregroundStyle(.black)
-                        }
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 5)
-                        .frame(width: 110, height: 20)
-                        .background(Color.white)
-                        .cornerRadius(50)
-                        
-                        HStack{
-                            Text("Lucena City")
-                                .font(.system(size: 8))
-                                .fontWeight(.regular)
-                                .foregroundStyle(.black)
-                        }
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 5)
-                        .frame(width: 110, height: 20)
-                        .background(Color.white)
-                        .cornerRadius(50)
-                        
-                        HStack{
-                            Text("On-Site")
-                                .font(.system(size: 8))
-                                .fontWeight(.regular)
-                                .foregroundStyle(.black)
-                        }
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 5)
-                        .frame(width: 110, height: 20)
-                        .background(Color.white)
-                        .cornerRadius(50)
-                    }
+                Text(job.companyName.isEmpty ? "Company" : job.companyName)
+                    .font(.system(size: 12))
+                    .fontWeight(.medium)
+                    .foregroundStyle(.white)
+                    .padding(.bottom, 6)
+                
+                HStack{
+                    infoPill(job.requiredLoc.isEmpty ? "Any location" : job.requiredLoc)
+                    infoPill(job.workSetup.rawValue)
+                    infoPill("Max hire: \(job.maxHire)")
                 }
-                .padding(.horizontal, 40)
-                .padding(.vertical, 15)
-                .frame(width: 420, height: 123)
-                .background(
-                    Color(
-                        red: 0/255,
-                        green: 61/255,
-                        blue: 92/255
-                    )
+            }
+            .padding(.horizontal, 40)
+            .padding(.vertical, 15)
+            .frame(width: 420, height: 123, alignment: .leading)
+            .background(
+                navy
                     .cornerRadius(10)
                     .offset(x: -20)
+            )
+            .cornerRadius(10)
+            
+            ScrollView{
+                QualiMatchCard(
+                    percentage: "\(breakdown.total)%",
+                    title: "Qualification Match"
                 )
-                .cornerRadius(10)
+                .padding(.bottom, 4)
                 
-                ScrollView{
-                    QualiMatchCard(
-                        percentage: "30%",
-                        title: "Qualification Match",
-                    )
+                Text(statusText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(statusColor)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white))
                     .padding(.bottom, 10)
+                
+                VStack(alignment: .leading){
+                    Text("Job Description")
+                        .font(.system(size: 18))
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                        .padding(.bottom, 5)
                     
-                    VStack(alignment: .leading){
-                        Text("Job Description")
-                            .font(.system(size: 18))
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                            .padding(.bottom, 5)
-                        
-                        Text("We are looking for a talented Junior Software Developer to join our agile team. You will work on building scalable web applications and contribute to the full software development lifecycle alongside senior engineers.")
-                            .font(.system(size: 12))
-                            .fontWeight(.regular)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.bottom, 15)
-                        
-                        Text("Responsibilities")
-                            .font(.system(size: 18))
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                            .padding(.bottom, 5)
-                        
-                        Text("- Develop and maintain web applications using modern frameworks")
-                            .font(.system(size: 12))
-                            .fontWeight(.regular)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.bottom, 5)
-                        
-                        Text("- Collaborate with cross-functional teams to define and ship features")
-                            .font(.system(size: 12))
-                            .fontWeight(.regular)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.bottom, 5)
-                        
-                        Text("- Write clean, maintainable, and well-documented code")
-                            .font(.system(size: 12))
-                            .fontWeight(.regular)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.bottom, 5)
-                        
-                        Text("- Participate in code reviews and provide constructive feedback")
-                            .font(.system(size: 12))
-                            .fontWeight(.regular)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.bottom, 5)
-                        
-                        Text("- Debug and resolve technical issues across the stack")
-                            .font(.system(size: 12))
-                            .fontWeight(.regular)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.bottom, 15)
-                        
-                        Text("Qualifications")
-                            .font(.system(size: 18))
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                            .padding(.bottom, 5)
-                        
-                        VStack{
-                            HStack{
-                                Text("Educational Attainment")
-                                    .font(.system(size: 14))
-                                    .fontWeight(.regular)
-                                    .foregroundStyle(.black)
-                                    .padding(.bottom, 2)
-                                
-                                Spacer()
-                            }
-                            
-                            ScrollView(.horizontal){
-                                HStack{
-                                    Text("BS Computer Science")
-                                        .font(.system(size: 8))
-                                        .fontWeight(.regular)
-                                        .foregroundStyle(.black)
-                                        .frame(width: 120, height: 15)
-                                        .background(
-                                            .black,
-                                            in: RoundedRectangle(cornerRadius: 5).stroke(lineWidth: 1))
-                                    
-                                    Text("BS Information Technology")
-                                        .font(.system(size: 8))
-                                        .fontWeight(.regular)
-                                        .foregroundStyle(.black)
-                                        .frame(width: 120, height: 15)
-                                        .background(
-                                            .black,
-                                            in: RoundedRectangle(cornerRadius: 5).stroke(lineWidth: 1))
-                                    
-                                    Text("BS Information Systems")
-                                        .font(.system(size: 8))
-                                        .fontWeight(.regular)
-                                        .foregroundStyle(.black)
-                                        .frame(width: 120, height: 15)
-                                        .background(
-                                            .black,
-                                            in: RoundedRectangle(cornerRadius: 5).stroke(lineWidth: 1))
-                                        
-                                }
-                            }
-                            .frame(width: 270)
-                            .clipped()      // To Clip Content
-                            
-                        }
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 10)
-                        .frame(width: 310)
-                        .background(.white)
-                        .cornerRadius(10)
-                        .shadow(
-                            color: .black.opacity(0.8),
-                            radius: 4,
-                            x: 0,
-                            y: 4
-                        )
-                        .padding(.bottom, 10)
-                        
-                        HStack{
-                            Text("Minimum Work Experience")
-                                .font(.system(size: 14))
-                                .fontWeight(.regular)
-                                .foregroundStyle(.black)
-                            
-                            Spacer()
-                            
-                            Text("2 years")
-                                .font(.system(size: 12))
-                                .fontWeight(.regular)
-                                .foregroundStyle(.black)
-                        }
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 10)
-                        .frame(width: 310)
-                        .background(.white)
-                        .cornerRadius(10)
-                        .shadow(
-                            color: .black.opacity(0.8),
-                            radius: 4,
-                            x: 0,
-                            y: 4
-                        )
-                        .padding(.bottom, 10)
-                        
-                        VStack{
-                            HStack{
-                                Text("Core Languages")
-                                    .font(.system(size: 14))
-                                    .fontWeight(.regular)
-                                    .foregroundStyle(.black)
-                                    .padding(.bottom, 2)
-                                
-                                Spacer()
-                            }
-                            
-                            ScrollView(.horizontal){
-                                HStack{
-                                    Text("Python")
-                                        .font(.system(size: 8))
-                                        .fontWeight(.regular)
-                                        .foregroundStyle(.black)
-                                        .frame(width: 100, height: 15)
-                                        .background(
-                                            .black,
-                                            in: RoundedRectangle(cornerRadius: 5).stroke(lineWidth: 1))
-                                    
-                                    Text("JavaScript")
-                                        .font(.system(size: 8))
-                                        .fontWeight(.regular)
-                                        .foregroundStyle(.black)
-                                        .frame(width: 100, height: 15)
-                                        .background(
-                                            .black,
-                                            in: RoundedRectangle(cornerRadius: 5).stroke(lineWidth: 1))
-                                    
-                                    Text("C#")
-                                        .font(.system(size: 8))
-                                        .fontWeight(.regular)
-                                        .foregroundStyle(.black)
-                                        .frame(width: 100, height: 15)
-                                        .background(
-                                            .black,
-                                            in: RoundedRectangle(cornerRadius: 5).stroke(lineWidth: 1))
-                                        
-                                }
-                            }
-                            .frame(width: 270)
-                            .clipped()
-                            
-                        }
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 10)
-                        .frame(width: 310)
-                        .background(.white)
-                        .cornerRadius(10)
-                        .shadow(
-                            color: .black.opacity(0.8),
-                            radius: 4,
-                            x: 0,
-                            y: 4
-                        )
+                    Text(job.jobDesc.isEmpty ? "The employer did not add a description." : job.jobDesc)
+                        .font(.system(size: 12))
+                        .fontWeight(.regular)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 15)
+                    
+                    Text("Qualifications")
+                        .font(.system(size: 18))
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                        .padding(.bottom, 5)
+                    
+                    card {
+                        scoreRow("Educational Attainment", points: breakdown.education, outOf: 20)
+                        chipRow([job.requiredEduc.isEmpty ? "Any program" : job.requiredEduc])
                     }
-                    .padding(.vertical, 20)
-                    .padding(.horizontal, 30)
-                    .frame(width: 360)
-                    .background(
-                        Color(
-                            red: 0/255,
-                            green: 61/255,
-                            blue: 92/255
-                        )
-                    )
-                    .cornerRadius(15)
+                    
+                    card {
+                        scoreRow("Minimum Work Experience", points: breakdown.experience, outOf: 20)
+                        Text(yearsText)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.black)
+                    }
+                    
+                    card {
+                        scoreRow("Core Languages", points: breakdown.languages, outOf: 60)
+                        chipRow(job.requiredLang, matched: breakdown.matchedLanguages)
+                    }
                 }
-            }
-            .appBg()
-            .navigationBarBackButtonHidden(true)
-            .navigationDestination(isPresented: $backScreen) {
-                MainTabView()
+                .padding(.vertical, 20)
+                .padding(.horizontal, 30)
+                .frame(width: 360)
+                .background(navy)
+                .cornerRadius(15)
+                .padding(.bottom, 100)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 8)
+        .appBg()
+        .navigationBarBackButtonHidden(true)
     }
-}
-
-#Preview {
-    JobDetailsView()
+    
+    private var statusColor: Color {
+        switch breakdown.tier {
+        case .high: return Color(red: 0/255, green: 126/255, blue: 6/255)
+        case .medium: return Color(red: 243/255, green: 121/255, blue: 0/255)
+        case .low: return Color(red: 160/255, green: 0/255, blue: 0/255)
+        }
+    }
+    
+    private func infoPill(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 8))
+            .fontWeight(.regular)
+            .foregroundStyle(.black)
+            .lineLimit(1)
+            .padding(.horizontal, 8)
+            .frame(width: 110, height: 20)
+            .background(Color.white)
+            .cornerRadius(50)
+    }
+    
+    private func card<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            content()
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 10)
+        .frame(width: 310, alignment: .leading)
+        .background(.white)
+        .cornerRadius(10)
+        .shadow(color: .black.opacity(0.8), radius: 4, x: 0, y: 4)
+        .padding(.bottom, 10)
+    }
+    
+    private func scoreRow(_ title: String, points: Int, outOf: Int) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 14))
+                .foregroundStyle(.black)
+            Spacer()
+            Text("\(points)/\(outOf)")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(points == outOf ? Color(red: 0/255, green: 126/255, blue: 6/255) : Color.black)
+        }
+    }
+    
+    // Required items; the ones the applicant has are highlighted
+    private func chipRow(_ items: [String], matched: [String] = []) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack {
+                ForEach(items, id: \.self) { item in
+                    let isMatched = matched.contains { Matching.normalized($0) == Matching.normalized(item) }
+                    Text(item)
+                        .font(.system(size: 8))
+                        .fontWeight(isMatched ? .semibold : .regular)
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 10)
+                        .frame(minWidth: 60, minHeight: 15)
+                        .background(isMatched ? Color.siriusMatchGreen.opacity(0.6) : Color.clear)
+                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black, lineWidth: 1))
+                        .cornerRadius(5)
+                }
+            }
+        }
+        .frame(width: 270)
+        .clipped()
+    }
 }

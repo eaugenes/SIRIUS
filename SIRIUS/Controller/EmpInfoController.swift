@@ -11,20 +11,40 @@ import UIKit
 
 final class EmpInfoController: ObservableObject {
     
-    @Published var employer: Employer
-    @Published var company: Company
+    // Saved to the account file whenever a registered employer edits their profile
+    @Published var employer: Employer { didSet { persistProfile() } }
+    @Published var company: Company { didSet { persistProfile() } }
     @Published var recentActivity: [EmpActivity]
     @Published var isRegistered: Bool = false
     @Published var signUpError: String?
     
+    private let auth: AuthController
+    
     init(
         employer: Employer = Employer(),
         company: Company = Company(),
-        recentActivity: [EmpActivity] = EmpInfoController.sampleActivity
+        recentActivity: [EmpActivity] = [],
+        auth: AuthController = .shared
     ) {
         self.employer = employer
         self.company = company
         self.recentActivity = recentActivity
+        self.auth = auth
+    }
+    
+    // Builds the controller for an employer who logged in
+    convenience init(account: UserAccount, auth: AuthController = .shared) {
+        self.init(
+            employer: account.employer ?? Employer(),
+            company: account.company ?? Company(),
+            auth: auth
+        )
+        isRegistered = true
+    }
+    
+    private func persistProfile() {
+        guard isRegistered else { return }
+        auth.updateEmployer(employer, company: company)
     }
     
     // MARK: - Display helpers
@@ -110,9 +130,15 @@ final class EmpInfoController: ObservableObject {
         }
         
         employer.username = username
-        signUpError = nil
-        isRegistered = true
-        return true
+        switch auth.registerEmployer(employer, company: company, confirm: confirmPassword) {
+        case .failure(let error):
+            signUpError = error.errorDescription
+            return false
+        case .success:
+            signUpError = nil
+            isRegistered = true
+            return true
+        }
     }
     
     func clearError() {
@@ -121,6 +147,7 @@ final class EmpInfoController: ObservableObject {
     
     func signOut() {
         isRegistered = false
+        auth.signOut()
     }
     
     private func isValidEmail(_ email: String) -> Bool {
@@ -162,7 +189,8 @@ final class EmpInfoController: ObservableObject {
                 founded: "2015",
                 email: "email@gmail.com",
                 website: "ABCtech.com.ph"
-            )
+            ),
+            recentActivity: sampleActivity
         )
     }
 }

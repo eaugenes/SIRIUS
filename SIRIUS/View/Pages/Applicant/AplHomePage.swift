@@ -9,7 +9,16 @@ import SwiftUI
 
 struct AplHomePage: View {
     
-    @StateObject private var controller = AplApplicationsController()
+    @Binding var selectedTab: AplNavigationTab
+    
+    @EnvironmentObject private var applicantController: AplInfoController
+    @EnvironmentObject private var jobsController: AplJobsController
+    @EnvironmentObject private var controller: AplApplicationsController
+    
+    private var firstName: String {
+        let name = applicantController.applicant.firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? "there" : name
+    }
     
     var body: some View {
         ScrollView {
@@ -19,7 +28,7 @@ struct AplHomePage: View {
                         .font(.system(size: 20))
                         .foregroundStyle(.white)
                     
-                    Text("Nea Presto!")
+                    Text("\(firstName)!")
                         .font(.system(size: 25))
                         .fontWeight(.semibold)
                         .foregroundStyle(.white)
@@ -31,9 +40,9 @@ struct AplHomePage: View {
             .padding(.top, 5)
             
             QualiMatchCard(
-                percentage: "90%",
+                percentage: "\(jobsController.averageMatch)%",
                 title: "Average Qualification Match",
-                subtext: "12 matched positions in total"
+                subtext: "\(jobsController.matchedListings.count) matched positions in total"
             )
             .padding(15)
             
@@ -44,13 +53,24 @@ struct AplHomePage: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)
                 
-                AplJobCard(
-                    jobTitle: "Junior Software Developer",
-                    companyName: "OpeniT Philippines, Inc.",
-                    jobLocation: "Lucena City",
-                    jobSalary: "₱40,000 - ₱50,000",
-                    matchPrct: 95
-                )
+                if let top = jobsController.topListing {
+                    Button {
+                        selectedTab = .jobs
+                    } label: {
+                        AplJobCard(
+                            jobTitle: top.job.jobPos,
+                            companyName: top.job.companyName.isEmpty ? "Company" : top.job.companyName,
+                            jobLocation: top.job.requiredLoc.isEmpty ? top.job.workSetup.rawValue : top.job.requiredLoc,
+                            matchPrct: Double(top.percentage)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text("No matching jobs yet. Jobs at 60% or more appear here.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .frame(maxWidth: .infinity, minHeight: 88)
+                }
             }
             .padding(.horizontal, 10)
             .frame(width: 363, height: 141)
@@ -81,7 +101,7 @@ struct AplHomePage: View {
                 ZStack{
                     HStack{
                         VStack{
-                            Text("10")
+                            Text("\(controller.allApplications.count)")
                                 .font(.system(size: 16))
                                 .fontWeight(.bold)
                                 .foregroundStyle(.black)
@@ -98,7 +118,7 @@ struct AplHomePage: View {
                             .background(Color.gray)
                         
                         VStack{
-                            Text("2")
+                            Text("\(controller.count(of: .interview))")
                                 .font(.system(size: 16))
                                 .fontWeight(.bold)
                                 .foregroundStyle(.black)
@@ -115,7 +135,7 @@ struct AplHomePage: View {
                             .background(Color.gray)
                         
                          VStack{
-                            Text("0")
+                            Text("\(controller.count(of: .accepted))")
                                 .font(.system(size: 16))
                                 .fontWeight(.bold)
                                 .foregroundStyle(.black)
@@ -151,17 +171,21 @@ struct AplHomePage: View {
                 Spacer()
             }
             
-            //      Dummy Data
-            VStack{
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(controller.filteredApplications) { app in
-                            JobApplicationCard(application: app)
-                        }
+            VStack(spacing: 12) {
+                if controller.allApplications.isEmpty {
+                    Text("No applications yet. You are applied automatically when a job matches you at 60% or more.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.black.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 10)
+                } else {
+                    ForEach(controller.allApplications.prefix(5)) { app in
+                        JobApplicationCard(application: app)
                     }
                 }
             }
             .padding(.horizontal, 20)
+            .padding(.bottom, 100)          // room for the bottom bar
         }
         .appBg()
         .navigationBarBackButtonHidden(true)
@@ -169,5 +193,11 @@ struct AplHomePage: View {
 }
 
 #Preview{
-    AplHomePage()
+    AplHomePage(selectedTab: .constant(.home))
+        .environmentObject(AplInfoController(applicant: AplInfoController.blankApplicant()))
+        .environmentObject(AplJobsController(
+            info: AplInfoController(applicant: AplInfoController.blankApplicant()),
+            board: JobBoard()
+        ))
+        .environmentObject(AplApplicationsController(board: JobBoard()))
 }

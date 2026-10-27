@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum WorkSetup: String, CaseIterable, Identifiable {
+enum WorkSetup: String, CaseIterable, Identifiable, Codable {
     case onSite = "On-site"
     case remote = "Remote"
     case hybrid = "Hybrid"
@@ -22,7 +22,7 @@ enum JobListTab: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 }
 
-struct Job: Identifiable, Hashable{
+struct Job: Identifiable, Hashable, Codable {
     var jobID: String
     var companyID: String
     var jobPos: String
@@ -38,6 +38,11 @@ struct Job: Identifiable, Hashable{
     var applicantCount: Int = 0
     var datePosted: Date = Date()
     var isActive: Bool = true
+    var companyName: String = ""
     
     var id: String { jobID }
+    
+    var matchRequirements: MatchRequirements {
+        MatchRequirements(program: requiredEduc, minYearsExperience: requiredYrExp, languages: requiredLang)
+    }
 }

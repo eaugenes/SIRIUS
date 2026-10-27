@@ -12,7 +12,10 @@ struct LogInPage: View {
     @State private var logInUsername: String = ""
     @State private var logInPassword: String = ""
     @State private var signUpScreen = false
-    @State private var nextScreen = false
+    @State private var loggedInAccount: UserAccount?        // set after a successful log in
+    @State private var errorMessage: String?
+    
+    @ObservedObject private var auth = AuthController.shared
     
     var body: some View {
         NavigationStack{
@@ -48,8 +51,11 @@ struct LogInPage: View {
                     isSecure: true
                 )
                 
+                FormErrorText(message: errorMessage)
+                    .padding(.top, 8)
+                
                 Button {
-                    nextScreen = true
+                    logIn()
                 } label: {
                     Text("Continue")
                         .fontWeight(.regular)
@@ -58,7 +64,7 @@ struct LogInPage: View {
                         .foregroundStyle(Color.white)
                         .background(Color(red: 10/255, green: 85/255, blue: 128/255))
                         .cornerRadius(10)
-                        .padding(.top, 50)
+                        .padding(.top, errorMessage == nil ? 50 : 16)
                 }
                 
                 HStack{
@@ -103,9 +109,20 @@ struct LogInPage: View {
             .navigationDestination(isPresented: $signUpScreen) {
                 RoleSelectionPage()
             }
-            .navigationDestination(isPresented: $nextScreen) {
-                MainTabView()
+            .navigationDestination(item: $loggedInAccount) { account in
+                MainTabView(account: account)
             }
+        }
+    }
+    
+    private func logIn() {
+        switch auth.login(username: logInUsername, password: logInPassword) {
+        case .failure(let error):
+            errorMessage = error.errorDescription
+        case .success(let account):
+            errorMessage = nil
+            logInPassword = ""
+            loggedInAccount = account
         }
     }
 }

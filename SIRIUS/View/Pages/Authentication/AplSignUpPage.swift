@@ -7,93 +7,82 @@
 
 import SwiftUI
 
+// Applicant sign up — step 1 of 2: Personal Information + qualifications
+// (the qualifications are what jobs are matched against)
 struct AplSignUpPage: View {
     
     @StateObject private var applicantController = AplInfoController(
-        applicant: Applicant(
-           firstName: "", middleName: "", lastName: "", contactNumber: "", location: "", program: "", yrExp: 0.0, coreLang: [""], workSetUp: "", email: "", password: ""
-        )
-            
+        applicant: AplInfoController.blankApplicant()
     )
     @StateObject private var cityController = CitySelectionController()
     
-    @State private var firstName = ""
-    @State private var middleName = ""
-    @State private var lastName = ""
-    @State private var birthDate = ""
-    @State private var contactNum = ""
-    @State private var location = ""
-    @State private var program = ""
-    @State private var yrExp = ""
-    @State private var coreLang = ""
-    @State private var workSetUp = ""
+    @Environment(\.dismiss) private var dismiss
     
-    @State private var backScreen = false
+    @State private var coreLang = ""
+    @State private var yearsOfExperience = 0
+    @State private var workSetup: WorkSetup = .onSite
     @State private var nextScreen = false
     
     var body: some View {
-        NavigationStack{
-            VStack{
-                ZStack{
-                    HStack{
-                        Button{
-                            backScreen = true
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20))
-                                .foregroundStyle(Color.black)
-                        }
-                        
-                        Spacer()
-                        
-                        Text("Personal Information")
-                            .font(.system(size: 20))
-                            .fontWeight(.medium)
-                        
-                        Spacer()
-                    }
+        ScrollView {
+            VStack(spacing: 10) {
+                PageHeader(title: "Personal Information") {
+                    applicantController.clearError()
+                    dismiss()
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 50)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
                 
                 ProfileImagePicker(
                     image: $applicantController.applicant.profilePicture
                 )
+                .padding(.bottom, 10)
                 
                 AppTextField(
                     title: "First Name",
                     placeholder: "Enter your first name",
-                    text: $firstName,
+                    text: $applicantController.applicant.firstName,
                     isSecure: false
                 )
                 
                 AppTextField(
                     title: "Middle Name",
                     placeholder: "Enter your middle name",
-                    text: $middleName,
+                    text: $applicantController.applicant.middleName,
                     isSecure: false
                 )
                 
                 AppTextField(
                     title: "Last Name",
                     placeholder: "Enter your last name",
-                    text: $lastName,
+                    text: $applicantController.applicant.lastName,
                     isSecure: false
                 )
                 
                 AppTextField(
                     title: "Date of Birth",
                     placeholder: "YYYY-MM-DD",
-                    text: $birthDate,
-                    isSecure: false
+                    text: $applicantController.applicant.birthDate,
+                    isSecure: false,
+                    keyboardType: .numbersAndPunctuation
                 )
                 
                 AppTextField(
                     title: "Contact Number",
                     placeholder: "Enter your contact number",
-                    text: $contactNum,
-                    isSecure: false
+                    text: $applicantController.applicant.contactNumber,
+                    isSecure: false,
+                    keyboardType: .phonePad
                 )
+                
+                AppTextField(
+                    title: "Email Address",
+                    placeholder: "e.g., 123@gmail.com",
+                    text: $applicantController.applicant.email,
+                    keyboardType: .emailAddress
+                )
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
                 
                 CitiesDropdown(
                     title: "Location",
@@ -102,10 +91,17 @@ struct AplSignUpPage: View {
                 )
                 .zIndex(1)
                 
+                ProgramDropdown(
+                    title: "Program",
+                    programs: ProgramsList.programs,
+                    selectedProgram: $applicantController.applicant.program
+                )
                 
-                
-                // Dropdown/picker educ
-                // Stepper Years of Experience
+                AppStepper(
+                    title: "Years of Experience",
+                    value: $yearsOfExperience,
+                    range: 0...50
+                )
                 
                 AppTextField(
                     title: "Core Languages",
@@ -113,36 +109,40 @@ struct AplSignUpPage: View {
                     text: $coreLang,
                     isSecure: false
                 )
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
                 
-                // picker work setup
+                WorkSetupPicker(
+                    title: "Work Setup",
+                    selection: $workSetup
+                )
                 
-                Button {
-//                    saveData()
-                    nextScreen = true
-                } label: {
-                    Text("Continue")
-                        .fontWeight(.regular)
-                        .padding(.horizontal, 20)
-                        .frame(width: 280, height: 38)
-                        .foregroundStyle(Color.white)
-                        .background(Color(red: 10/255, green: 85/255, blue: 128/255))
-                        .cornerRadius(10)
-                        .padding(.top, 50)
+                FormErrorText(message: applicantController.signUpError)
+                    .padding(.top, 6)
+                
+                SiriusButton(title: "Continue") {
+                    applicantController.applicant.yrExp = Double(yearsOfExperience)
+                    applicantController.applicant.workSetUp = workSetup.rawValue
+                    if applicantController.validateProfile(coreLanguageText: coreLang, city: cityController.selectedCity) {
+                        nextScreen = true
+                    }
                 }
+                .padding(.top, applicantController.signUpError == nil ? 30 : 6)
+                .padding(.bottom, 40)
             }
-            .frame(maxWidth: 370, maxHeight: .infinity)
-            .appBg()
-            .navigationDestination(isPresented: $backScreen) {
-                RoleSelectionPage()
-            }
-            .navigationDestination(isPresented: $nextScreen) {
-                MainTabView()
-            }
+            .frame(maxWidth: .infinity)
         }
+        .scrollDismissesKeyboard(.interactively)
+        .appBg()
         .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $nextScreen) {
+            AplFinishSignUpPage(applicantController: applicantController)
+        }
     }
 }
 
 #Preview {
-    AplSignUpPage()
+    NavigationStack {
+        AplSignUpPage()
+    }
 }

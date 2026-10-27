@@ -18,9 +18,11 @@ enum ApplicationStatus: String, CaseIterable, Identifiable {
 }
 
 struct JobApplication: Identifiable {
-    let id = UUID()
+    var id = UUID()
     let role: String
     let company: String
     let dateApplied: String
     let status: ApplicationStatus
+    var jobID: String = ""
+    var matchPercentage: Int = 0
 }

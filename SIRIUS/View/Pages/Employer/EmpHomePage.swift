@@ -136,7 +136,7 @@ struct EmpHomePage: View {
     NavigationStack {
         EmpHomePage(selectedTab: .constant(.home))
             .environmentObject(EmpInfoController.sample())
-            .environmentObject(EmpJobController())
-            .environmentObject(EmpAplStatusController())
+            .environmentObject(EmpJobController(jobs: EmpJobController.sampleJobs))
+            .environmentObject(EmpAplStatusController(applicants: EmpAplStatusController.sampleApplicants))
     }
 }

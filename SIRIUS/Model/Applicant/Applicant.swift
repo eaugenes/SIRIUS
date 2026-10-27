@@ -8,7 +8,7 @@
 import Foundation
 import UIKit                // for UIImage
 
-struct Applicant {
+struct Applicant: Codable {
     var id = UUID()
     var firstName: String
     var middleName: String
@@ -23,5 +23,24 @@ struct Applicant {
     var email: String
     var password: String
     
-    var profilePicture: UIImage? = nil          // to temporarily store the selected photoensure that the pfp is not optional, if no picture yet, display Image(systemName: "person")
+    var profilePicture: UIImage? = nil     // temporarily store  selected photo and ensure that the pfp is not optional, if no picture yet, display Image(systemName: "person")
+    var birthDate: String = ""
+    var username: String = ""
+    
+    // The profile photo (UIImage) is not stored in the JSON file
+    private enum CodingKeys: String, CodingKey {
+        case id, firstName, middleName, lastName, contactNumber, location, program
+        case yrExp, coreLang, workSetUp, email, password, birthDate, username
+    }
+    
+    var fullName: String {
+        [firstName, middleName, lastName]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+    }
+    
+    var matchProfile: MatchProfile {
+        MatchProfile(program: program, yearsExperience: yrExp, languages: coreLang)
+    }
 }

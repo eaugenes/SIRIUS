@@ -16,6 +16,8 @@ struct EmpJobPostingPage: View {
     
     @Environment(\.dismiss) private var dismiss
     
+    var job: Job? = nil                 // when set, the form edits this job instead of posting a new one
+    
     // Form input (raw text; EmpJobController validates it on Post)
     @State private var position = ""
     @State private var jobDescription = ""
@@ -25,11 +27,12 @@ struct EmpJobPostingPage: View {
     @State private var workSetup: WorkSetup = .onSite
     @State private var preferredLocation = ""
     @State private var maxHire = ""
+    @State private var loadedJob = false
     
     var body: some View {
         ScrollView {
             VStack(spacing: 10) {
-                PageHeader(title: "Job Posting", titleSize: 25) {
+                PageHeader(title: job == nil ? "Job Posting" : "Edit Job", titleSize: 25) {
                     jobController.postError = nil
                     dismiss()
                 }
@@ -99,7 +102,7 @@ struct EmpJobPostingPage: View {
                 FormErrorText(message: jobController.postError)
                     .padding(.top, 6)
                 
-                SiriusButton(title: "Post") {
+                SiriusButton(title: job == nil ? "Post" : "Save") {
                     post()
                 }
                 .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 4)
@@ -111,6 +114,21 @@ struct EmpJobPostingPage: View {
         .scrollDismissesKeyboard(.interactively)
         .appBg()
         .navigationBarBackButtonHidden(true)
+        .onAppear { loadJobIfEditing() }
+    }
+    
+    // Pre-fills the form once when editing an existing job
+    private func loadJobIfEditing() {
+        guard let job, !loadedJob else { return }
+        loadedJob = true
+        position = job.jobPos
+        jobDescription = job.jobDesc
+        program = job.requiredEduc
+        yearsOfExperience = Int(job.requiredYrExp)
+        coreLanguages = job.requiredLang.joined(separator: ", ")
+        workSetup = job.workSetup
+        preferredLocation = job.requiredLoc
+        maxHire = String(job.maxHire)
     }
     
     private func post() {
@@ -123,14 +141,15 @@ struct EmpJobPostingPage: View {
             coreLanguages: coreLanguages,
             workSetup: workSetup,
             preferredLocation: preferredLocation,
-            maxHireText: maxHire
+            maxHireText: maxHire,
+            editing: job
         )
         
         guard didPost else { return }
         
         infoController.logActivity(
             icon: "briefcase",
-            title: "New Job Posted",
+            title: job == nil ? "New Job Posted" : "Job Updated",
             jobPosition: position.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         dismiss()
@@ -141,6 +160,6 @@ struct EmpJobPostingPage: View {
     NavigationStack {
         EmpJobPostingPage()
             .environmentObject(EmpInfoController.sample())
-            .environmentObject(EmpJobController())
+            .environmentObject(EmpJobController(jobs: []))
     }
 }

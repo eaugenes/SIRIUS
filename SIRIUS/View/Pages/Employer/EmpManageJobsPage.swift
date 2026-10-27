@@ -13,7 +13,7 @@ struct EmpManageJobsPage: View {
     
     @EnvironmentObject private var jobController: EmpJobController
     
-    @State private var selectedJob: Job?            // pushes that job's applicants
+    @State private var selectedJobID: String?       // pushes that job's details
     @State private var jobPostingScreen = false
     @State private var jobToDelete: Job?
     
@@ -56,7 +56,7 @@ struct EmpManageJobsPage: View {
                     LazyVStack(spacing: 10) {
                         ForEach(jobController.filteredJobs) { job in
                             Button {
-                                selectedJob = job
+                                selectedJobID = job.jobID
                             } label: {
                                 EmpJobCard(job: job)
                             }
@@ -89,8 +89,8 @@ struct EmpManageJobsPage: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .appBg()
-        .navigationDestination(item: $selectedJob) { job in
-            EmpManageApplicantsPage(job: job)
+        .navigationDestination(item: $selectedJobID) { jobID in
+            EmpJobDetailsPage(jobID: jobID)
         }
         .navigationDestination(isPresented: $jobPostingScreen) {
             EmpJobPostingPage()
@@ -136,7 +136,7 @@ struct EmpManageJobsPage: View {
     NavigationStack {
         EmpManageJobsPage()
             .environmentObject(EmpInfoController.sample())
-            .environmentObject(EmpJobController())
-            .environmentObject(EmpAplStatusController())
+            .environmentObject(EmpJobController(jobs: EmpJobController.sampleJobs))
+            .environmentObject(EmpAplStatusController(applicants: EmpAplStatusController.sampleApplicants))
     }
 }
