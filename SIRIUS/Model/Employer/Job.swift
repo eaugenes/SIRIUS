@@ -28,7 +28,7 @@ struct Job: Identifiable, Hashable, Codable {
     var jobPos: String
     var jobDesc: String
     var requiredLoc: String
-    var requiredEduc: String
+    var requiredProgram: String
     var requiredYrExp: Double
     var requiredLang: [String]
     
@@ -39,10 +39,24 @@ struct Job: Identifiable, Hashable, Codable {
     var datePosted: Date = Date()
     var isActive: Bool = true
     var companyName: String = ""
+    var isFilled: Bool = false          // closed automatically because maxHire was reached
+    var salary: Int = 0                 // monthly salary in pesos (whole number)
     
     var id: String { jobID }
     
+    // "₱25,000" (empty when no salary was set)
+    var salaryText: String {
+        salary > 0 ? Job.pesoText(salary) : ""
+    }
+    
+    static func pesoText(_ amount: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = ","
+        return "\u{20B1}" + (formatter.string(from: NSNumber(value: amount)) ?? String(amount))
+    }
+    
     var matchRequirements: MatchRequirements {
-        MatchRequirements(program: requiredEduc, minYearsExperience: requiredYrExp, languages: requiredLang)
+        MatchRequirements(program: requiredProgram, minYearsExperience: requiredYrExp, languages: requiredLang, location: requiredLoc)
     }
 }

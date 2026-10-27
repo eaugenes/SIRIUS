@@ -7,129 +7,179 @@
 
 import Foundation
 import Combine
-import CryptoKit
 
+// Sign up / log in / log out against Supabase Auth (email + password).
+// Passwords are sent to Supabase only; the app never stores them.
 final class AuthController: ObservableObject {
     
     static let shared = AuthController()
     
-    @Published private(set) var accounts: [UserAccount] = []
     @Published private(set) var currentAccount: UserAccount?
     
-    init() {}
+    private var didRestoreSession = false
     
-    // All saved applicant profiles (used to match new jobs against applicants)
-    var applicantProfiles: [Applicant] {
-        accounts.compactMap { $0.role == .applicant ? $0.applicant : nil }
-    }
+    init() {}
     
     // MARK: - Validation
     
     static let minimumPasswordLength = 6
     
-    func validateCredentials(username: String, password: String, confirm: String) -> AuthError? {
-        let name = username.trimmingCharacters(in: .whitespacesAndNewlines)
-        if name.isEmpty { return .missingUsername }
-        if name.count < 3 || name.contains(" ") { return .invalidUsername }
+    static func normalizedEmail(_ email: String) -> String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+    
+    static func isValidEmail(_ email: String) -> Bool {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let at = trimmed.firstIndex(of: "@") else { return false }
+        let domain = trimmed[trimmed.index(after: at)...]
+        return at != trimmed.startIndex && domain.contains(".") && !domain.hasSuffix(".") && !trimmed.contains(" ")
+    }
+    
+    func validateCredentials(email: String, password: String, confirm: String) -> AccountError? {
+        let address = Self.normalizedEmail(email)
+        if address.isEmpty { return .missingEmail }
+        if !Self.isValidEmail(address) { return .invalidEmail }
         if password.isEmpty { return .missingPassword }
         if password.count < Self.minimumPasswordLength { return .weakPassword }
         if password != confirm { return .passwordMismatch }
-        if isUsernameTaken(name) { return .usernameTaken }
         return nil
-    }
-    
-    func isUsernameTaken(_ username: String) -> Bool {
-        let key = username.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return accounts.contains { $0.username.lowercased() == key }
     }
     
     // MARK: - Sign up
     
-    func registerApplicant(_ applicant: Applicant, password: String, confirm: String) -> Result<UserAccount, AuthError> {
-        if let error = validateCredentials(username: applicant.username, password: password, confirm: confirm) {
+    @MainActor
+    func registerApplicant(_ applicant: Applicant, password: String, confirm: String) async -> Result<UserAccount, AccountError> {
+        if let error = validateCredentials(email: applicant.email, password: password, confirm: confirm) {
             return .failure(error)
         }
-        var profile = applicant
-        profile.username = applicant.username.trimmingCharacters(in: .whitespacesAndNewlines)
-        profile.password = ""                           // never stored
-        return add(UserAccount(role: .applicant, username: profile.username, salt: "", passwordHash: "", applicant: profile), password: password)
+        let email = Self.normalizedEmail(applicant.email)
+        do {
+            let result = try await SupabaseAuthService.signUp(email: email, password: password, role: .applicant)
+            if result.needsEmailConfirmation { return .failure(.confirmEmail) }
+            
+            var profile = applicant
+            profile.id = result.userID                  // the applicant id IS the Supabase user id
+            profile.email = email
+            profile.password = ""                       // never kept
+            profile.username = email.split(separator: "@").first.map(String.init) ?? ""
+            try await SupabaseStore.saveApplicant(profile)
+            
+            let account = UserAccount(id: result.userID, role: .applicant, email: email, applicant: profile)
+            currentAccount = account
+            return .success(account)
+        } catch {
+            return .failure(SupabaseAuthService.accountError(from: error))
+        }
     }
     
-    func registerEmployer(_ employer: Employer, company: Company, confirm: String) -> Result<UserAccount, AuthError> {
-        if let error = validateCredentials(username: employer.username, password: employer.password, confirm: confirm) {
+    @MainActor
+    func registerEmployer(_ employer: Employer, company: Company, password: String, confirm: String) async -> Result<UserAccount, AccountError> {
+        if let error = validateCredentials(email: employer.email, password: password, confirm: confirm) {
             return .failure(error)
         }
-        var profile = employer
-        profile.username = employer.username.trimmingCharacters(in: .whitespacesAndNewlines)
-        let password = employer.password
-        profile.password = ""                           // never stored
-        return add(UserAccount(role: .employer, username: profile.username, salt: "", passwordHash: "", employer: profile, company: company), password: password)
-    }
-    
-    private func add(_ draft: UserAccount, password: String) -> Result<UserAccount, AuthError> {
-        var account = draft
-        account.salt = UUID().uuidString
-        account.passwordHash = Self.hash(password: password, salt: account.salt)
-        accounts.append(account)
-        guard persist() else {
-            accounts.removeAll { $0.id == account.id }
-            return .failure(.saveFailed)
+        let email = Self.normalizedEmail(employer.email)
+        do {
+            let result = try await SupabaseAuthService.signUp(email: email, password: password, role: .employer)
+            if result.needsEmailConfirmation { return .failure(.confirmEmail) }
+            
+            var profile = employer
+            profile.id = result.userID
+            profile.email = email
+            profile.password = ""
+            profile.username = email.split(separator: "@").first.map(String.init) ?? ""
+            var companyProfile = company
+            companyProfile.id = result.userID.uuidString.lowercased()      // the company id IS the employer's user id
+            try await SupabaseStore.saveEmployer(profile, company: companyProfile, userID: result.userID)
+            
+            let account = UserAccount(id: result.userID, role: .employer, email: email, employer: profile, company: companyProfile)
+            currentAccount = account
+            return .success(account)
+        } catch {
+            return .failure(SupabaseAuthService.accountError(from: error))
         }
-        currentAccount = account
-        return .success(account)
     }
     
     // MARK: - Log in / out
     
-    func login(username: String, password: String) -> Result<UserAccount, AuthError> {
-        let key = username.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if key.isEmpty { return .failure(.missingUsername) }
+    @MainActor
+    func login(email: String, password: String) async -> Result<UserAccount, AccountError> {
+        let address = Self.normalizedEmail(email)
+        if address.isEmpty { return .failure(.missingEmail) }
         if password.isEmpty { return .failure(.missingPassword) }
-        
-        guard let account = accounts.first(where: { $0.username.lowercased() == key }),
-              Self.hash(password: password, salt: account.salt) == account.passwordHash else {
-            return .failure(.invalidCredentials)       // same message for unknown user and wrong password
+        do {
+            let profile = try await SupabaseAuthService.signIn(email: address, password: password)
+            let account = try await loadAccount(profile, fallbackEmail: address)
+            currentAccount = account
+            return .success(account)
+        } catch {
+            return .failure(SupabaseAuthService.accountError(from: error))
         }
+    }
+    
+    // Opens the saved session when the app starts (only tried once per launch)
+    @MainActor
+    func restoreSession() async -> UserAccount? {
+        guard !didRestoreSession else { return nil }
+        didRestoreSession = true
+        guard let profile = await SupabaseAuthService.restoreSession(),
+              let account = try? await loadAccount(profile, fallbackEmail: profile.email ?? "") else { return nil }
         currentAccount = account
-        return .success(account)
+        return account
+    }
+    
+    // Builds the account (applicant, or employer + company) from the database rows
+    @MainActor
+    private func loadAccount(_ profile: ProfileRow, fallbackEmail: String) async throws -> UserAccount {
+        let email = profile.email ?? fallbackEmail
+        if profile.role == "employer" {
+            let loaded = try await SupabaseStore.fetchEmployer(id: profile.id, email: email)
+            var employer = loaded?.0 ?? Employer()
+            employer.id = profile.id
+            employer.email = email
+            var company = loaded?.1 ?? Company()
+            company.id = profile.id.uuidString.lowercased()
+            return UserAccount(id: profile.id, role: .employer, email: email, employer: employer, company: company)
+        }
+        var applicant = try await SupabaseStore.fetchApplicant(id: profile.id, email: email) ?? AplInfoController.blankApplicant()
+        applicant.id = profile.id
+        applicant.email = email
+        return UserAccount(id: profile.id, role: .applicant, email: email, applicant: applicant)
     }
     
     func signOut() {
         currentAccount = nil
+        JobBoard.shared.clear()
+        Task { try? await SupabaseAuthService.signOut() }
     }
     
     // MARK: - Profile updates
     
+    @MainActor
     @discardableResult
-    func updateApplicant(_ applicant: Applicant) -> Bool {
-        guard let index = accounts.firstIndex(where: { $0.applicant?.id == applicant.id }) else { return false }
-        var profile = applicant
-        profile.password = ""
-        accounts[index].applicant = profile
-        if currentAccount?.id == accounts[index].id { currentAccount = accounts[index] }
-        return persist()
+    func updateApplicant(_ applicant: Applicant) async -> Bool {
+        do {
+            try await SupabaseStore.saveApplicant(applicant)
+            if var account = currentAccount, account.applicant?.id == applicant.id {
+                var profile = applicant
+                profile.password = ""
+                account.applicant = profile
+                currentAccount = account
+            }
+            return true
+        } catch {
+            return false
+        }
     }
     
+    @MainActor
     @discardableResult
-    func updateEmployer(_ employer: Employer, company: Company) -> Bool {
-        guard let index = accounts.firstIndex(where: { $0.employer?.id == employer.id }) else { return false }
-        var profile = employer
-        profile.password = ""
-        accounts[index].employer = profile
-        accounts[index].company = company
-        if currentAccount?.id == accounts[index].id { currentAccount = accounts[index] }
-        return persist()
-    }
-    
-    // MARK: - Helpers
-    
-    // TODO(Supabase): write the account to the database; return false on failure.
-    private func persist() -> Bool {
-        true
-    }
-    
-    static func hash(password: String, salt: String) -> String {
-        let digest = SHA256.hash(data: Data((salt + password).utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
+    func updateEmployer(_ employer: Employer, company: Company) async -> Bool {
+        guard let userID = currentAccount?.id else { return false }
+        do {
+            try await SupabaseStore.saveEmployer(employer, company: company, userID: userID)
+            return true
+        } catch {
+            return false
+        }
     }
 }

@@ -12,15 +12,15 @@ struct AppStepper: View {
     let title: String
     @Binding var value: Int
     var range: ClosedRange<Int> = 0...50
-    var borderColor: Color = .gray
+    var borderColor: Color = .siriusFieldBorder
     
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .fontWeight(.medium)
-                .foregroundStyle(Color.black)
-                .padding(2)
+                .foregroundStyle(Color.siriusInk)
+                .padding(.leading, 11)
             
             HStack(spacing: 0) {
                 stepButton(symbol: "minus", isEnabled: value > range.lowerBound) {
@@ -28,19 +28,20 @@ struct AppStepper: View {
                 }
                 
                 Text("\(value)")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.black)
+                    .scaledFont(size: 12)
+                    .foregroundStyle(Color.siriusText)
                     .frame(maxWidth: .infinity)
                 
                 stepButton(symbol: "plus", isEnabled: value < range.upperBound) {
                     value += 1
                 }
             }
-            .frame(width: 300, height: 35)
-            .background(Color.white)
-            .cornerRadius(10)
+            .frame(width: 300)
+                    .frame(minHeight: 35)
+            .background(Color.siriusFieldFill)
+            .cornerRadius(14)
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 14)
                     .strokeBorder(borderColor, lineWidth: 1)
             )
         }
@@ -49,9 +50,9 @@ struct AppStepper: View {
     private func stepButton(symbol: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .bold))
+                .scaledFont(size: 13, weight: .bold)
                 .foregroundStyle(Color.black.opacity(isEnabled ? 1 : 0.3))
-                .frame(width: 44, height: 35)
+                .frame(width: 40, height: 35)
                 .background(Color.siriusFill)
         }
         .disabled(!isEnabled)

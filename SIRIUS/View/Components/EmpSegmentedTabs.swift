@@ -27,7 +27,7 @@ struct EmployerSegmentedTabs<Item: Hashable>: View {
                     }
                 } label: {
                     Text(title(item))
-                        .font(.system(size: 15, weight: .medium))
+                        .scaledFont(size: 15, weight: .medium)
                         .foregroundStyle(isSelected ? Color.white : Color.black)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -45,7 +45,7 @@ struct EmployerSegmentedTabs<Item: Hashable>: View {
             }
         }
         .padding(2)
-        .background(Capsule().fill(Color.white))
+        .background(Capsule().fill(Color.siriusSurface))
         .overlay(Capsule().strokeBorder(Color.siriusNavy.opacity(0.4), lineWidth: 1))
         .frame(width: width)
     }

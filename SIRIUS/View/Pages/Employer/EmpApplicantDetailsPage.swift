@@ -14,7 +14,7 @@ struct EmpApplicantDetailsPage: View {
     @EnvironmentObject private var aplController: EmpAplStatusController
     @Environment(\.dismiss) private var dismiss
     
-    @State private var confirmRemove = false
+    @State private var showReject = false
     
     private var applicant: EmpApplicant? {
         aplController.applicants.first { $0.id == applicantID }
@@ -28,8 +28,8 @@ struct EmpApplicantDetailsPage: View {
                 // The applicant was removed
                 VStack(spacing: 12) {
                     Text("This applicant is no longer available.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.siriusNavy)
+                        .scaledFont(size: 14, weight: .medium)
+                        .foregroundStyle(Color.siriusInk)
                     SiriusButton(title: "Back") { dismiss() }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -37,60 +37,38 @@ struct EmpApplicantDetailsPage: View {
         }
         .appBg()
         .navigationBarBackButtonHidden(true)
-        .alert("Remove applicant?", isPresented: $confirmRemove) {
-            Button("Remove", role: .destructive) {
-                if let applicant {
-                    aplController.removeApplicant(applicant)
-                }
-                dismiss()
+        .sheet(isPresented: $showReject) {
+            if let applicant {
+                RejectApplicantDialog(
+                    applicantName: applicant.name,
+                    onReject: { reason in
+                        aplController.removeApplicant(applicant, reason: reason)
+                        showReject = false
+                        dismiss()
+                    },
+                    onCancel: { showReject = false }
+                )
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("\(applicant?.name ?? "This applicant") will be removed from your applicants.")
         }
+        .boardLoadState()
     }
     
     private func content(for applicant: EmpApplicant) -> some View {
-        let result = applicant.breakdown
-        
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .center, spacing: 16) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color.black)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(Color.white))
-                }
-                .accessibilityLabel("Back")
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(applicant.name)
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundStyle(Color.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                    Text(applicant.jobPosition)
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(Color.white)
-                        .lineLimit(1)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: 14) {
+                CircleBackButton { dismiss() }
+                Text("Applicant Details")
+                    .scaledFont(size: 24, weight: .medium)
+                    .foregroundStyle(Color.white)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 16)
             
             ScrollView {
                 VStack(spacing: 14) {
-                    infoCard(applicant)
-                    
-                    if let result {
-                        overallCard(result)
-                        breakdownCard(applicant, result)
-                    }
-                    
+                    mainCard(applicant)
+                    extrasCard(applicant)
                     FormErrorText(message: aplController.actionError)
                     actions(applicant)
                 }
@@ -101,79 +79,156 @@ struct EmpApplicantDetailsPage: View {
         }
     }
     
-    private func card<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            content()
-        }
-        .padding(16)
-        .frame(width: 338, alignment: .leading)
-        .background(Color.white)
-        .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
-    }
-    
-    private func infoCard(_ applicant: EmpApplicant) -> some View {
-        card {
-            detailRow("Program", applicant.degree)
-            detailRow("Work experience", applicant.experienceText.replacingOccurrences(of: " work experience", with: ""))
-            detailRow("Stage", applicant.status.rawValue)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Core languages")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.siriusTextSecondary)
-                chips(applicant.coreLanguages, highlighted: applicant.breakdown?.matchedLanguages ?? [])
-            }
-        }
-    }
-    
-    // Overall percentage next to the 60% minimum, coloured green / orange / red
-    private func overallCard(_ result: MatchBreakdown) -> some View {
-        card {
-            HStack {
-                Text("Overall match")
-                    .font(.system(size: 13, weight: .medium))
-                Spacer()
-                Text("\(result.total)%")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(color(for: result.tier))
-            }
+    // Single white card: profile, compatibility rows, language chips, overall match
+    private func mainCard(_ applicant: EmpApplicant) -> some View {
+        let result = applicant.breakdown
+        let matched = result?.matchedLanguages ?? []
+        let years = applicant.jobMinYears
+        let yearsText = years <= 0 ? "No minimum" : "\(years == years.rounded() ? String(Int(years)) : String(years)) years or more"
+        let programs = Matching.parsePrograms(applicant.jobProgram).joined(separator: ", ")
+        let langs = applicant.jobRequiredLanguages.joined(separator: ", ")
+        
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(applicant.name)
+                .scaledFont(size: 24, weight: .semibold)
+                .foregroundStyle(Color.siriusInk)
+            Text(applicant.degree)
+                .scaledFont(size: 14)
+                .foregroundStyle(Color.siriusMuted)
+                .padding(.top, 4)
+            Text(applicant.experienceText)
+                .scaledFont(size: 14)
+                .foregroundStyle(Color.siriusMuted)
+            Text("Applied to: \(applicant.jobPosition)")
+                .scaledFont(size: 12, weight: .semibold)
+                .foregroundStyle(Color.siriusAction)
+                .padding(.top, 10)
             
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.siriusFill)
-                    Capsule()
-                        .fill(color(for: result.tier))
-                        .frame(width: proxy.size.width * CGFloat(result.total) / 100)
-                    // Minimum marker
-                    Rectangle()
-                        .fill(Color.black.opacity(0.6))
-                        .frame(width: 2)
-                        .offset(x: proxy.size.width * CGFloat(MatchRules.autoApplyThreshold) / 100)
+            Divider().padding(.vertical, 14)
+            
+            Text("Compatibility with the job")
+                .scaledFont(size: 16, weight: .semibold)
+                .foregroundStyle(Color.siriusAction)
+            
+            if let result {
+                VStack(alignment: .leading, spacing: 12) {
+                    scoreRow("Program", result.program, 20, programs.isEmpty ? "Required: Any program" : "Required: \(programs)")
+                    scoreRow("Work experience", result.experience, 20, "Required: \(yearsText)")
+                    scoreRow("Programming languages", result.languages, 60, langs.isEmpty ? "Required: Any" : "Required: \(langs)")
+                }
+                .padding(.top, 12)
+                
+                HStack(spacing: 6) {
+                    ForEach(applicant.coreLanguages, id: \.self) { item in
+                        let isMatched = matched.contains { Matching.normalized($0) == Matching.normalized(item) }
+                        Text(isMatched ? "✓ \(item)" : item)
+                            .scaledFont(size: 11, weight: .medium)
+                            .foregroundStyle(isMatched ? Color.white : Color.siriusInk)
+                            .padding(.horizontal, 10)
+                            .frame(height: 22)
+                            .background(Capsule().fill(isMatched ? Color.siriusMatchBar : Color.siriusFill))
+                    }
+                }
+                .padding(.top, 14)
+                
+                Divider().padding(.vertical, 14)
+                
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Overall match")
+                            .scaledFont(size: 16, weight: .semibold)
+                            .foregroundStyle(Color.siriusInk)
+                        Text("Minimum qualification: \(MatchRules.autoApplyThreshold)% match")
+                            .scaledFont(size: 11)
+                            .foregroundStyle(Color.siriusMuted)
+                    }
+                    Spacer()
+                    Text("\(result.total)%")
+                        .scaledFont(size: 24, weight: .semibold)
+                        .foregroundStyle(color(for: result.tier))
+                }
+                
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.siriusBarTrack)
+                        Capsule()
+                            .fill(color(for: result.tier))
+                            .frame(width: proxy.size.width * CGFloat(result.total) / 100)
+                        Rectangle()
+                            .fill(Color.siriusInk)
+                            .frame(width: 2, height: 18)
+                            .offset(x: proxy.size.width * CGFloat(MatchRules.autoApplyThreshold) / 100)
+                    }
+                }
+                .frame(height: 18)
+                .padding(.top, 10)
+            }
+        }
+        .padding(20)
+        .fluidFrame(width: 370, alignment: .leading)
+        .background(Color.siriusSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+    }
+    
+    // Location (shown, not scored), resume and the scheduled interview
+    private func extrasCard(_ applicant: EmpApplicant) -> some View {
+        let interview = aplController.interview(for: applicant)
+        return VStack(alignment: .leading, spacing: 10) {
+            extraRow("mappin.and.ellipse", "Location",
+                     applicant.location.isEmpty ? "Not provided" : applicant.location,
+                     note: locationNote(applicant))
+            extraRow("doc.text", "Resume",
+                     applicant.resumeFileName.isEmpty ? "No resume uploaded" : applicant.resumeFileName,
+                     note: nil)
+            if applicant.status == .interview, let interview {
+                Divider()
+                extraRow("calendar", "Interview",
+                         interview.date.formatted(date: .abbreviated, time: .shortened) + " \u{00B7} " + interview.location,
+                         note: interview.message.isEmpty ? nil : interview.message)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: 370, alignment: .leading)
+        .background(Color.siriusSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+    }
+    
+    private func locationNote(_ applicant: EmpApplicant) -> String? {
+        guard let matches = applicant.breakdown?.locationMatches else { return nil }
+        return matches ? "In the preferred area" : "Outside the preferred area (not part of the score)"
+    }
+    
+    private func extraRow(_ icon: String, _ title: String, _ value: String, note: String?) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .foregroundStyle(Color.siriusAction)
+                .frame(width: 20)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).scaledFont(size: 12).foregroundStyle(Color.siriusMuted)
+                Text(value).scaledFont(size: 14, weight: .semibold).foregroundStyle(Color.siriusInk)
+                if let note {
+                    Text(note).scaledFont(size: 11).foregroundStyle(Color.siriusMuted)
                 }
             }
-            .frame(height: 10)
-            
-            Text(result.isEligible
-                 ? "Meets the \(MatchRules.autoApplyThreshold)% minimum"
-                 : "Below the \(MatchRules.autoApplyThreshold)% minimum")
-                .font(.system(size: 11))
-                .foregroundStyle(result.isEligible ? Color.siriusTextSecondary : Color.siriusDanger)
         }
+        .accessibilityElement(children: .combine)
     }
     
-    private func breakdownCard(_ applicant: EmpApplicant, _ result: MatchBreakdown) -> some View {
-        card {
-            Text("Compatibility")
-                .font(.system(size: 13, weight: .medium))
-            scoreRow("Education", result.education, 20)
-            scoreRow("Work Experience", result.experience, 20)
-            scoreRow("Languages", result.languages, 60)
-            
-            if !result.missingLanguages.isEmpty {
-                Text("Missing: \(result.missingLanguages.joined(separator: ", "))")
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.siriusDanger)
+    private func scoreRow(_ title: String, _ points: Int, _ outOf: Int, _ caption: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(title)
+                    .scaledFont(size: 14, weight: .semibold)
+                    .foregroundStyle(Color.siriusInk)
+                Spacer()
+                Text("\(points) / \(outOf)")
+                    .scaledFont(size: 14, weight: .semibold)
+                    .foregroundStyle(points == outOf ? Color.siriusMatchBar : Color.siriusInk)
             }
+            Text(caption)
+                .scaledFont(size: 11)
+                .foregroundStyle(Color.siriusMuted)
         }
     }
     
@@ -190,47 +245,13 @@ struct EmpApplicantDetailsPage: View {
                 SiriusButton(title: "Hire") {
                     aplController.hire(applicant)
                 }
+                SiriusButton(title: "Reschedule Interview", isFilled: false) {
+                    aplController.beginRescheduling(applicant)
+                    dismiss()                       // the dialog opens on the applicants list
+                }
             }
-            SiriusButton(title: "Remove Applicant", isFilled: false) {
-                confirmRemove = true
-            }
-        }
-    }
-    
-    private func detailRow(_ title: String, _ value: String) -> some View {
-        HStack {
-            Text(title)
-                .font(.system(size: 11))
-                .foregroundStyle(Color.siriusTextSecondary)
-            Spacer()
-            Text(value)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.black)
-        }
-    }
-    
-    private func scoreRow(_ title: String, _ points: Int, _ outOf: Int) -> some View {
-        HStack {
-            Text(title)
-                .font(.system(size: 12))
-            Spacer()
-            Text("\(points)/\(outOf)")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(points == outOf ? Color.siriusMatchBar : Color.black)
-        }
-    }
-    
-    private func chips(_ items: [String], highlighted: [String]) -> some View {
-        HStack(spacing: 6) {
-            ForEach(items, id: \.self) { item in
-                let isMatched = highlighted.contains { Matching.normalized($0) == Matching.normalized(item) }
-                Text(item)
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(isMatched ? Color.white : Color.black)
-                    .padding(.horizontal, 10)
-                    .frame(height: 16)
-                    .background(isMatched ? Color.siriusNavy : Color.siriusFill)
-                    .cornerRadius(8)
+            SiriusButton(title: "Reject Applicant", isFilled: false) {
+                showReject = true
             }
         }
     }

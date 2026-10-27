@@ -16,6 +16,7 @@ final class EmpJobController: ObservableObject {
     @Published var jobs: [Job]
     @Published var selectedTab: JobListTab = .active
     @Published var postError: String?
+    @Published var statusError: String?        // e.g. a filled job cannot be reopened
     
     private let board: JobBoard?
     private let auth: AuthController
@@ -56,7 +57,7 @@ final class EmpJobController: ObservableObject {
             .filter { companyID == nil || $0.companyID == companyID }
             .map { job in
                 var copy = job
-                copy.applicantCount = applications.filter { $0.jobID == job.jobID && !$0.isRemoved }.count
+                copy.applicantCount = applications.filter { $0.jobID == job.jobID && !$0.isRemoved && !$0.isWithdrawn }.count
                 return copy
             }
     }
@@ -85,6 +86,7 @@ final class EmpJobController: ObservableObject {
         workSetup: WorkSetup,
         preferredLocation: String,
         maxHireText: String,
+        salaryText: String,
         editing existing: Job? = nil
     ) -> Bool {
         let trimmedPosition = position.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -95,11 +97,18 @@ final class EmpJobController: ObservableObject {
             return false
         }
         if program.isEmpty {
-            postError = "Please select a program."
+            postError = "Please select at least one program."
             return false
         }
         if Matching.parseLanguages(coreLanguages).isEmpty {
             postError = "Please enter at least one core language."
+            return false
+        }
+        let trimmedSalary = salaryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedSalary.isEmpty,
+              trimmedSalary.allSatisfy({ $0.isASCII && $0.isNumber }),
+              let salary = Int(trimmedSalary), salary > 0, salary <= 10_000_000 else {
+            postError = "Please enter the salary in pesos (numbers only)."
             return false
         }
         guard let maxHire = Int(trimmedMaxHire), maxHire > 0, maxHire <= 1000 else {
@@ -115,12 +124,13 @@ final class EmpJobController: ObservableObject {
             var updated = existing
             updated.jobPos = trimmedPosition
             updated.jobDesc = description.trimmingCharacters(in: .whitespacesAndNewlines)
-            updated.requiredEduc = program
+            updated.requiredProgram = program
             updated.requiredYrExp = Double(yearsOfExperience)
             updated.requiredLang = Matching.parseLanguages(coreLanguages)
             updated.workSetup = workSetup
             updated.requiredLoc = preferredLocation.trimmingCharacters(in: .whitespacesAndNewlines)
             updated.maxHire = maxHire
+            updated.salary = salary
             updateJob(updated)
         } else {
             postJob(
@@ -132,7 +142,8 @@ final class EmpJobController: ObservableObject {
                 coreLanguages: coreLanguages,
                 workSetup: workSetup,
                 preferredLocation: preferredLocation.trimmingCharacters(in: .whitespacesAndNewlines),
-                maxHire: maxHire
+                maxHire: maxHire,
+                salary: salary
             )
         }
         postError = nil
@@ -151,15 +162,16 @@ final class EmpJobController: ObservableObject {
         coreLanguages: String,
         workSetup: WorkSetup,
         preferredLocation: String,
-        maxHire: Int
+        maxHire: Int,
+        salary: Int = 0
     ) {
         let job = Job(
-            jobID: UUID().uuidString,
+            jobID: UUID().uuidString.lowercased(),     // lowercase, same as the database returns
             companyID: companyID,
             jobPos: position.trimmingCharacters(in: .whitespacesAndNewlines),
             jobDesc: description,
             requiredLoc: preferredLocation,
-            requiredEduc: program,
+            requiredProgram: program,
             requiredYrExp: Double(yearsOfExperience),
             requiredLang: Matching.parseLanguages(coreLanguages),
             workSetup: workSetup,
@@ -167,11 +179,12 @@ final class EmpJobController: ObservableObject {
             applicantCount: 0,
             datePosted: Date(),
             isActive: true,
-            companyName: companyName
+            companyName: companyName,
+            salary: salary
         )
         
         if let board {
-            board.addJob(job, applicants: auth.applicantProfiles)
+            board.addJob(job)
         } else {
             jobs.insert(job, at: 0)
         }
@@ -180,7 +193,7 @@ final class EmpJobController: ObservableObject {
     
     func updateJob(_ job: Job) {
         if let board {
-            board.updateJob(job, applicants: auth.applicantProfiles)
+            board.updateJob(job)
         } else if let index = jobs.firstIndex(where: { $0.jobID == job.jobID }) {
             jobs[index] = job
         }
@@ -188,8 +201,12 @@ final class EmpJobController: ObservableObject {
     
     // Moves a job between Active and Inactive.
     func toggleStatus(of job: Job) {
+        statusError = nil
         if let board {
-            board.setActive(jobID: job.jobID, isActive: !job.isActive, applicants: auth.applicantProfiles)
+            let changed = board.setActive(jobID: job.jobID, isActive: !job.isActive)
+            if !changed {
+                statusError = "All \(job.maxHire) position(s) are filled. Edit the job and raise the maximum hire to reopen it."
+            }
         } else if let index = jobs.firstIndex(where: { $0.jobID == job.jobID }) {
             jobs[index].isActive.toggle()
         }
@@ -223,7 +240,7 @@ final class EmpJobController: ObservableObject {
                     jobPos: "Junior Software Developer",
                     jobDesc: "",
                     requiredLoc: "Lucena City",
-                    requiredEduc: "BS Computer Science",
+                    requiredProgram: "BS Computer Science",
                     requiredYrExp: 1,
                     requiredLang: ["Python", "C++"],
                     workSetup: .onSite,

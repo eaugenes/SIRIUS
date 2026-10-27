@@ -18,9 +18,10 @@ struct CitiesDropdown: View {
     var body: some View {
         VStack(alignment: .leading){
             Text(title)
-                .font(.system(size:13))
-                .fontWeight(.regular)
-                .foregroundStyle(Color(.black))
+                .scaledFont(size: 13)
+                .fontWeight(.medium)
+                .foregroundStyle(Color.siriusInk)
+                .padding(.leading, 11)
                 .padding(.bottom, 3)
             
             VStack{
@@ -29,24 +30,24 @@ struct CitiesDropdown: View {
                 } label: {
                     HStack{
                         Text(selectedCity?.name ?? "Select City")
-                            .font(.system(size: 13))
+                            .scaledFont(size: 13)
                             .fontWeight(.regular)
                         
                         
                         Spacer()
                         
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 13))
+                            .scaledFont(size: 13)
                             .fontWeight(.regular)
                     }
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .padding(10)
                     .visibleEdges(
                         isExpanded ? [.top, .leading, .trailing] : [.top, .bottom, .leading, .trailing],
                         color: .gray,
                         width: 1)
                     .foregroundStyle(Color(.gray.opacity(0.7)))
-                    .background(Color.white)
+                    .background(Color.siriusSurface)
                     .clipShape(
                         UnevenRoundedRectangle(             // Customize corner radius
                             topLeadingRadius: 10,
@@ -55,7 +56,8 @@ struct CitiesDropdown: View {
                             topTrailingRadius: 10
                         )
                     )
-                    .frame(width: 300, height: 35)
+                    .frame(width: 300)
+                    .frame(minHeight: 35)
                 }
                 .overlay(
                     VStack{
@@ -69,7 +71,7 @@ struct CitiesDropdown: View {
                                         } label: {
                                             HStack{
                                                 Text(city.name)
-                                                    .font(.system(size: 12))
+                                                    .scaledFont(size: 12)
                                                     .fontWeight(.medium)
                                                     .foregroundStyle(Color.gray)
                                                 
@@ -88,7 +90,7 @@ struct CitiesDropdown: View {
                                         Divider()
                                     }
                                 }
-                                .background(Color.white)
+                                .background(Color.siriusSurface)
                             }
                             .clipShape(
                                 UnevenRoundedRectangle(             // Customize corner radius

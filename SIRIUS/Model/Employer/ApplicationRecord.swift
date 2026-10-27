@@ -17,9 +17,16 @@ struct ApplicationRecord: Identifiable, Codable, Equatable {
     var languages: [String]
     var breakdown: MatchBreakdown
     var status: EmpAplStatus = .toReview
+    var location: String = ""
+    var resumeFileName: String = ""
+    var rejectionReason: String = ""        // shown to the applicant when the employer rejects
+    var isWithdrawn: Bool = false           // the applicant withdrew; kept so they are not auto-applied again
     var isRemoved: Bool = false             // removed by the employer; kept so the applicant is not auto-applied again
     var dateApplied: Date = Date()
     var percentage: Int { breakdown.total }
+    var matchProfile: MatchProfile {
+        MatchProfile(program: degree, yearsExperience: yearsExperience, languages: languages, location: location)
+    }
 }
 
 enum HireResult: Equatable {

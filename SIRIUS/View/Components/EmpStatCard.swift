@@ -15,21 +15,21 @@ struct EmpStatCard: View {
     var body: some View {
         HStack(spacing: 10) {
             Text("\(value)")
-                .font(.system(size: 25, weight: .semibold))
-                .foregroundStyle(Color.black)
+                .scaledFont(size: 25, weight: .semibold)
+                .foregroundStyle(Color.siriusText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             
             Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.black)
+                .scaledFont(size: 14, weight: .medium)
+                .foregroundStyle(Color.siriusText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)
         .frame(height: 61)
-        .background(Color.white)
+        .background(Color.siriusSurface)
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.25), radius: 2, x: 4, y: 4)
     }
@@ -42,12 +42,12 @@ struct EmpAverageMatchCard: View {
     var body: some View {
         HStack(spacing: 9) {
             Text("\(percentage)%")
-                .font(.system(size: 30, weight: .medium))
+                .scaledFont(size: 30, weight: .medium)
             
             Text("Average Match")
-                .font(.system(size: 18))
+                .scaledFont(size: 18)
         }
-        .foregroundStyle(Color.black)
+        .foregroundStyle(Color.siriusText)
         .frame(maxWidth: .infinity)
         .frame(height: 61)
         .background(

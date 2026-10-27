@@ -31,8 +31,8 @@ struct EmpJobDetailsPage: View {
             } else {
                 VStack(spacing: 12) {
                     Text("This job is no longer available.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.siriusNavy)
+                        .scaledFont(size: 14, weight: .medium)
+                        .foregroundStyle(Color.siriusInk)
                     SiriusButton(title: "Back") { dismiss() }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -45,10 +45,18 @@ struct EmpJobDetailsPage: View {
                 EmpManageApplicantsPage(job: job)
             }
         }
-        .navigationDestination(isPresented: $showEdit) {
+        .sheet(isPresented: $showEdit) {
             if let job {
                 EmpJobPostingPage(job: job)
             }
+        }
+        .alert("Can't reopen this job", isPresented: Binding(
+            get: { jobController.statusError != nil },
+            set: { if !$0 { jobController.statusError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(jobController.statusError ?? "")
         }
         .alert("Delete this job?", isPresented: $confirmDelete) {
             Button("Delete", role: .destructive) {
@@ -64,136 +72,188 @@ struct EmpJobDetailsPage: View {
     }
     
     private func content(for job: Job) -> some View {
-        let postedText = job.datePosted.formatted(.dateTime.month(.abbreviated).day().year())
-        let company = job.companyName.isEmpty ? infoController.displayCompanyName : job.companyName
-        
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .center, spacing: 16) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.backward")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color.black)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(Color.white))
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 14) {
+                    CircleBackButton { dismiss() }
+                    Text("Job Details")
+                        .scaledFont(size: 24, weight: .medium)
+                        .foregroundStyle(Color.white)
                 }
-                .accessibilityLabel("Back")
+                .padding(.top, 12)
                 
+                infoCard(job)
+                statGrid(job)
+                pipelineCard(job)
+                requirementsCard(job)
+                descriptionCard(job)
+                actions(job)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity)
+        }
+        .scrollIndicators(.hidden)
+    }
+    
+    private func panel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) { content() }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.siriusSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+    }
+    
+    private func infoCard(_ job: Job) -> some View {
+        let company = job.companyName.isEmpty ? infoController.displayCompanyName : job.companyName
+        return panel {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(job.jobPos)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.white)
-                        .lineLimit(1)
-                    Text("\(company) | \(postedText)")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color.white)
-                        .lineLimit(1)
+                        .scaledFont(size: 20, weight: .semibold)
+                        .foregroundStyle(Color.siriusInk)
+                    Text(company)
+                        .scaledFont(size: 13)
+                        .foregroundStyle(Color.siriusMuted)
                 }
+                Spacer()
+                Text(job.isFilled ? "Filled" : (job.isActive ? "Active" : "Inactive"))
+                    .scaledFont(size: 11, weight: .semibold)
+                    .foregroundStyle(job.isFilled ? Color.siriusMatchOrange : (job.isActive ? Color.siriusMatchGreenText : Color.siriusMuted))
+                    .padding(.horizontal, 12)
+                    .frame(height: 22)
+                    .background(Capsule().fill(job.isFilled ? Color.siriusMatchOrange.opacity(0.18) : (job.isActive ? Color.siriusMatchBar.opacity(0.18) : Color.siriusFill)))
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 12)
-            .padding(.bottom, 16)
-            
-            ScrollView {
-                VStack(spacing: 14) {
-                    statsRow(job)
-                    requirementsCard(job)
-                    descriptionCard(job)
-                    actions(job)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 40)
+            if job.isFilled {
+                Label("All \(job.maxHire) position(s) are filled, so this job was closed automatically. Raise the maximum hire to reopen it.",
+                      systemImage: "checkmark.seal")
+                    .scaledFont(size: 12)
+                    .foregroundStyle(Color.siriusMatchOrange)
             }
-            .scrollIndicators(.hidden)
+            Divider().padding(.vertical, 4)
+            infoLine("Salary", job.salary > 0 ? "\(job.salaryText) / month" : "Not specified")
+            infoLine("Location", job.requiredLoc.isEmpty ? "Any" : job.requiredLoc)
+            infoLine("Work Setup", job.workSetup.rawValue)
         }
     }
     
-    private func statsRow(_ job: Job) -> some View {
-        HStack(spacing: 0) {
-            stat(aplController.count(forJobID: job.jobID), "Applicants")
-            stat(aplController.count(forJobID: job.jobID, status: .toReview), "To Review")
-            stat(aplController.count(forJobID: job.jobID, status: .interview), "Interview")
-            stat(aplController.count(forJobID: job.jobID, status: .hired), "Hired")
+    private func infoLine(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title).scaledFont(size: 12).foregroundStyle(Color.siriusMuted)
+            Spacer()
+            Text(value).scaledFont(size: 13, weight: .semibold).foregroundStyle(Color.siriusInk)
         }
-        .frame(width: 338, height: 70)
-        .background(Color.white)
-        .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
     }
     
-    private func stat(_ value: Int, _ title: String) -> some View {
-        VStack(spacing: 2) {
+    private func statGrid(_ job: Job) -> some View {
+        let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+        return LazyVGrid(columns: columns, spacing: 12) {
+            statCard(aplController.count(forJobID: job.jobID), "Applicants", Color.siriusAction)
+            statCard(aplController.count(forJobID: job.jobID, status: .toReview), "To Review", Color.siriusMatchOrange)
+            statCard(aplController.count(forJobID: job.jobID, status: .interview), "Interview", Color.siriusLink)
+            statCard(aplController.count(forJobID: job.jobID, status: .hired), "Hired", Color.siriusMatchBar)
+        }
+    }
+    
+    private func statCard(_ value: Int, _ title: String, _ color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
             Text("\(value)")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.siriusNavy)
+                .scaledFont(size: 28, weight: .semibold)
+                .foregroundStyle(Color.white)
             Text(title)
-                .font(.system(size: 9))
-                .foregroundStyle(Color.siriusTextSecondary)
+                .scaledFont(size: 12)
+                .foregroundStyle(Color.white)
         }
-        .frame(maxWidth: .infinity)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 16).fill(color))
+    }
+    
+    // Segmented bar of To Review / Interview / Hired out of all applicants
+    private func pipelineCard(_ job: Job) -> some View {
+        let review = aplController.count(forJobID: job.jobID, status: .toReview)
+        let interview = aplController.count(forJobID: job.jobID, status: .interview)
+        let hired = aplController.count(forJobID: job.jobID, status: .hired)
+        let total = max(review + interview + hired, 1)
+        
+        return panel {
+            Text("Hiring Pipeline")
+                .scaledFont(size: 16, weight: .semibold)
+                .foregroundStyle(Color.siriusInk)
+            GeometryReader { proxy in
+                HStack(spacing: 2) {
+                    segment(proxy.size.width, review, total, Color.siriusMatchOrange)
+                    segment(proxy.size.width, interview, total, Color.siriusLink)
+                    segment(proxy.size.width, hired, total, Color.siriusMatchBar)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Capsule().fill(Color.siriusBarTrack))
+                .clipShape(Capsule())
+            }
+            .frame(height: 12)
+            HStack(spacing: 14) {
+                legend("To Review \(review)", Color.siriusMatchOrange)
+                legend("Interview \(interview)", Color.siriusLink)
+                legend("Hired \(hired)", Color.siriusMatchBar)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func segment(_ width: CGFloat, _ count: Int, _ total: Int, _ color: Color) -> some View {
+        if count > 0 {
+            Rectangle().fill(color).frame(width: max(width * CGFloat(count) / CGFloat(total) - 2, 0))
+        }
+    }
+    
+    private func legend(_ text: String, _ color: Color) -> some View {
+        HStack(spacing: 4) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(text).scaledFont(size: 11).foregroundStyle(Color.siriusMuted)
+        }
     }
     
     private func requirementsCard(_ job: Job) -> some View {
         let years = job.requiredYrExp
         let yearsText = years <= 0 ? "No minimum" : (years == 1 ? "1 year" : "\(Int(years)) years")
         
-        return card {
-            Text("Requirements")
-                .font(.system(size: 13, weight: .medium))
-            row("Program", job.requiredEduc.isEmpty ? "Any" : job.requiredEduc)
-            row("Minimum experience", yearsText)
-            row("Core languages", job.requiredLang.isEmpty ? "Any" : job.requiredLang.joined(separator: ", "))
-            row("Work setup", job.workSetup.rawValue)
-            row("Preferred location", job.requiredLoc.isEmpty ? "Any" : job.requiredLoc)
-            row("Maximum hire", "\(job.maxHire)")
-            row("Status", job.isActive ? "Active" : "Inactive")
+        return panel {
+            Text("Hiring Requirements")
+                .scaledFont(size: 16, weight: .semibold)
+                .foregroundStyle(Color.siriusInk)
+            infoLine("Program", job.requiredProgram.isEmpty ? "Any" : job.requiredProgram)
+            infoLine("Minimum experience", yearsText)
+            infoLine("Core languages", job.requiredLang.isEmpty ? "Any" : job.requiredLang.joined(separator: ", "))
+            infoLine("Hired / maximum", "\(aplController.count(forJobID: job.jobID, status: .hired)) / \(job.maxHire)")
         }
     }
     
     private func descriptionCard(_ job: Job) -> some View {
-        card {
-            Text("Job Description")
-                .font(.system(size: 13, weight: .medium))
+        panel {
+            Text("About the Role")
+                .scaledFont(size: 16, weight: .semibold)
+                .foregroundStyle(Color.siriusInk)
             Text(job.jobDesc.isEmpty ? "No description added." : job.jobDesc)
-                .font(.system(size: 11))
-                .foregroundStyle(Color.black)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .scaledFont(size: 13)
+                .foregroundStyle(Color.siriusMuted)
         }
     }
     
     private func actions(_ job: Job) -> some View {
         VStack(spacing: 10) {
-            SiriusButton(title: "View Applicants") { showApplicants = true }
+            Button { showApplicants = true } label: {
+                Text("View Applicants")
+                    .scaledFont(size: 17, weight: .semibold)
+                    .foregroundStyle(Color.siriusInk)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 52)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.siriusSurface))
+            }
             SiriusButton(title: "Edit Job", isFilled: false) { showEdit = true }
-            SiriusButton(title: job.isActive ? "Mark as Inactive" : "Mark as Active", isFilled: false) {
+            SiriusButton(title: job.isActive ? "Mark as Inactive" : (job.isFilled ? "Reopen Job" : "Mark as Active"), isFilled: false) {
                 jobController.toggleStatus(of: job)
             }
             SiriusButton(title: "Delete Job", isFilled: false) { confirmDelete = true }
-        }
-    }
-    
-    private func card<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            content()
-        }
-        .padding(16)
-        .frame(width: 338, alignment: .leading)
-        .background(Color.white)
-        .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
-    }
-    
-    private func row(_ title: String, _ value: String) -> some View {
-        HStack(alignment: .top) {
-            Text(title)
-                .font(.system(size: 11))
-                .foregroundStyle(Color.siriusTextSecondary)
-            Spacer()
-            Text(value)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.black)
-                .multilineTextAlignment(.trailing)
         }
     }
 }

@@ -21,7 +21,7 @@ struct EmpManageJobsPage: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Manage Jobs")
-                    .font(.system(size: 30, weight: .medium))
+                    .scaledFont(size: 30, weight: .medium)
                     .foregroundStyle(Color.white)
                 
                 Spacer()
@@ -30,10 +30,10 @@ struct EmpManageJobsPage: View {
                     jobPostingScreen = true
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Color.siriusNavy)
+                        .scaledFont(size: 18, weight: .semibold)
+                        .foregroundStyle(Color.siriusInk)
                         .frame(width: 36, height: 36)
-                        .background(Circle().fill(Color.white))
+                        .background(Circle().fill(Color.siriusSurface))
                 }
                 .accessibilityLabel("Post a job")
             }
@@ -89,10 +89,11 @@ struct EmpManageJobsPage: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .appBg()
+        .boardLoadState()
         .navigationDestination(item: $selectedJobID) { jobID in
             EmpJobDetailsPage(jobID: jobID)
         }
-        .navigationDestination(isPresented: $jobPostingScreen) {
+        .sheet(isPresented: $jobPostingScreen) {
             EmpJobPostingPage()
         }
         .alert(
@@ -118,15 +119,15 @@ struct EmpManageJobsPage: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "briefcase")
-                .font(.system(size: 32))
+                .scaledFont(size: 32)
             Text(jobController.selectedTab == .active ? "No active jobs yet" : "No inactive jobs")
-                .font(.system(size: 15, weight: .medium))
+                .scaledFont(size: 15, weight: .medium)
             if jobController.selectedTab == .active {
                 Text("Tap + to post a job opening.")
-                    .font(.system(size: 12, weight: .light))
+                    .scaledFont(size: 12, weight: .light)
             }
         }
-        .foregroundStyle(Color.siriusNavy)
+        .foregroundStyle(Color.siriusInk)
         .frame(maxWidth: .infinity)
         .padding(.top, 80)
     }

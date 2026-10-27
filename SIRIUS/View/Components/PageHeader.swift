@@ -18,7 +18,7 @@ struct PageHeader: View {
     var body: some View {
         ZStack {
             Text(title)
-                .font(.system(size: titleSize, weight: .medium))
+                .scaledFont(size: titleSize, weight: .medium)
                 .foregroundStyle(titleColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -28,7 +28,7 @@ struct PageHeader: View {
                 HStack {
                     Button(action: onBack) {
                         Image(systemName: "chevron.backward")
-                            .font(.system(size: 26, weight: .regular))
+                            .scaledFont(size: 26, weight: .regular)
                             .foregroundStyle(titleColor)
                             .frame(width: 44, height: 44, alignment: .leading)
                     }
@@ -51,17 +51,19 @@ struct SiriusButton: View {
     var isFilled: Bool = true
     var width: CGFloat = 280
     var height: CGFloat = 38
-    var fontSize: CGFloat = 15
+    var fontSize: CGFloat = 17
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: fontSize))
+                .scaledFont(size: fontSize, weight: fontSize >= 15 ? .semibold : .regular)
                 .foregroundStyle(isFilled ? Color.white : Color.black)
-                .frame(width: width, height: height)
+                .frame(width: width)
+                .frame(minHeight: height)
                 .background(isFilled ? Color.siriusNavy : Color.white)
-                .cornerRadius(10)
+                .cornerRadius(14)
+                .shadow(color: Color(red: 0, green: 26/255, blue: 51/255).opacity(isFilled ? 0.3 : 0), radius: 2.5, x: 0, y: 4)
         }
     }
 }
@@ -74,12 +76,12 @@ struct FormErrorText: View {
     var body: some View {
         if let message {
             Text(message)
-                .font(.system(size: 12, weight: .medium))
+                .scaledFont(size: 12, weight: .medium)
                 .foregroundStyle(Color.siriusDanger)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.white.opacity(0.85))
+                .background(Color.siriusSurface.opacity(0.85))
                 .cornerRadius(6)
         }
     }

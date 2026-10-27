@@ -13,8 +13,12 @@ enum ApplicationStatus: String, CaseIterable, Identifiable {
     case interview = "Interview"
     case accepted = "Accepted"
     case rejected = "Rejected"
+    case withdrawn = "Withdrawn"        // shown under "All" only (no tab of its own)
     
     var id: String { self.rawValue }
+    
+    // Tabs of the My Applications segmented control
+    static let tabs: [ApplicationStatus] = [.all, .applied, .interview, .accepted, .rejected]
 }
 
 struct JobApplication: Identifiable {
@@ -25,4 +29,14 @@ struct JobApplication: Identifiable {
     let status: ApplicationStatus
     var jobID: String = ""
     var matchPercentage: Int = 0
+    
+    // Details for the application screen
+    var job: Job? = nil
+    var profile: MatchProfile? = nil
+    var breakdown: MatchBreakdown? = nil
+    var interview: Interview? = nil
+    var rejectionReason: String = ""
+    
+    // Hired or already closed applications can't be withdrawn
+    var canWithdraw: Bool { status == .applied || status == .interview }
 }

@@ -26,7 +26,7 @@ struct EmpApplicantsOverviewPage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Manage Applicants")
-                .font(.system(size: 30, weight: .medium))
+                .scaledFont(size: 30, weight: .medium)
                 .foregroundStyle(Color.white)
                 .padding(.horizontal, 32)
                 .padding(.top, 20)
@@ -58,6 +58,7 @@ struct EmpApplicantsOverviewPage: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .appBg()
+        .boardLoadState()
         .navigationDestination(item: $selectedJob) { job in
             EmpManageApplicantsPage(job: job)
         }
@@ -75,7 +76,7 @@ struct EmpApplicantsOverviewPage: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 76)
-        .background(Color.white)
+        .background(Color.siriusSurface)
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
     }
@@ -83,10 +84,10 @@ struct EmpApplicantsOverviewPage: View {
     private func summaryCell(value: Int, title: String) -> some View {
         VStack(spacing: 2) {
             Text("\(value)")
-                .font(.system(size: 26, weight: .semibold))
-                .foregroundStyle(Color.siriusNavy)
+                .scaledFont(size: 26, weight: .semibold)
+                .foregroundStyle(Color.siriusInk)
             Text(title)
-                .font(.system(size: 11))
+                .scaledFont(size: 11)
                 .foregroundStyle(Color.siriusTextSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -96,12 +97,12 @@ struct EmpApplicantsOverviewPage: View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text(job.jobPos)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.black)
+                    .scaledFont(size: 13, weight: .medium)
+                    .foregroundStyle(Color.siriusText)
                     .lineLimit(1)
                 
                 Text("Review - \(aplController.count(forJobID: job.jobID, status: .toReview)) | Interview - \(aplController.count(forJobID: job.jobID, status: .interview)) | Hired - \(aplController.count(forJobID: job.jobID, status: .hired))")
-                    .font(.system(size: 10))
+                    .scaledFont(size: 10)
                     .foregroundStyle(Color.siriusTextSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -110,12 +111,12 @@ struct EmpApplicantsOverviewPage: View {
             Spacer()
             
             Image(systemName: "chevron.forward")
-                .font(.system(size: 20))
-                .foregroundStyle(Color.black)
+                .scaledFont(size: 20)
+                .foregroundStyle(Color.siriusText)
         }
         .padding(.horizontal, 16)
-        .frame(width: 338, height: 65)
-        .background(Color.white)
+        .fluidFrame(width: 338, height: 65)
+        .background(Color.siriusSurface)
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.25), radius: 2, x: 4, y: 4)
         .contentShape(Rectangle())
@@ -124,13 +125,13 @@ struct EmpApplicantsOverviewPage: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "person.2")
-                .font(.system(size: 32))
+                .scaledFont(size: 32)
             Text("No active jobs")
-                .font(.system(size: 15, weight: .medium))
+                .scaledFont(size: 15, weight: .medium)
             Text("Post a job to start receiving matched applicants.")
-                .font(.system(size: 12, weight: .light))
+                .scaledFont(size: 12, weight: .light)
         }
-        .foregroundStyle(Color.siriusNavy)
+        .foregroundStyle(Color.siriusInk)
         .frame(maxWidth: .infinity)
         .padding(.top, 60)
     }

@@ -7,79 +7,97 @@
 
 import SwiftUI
 
-struct AplJobCard: View {
-    var jobTitle: String
-    var companyName: String
-    var jobLocation: String
-    var jobSalary: String = ""            // empty hides the line (jobs have no salary field)
-    var matchPrct: Double
+// Percentage pill (70x20, radius 15): green 80+, orange 60-79, red below 60 (Figma "Final")
+struct MatchPill: View {
+    let percentage: Int
     
-    private var colorPrctText: Color {
-        switch MatchTier(percentage: Int(matchPrct.rounded())) {
-        case .high:
-            return Color(red: 0/255, green: 126/255, blue: 6/255)   // DARK GREEN  (80-100)
-        case .medium:
-            return Color(red: 243/255, green: 121/255, blue: 0/255)     //  DARK ORANGE (60-79)
-        case .low:
-            return Color(red: 58/255, green: 2/255, blue: 2/255)    //  DARK RED (below 60)
+    private var textColor: Color {
+        switch MatchTier(percentage: percentage) {
+        case .high: return .siriusMatchGreenText
+        case .medium: return .siriusMatchOrange
+        case .low: return Color(red: 58/255, green: 2/255, blue: 2/255)
         }
     }
     
-    private var colorPrctBg: Color {
-        switch MatchTier(percentage: Int(matchPrct.rounded())) {
-        case .high:
-            return Color(red: 139/255, green: 255/255, blue: 149/255)   // BRIGHT GREEN
-        case .medium:
-            return Color(red: 239/255, green: 173/255, blue: 68/255).opacity(0.54)     //  BRIGHT ORANGE
-        case .low:
-            return Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.45)     //  BRIGHT RED
+    private var fillColor: Color {
+        switch MatchTier(percentage: percentage) {
+        case .high: return .siriusMatchGreen
+        case .medium: return .siriusMatchOrangeFill
+        case .low: return Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.45)
         }
     }
     
     var body: some View {
-        HStack(alignment: .top){
-            VStack(alignment: .leading){
-                Text(jobTitle)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.black)
-                    .lineLimit(1)
+        Text("\(percentage)%")
+            .scaledFont(size: 8)
+            .foregroundStyle(textColor)
+            .frame(width: 70, height: 20)
+            .background(fillColor)
+            .clipShape(RoundedRectangle(cornerRadius: 15))
+            .accessibilityLabel("\(percentage) percent match")
+    }
+}
+
+// "Qualified Card": 88pt high white card (Jobs list, Home top match)
+struct AplJobCard: View {
+    var jobTitle: String
+    var companyName: String
+    var jobLocation: String
+    var jobSalary: String = ""            // empty hides the line (jobs have no salary field yet)
+    var matchPrct: Double
+    var width: CGFloat = 339
+    var isAutoApplied: Bool = false       // shows "✓ Auto-applied" at the bottom right
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text(jobTitle)
+                        .scaledFont(size: 14, weight: .bold)
+                        .foregroundStyle(Color.siriusText)
+                        .lineLimit(1)
+                    
+                    Spacer(minLength: 8)
+                    
+                    MatchPill(percentage: Int(matchPrct.rounded()))
+                }
                 
                 Text(companyName)
+                    .scaledFont(size: 10, weight: .medium)
+                    .foregroundStyle(Color.siriusText)
                     .lineLimit(1)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.black)
-                    .padding(.bottom, 1)
-                
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
                 Text(jobLocation)
-                    .font(.system(size: 10, weight: .light))
-                    .foregroundStyle(Color.black)
+                    .scaledFont(size: 10, weight: .light)
+                    .foregroundStyle(Color.siriusText)
+                    .lineLimit(1)
                 
                 if !jobSalary.isEmpty {
                     Text(jobSalary)
-                        .font(.system(size: 10, weight: .light))
-                        .foregroundStyle(Color.black)
+                        .scaledFont(size: 10, weight: .light)
+                        .foregroundStyle(Color.siriusText)
+                        .lineLimit(1)
                 }
             }
-                
-            Spacer()
-            
-            Text("\(matchPrct, specifier: "%.0f")%")           // percentage only (SIRIUS 2.0)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(colorPrctText)
-                .frame(width: 70, height: 20)
-                .background(colorPrctBg)
-                .cornerRadius(15)
         }
-        .padding(20)
-        .frame(width: 350, height: 88)              // fixed size: never changes with text length
-        .background(Color.white)
-        .cornerRadius(10)
-        .shadow(
-            color: Color.black.opacity(0.1),
-            radius: 8,
-            x: 0,
-            y: 4
-        )
+        .padding(.horizontal, 18)
+        .padding(.vertical, 15)
+        .frame(width: width, alignment: .leading)
+        .frame(minHeight: 88)       // fixed size: never changes with text length
+        .background(Color.siriusSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .combine)
+        .overlay(alignment: .bottomTrailing) {
+            if isAutoApplied {
+                Text("\u{2713} Auto-applied")
+                    .scaledFont(size: 10)
+                    .foregroundStyle(Color(red: 0, green: 125/255, blue: 5/255))
+                    .padding(.trailing, 14)
+                    .padding(.bottom, 10)
+            }
+        }
     }
 }
 
@@ -89,6 +107,7 @@ struct AplJobCard: View {
         companyName: "OpeniT Philippines, Inc.",
         jobLocation: "San Juan City, Metro Manila",
         jobSalary: "₱40,000 - ₱50,000",
-        matchPrct: 95
+        matchPrct: 95,
+        isAutoApplied: true
     )
 }

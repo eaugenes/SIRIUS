@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// Figma "Final" Home Screen (Applicant)
 struct AplHomePage: View {
     
     @Binding var selectedTab: AplNavigationTab
@@ -22,173 +23,133 @@ struct AplHomePage: View {
     
     var body: some View {
         ScrollView {
-            HStack{
-                VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Greetings
+                VStack(alignment: .leading, spacing: 0) {
                     Text("Greetings,")
-                        .font(.system(size: 20))
-                        .foregroundStyle(.white)
-                    
+                        .scaledFont(size: 20, weight: .light)
                     Text("\(firstName)!")
-                        .font(.system(size: 25))
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
+                        .scaledFont(size: 25, weight: .medium)
                 }
-                .padding(.leading, 30)
+                .foregroundStyle(Color.white)
+                .padding(.leading, 45)
+                .padding(.top, 75)
                 
-                Spacer()
-            }
-            .padding(.top, 5)
-            
-            QualiMatchCard(
-                percentage: "\(jobsController.averageMatch)%",
-                title: "Average Qualification Match",
-                subtext: "\(jobsController.matchedListings.count) matched positions in total"
-            )
-            .padding(15)
-            
-            VStack(alignment: .leading){
-                Text("Top Match For You")
-                    .font(.system(size: 15))
-                    .fontWeight(.medium)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 10)
-                
-                if let top = jobsController.topListing {
-                    Button {
-                        selectedTab = .jobs
-                    } label: {
-                        AplJobCard(
-                            jobTitle: top.job.jobPos,
-                            companyName: top.job.companyName.isEmpty ? "Company" : top.job.companyName,
-                            jobLocation: top.job.requiredLoc.isEmpty ? top.job.workSetup.rawValue : top.job.requiredLoc,
-                            matchPrct: Double(top.percentage)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Text("No matching jobs yet. Jobs at 60% or more appear here.")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .frame(maxWidth: .infinity, minHeight: 88)
-                }
-            }
-            .padding(.horizontal, 10)
-            .frame(width: 363, height: 141)
-            .background(
-                Color(
-                    red: 3/255,
-                    green: 82/255,
-                    blue: 123/255
+                QualiMatchCard(
+                    percentage: "\(jobsController.averageMatch)%",
+                    title: "Average Qualification Match",
+                    subtext: "\(jobsController.matchedListings.count) matched \u{00B7} auto-applied"
                 )
-            )
-            .cornerRadius(10)
-            
-            HStack{
-                VStack(alignment: .leading){
-                    Text("Application")
-                        .font(.system(size: 16))
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.black)
-                    
-                    Text("Status")
-                        .font(.system(size: 16))
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.black)
-                }
+                .padding(.leading, 19)
+                .padding(.top, 25)
                 
-                Spacer()
+                topMatch
+                    .padding(.leading, 19)
+                    .padding(.top, 29)
                 
-                ZStack{
-                    HStack{
-                        VStack{
-                            Text("\(controller.allApplications.count)")
-                                .font(.system(size: 16))
-                                .fontWeight(.bold)
-                                .foregroundStyle(.black)
-                            
-                            Text("Applied")
-                                .font(.system(size: 8))
-                                .fontWeight(.regular)
-                                .foregroundStyle(.black)
-                        }
-                        .frame(width: 66, height: 31)
-                        
-                        Divider()
-                            .frame(width: 1)
-                            .background(Color.gray)
-                        
-                        VStack{
-                            Text("\(controller.count(of: .interview))")
-                                .font(.system(size: 16))
-                                .fontWeight(.bold)
-                                .foregroundStyle(.black)
-                            
-                            Text("Interview")
-                                .font(.system(size: 8))
-                                .fontWeight(.regular)
-                                .foregroundStyle(.black)
-                        }
-                        .frame(width: 66, height: 31)
-                        
-                        Divider()
-                            .frame(width: 1)
-                            .background(Color.gray)
-                        
-                         VStack{
-                            Text("\(controller.count(of: .accepted))")
-                                .font(.system(size: 16))
-                                .fontWeight(.bold)
-                                .foregroundStyle(.black)
-                            
-                            Text("Accepted")
-                                .font(.system(size: 8))
-                                .fontWeight(.regular)
-                                .foregroundStyle(.black)
-                        }
-                         .frame(width: 66, height: 31)
-                    }
-                }
-                .padding(
-                    EdgeInsets(top: 12, leading: 10, bottom: 12, trailing: 10))
-                .background(Color.white)
-                .cornerRadius(10)
-                .frame(maxWidth: 244, maxHeight: 53)
-                .shadow(
-                    color: Color.gray,
-                    radius: 4
-                )
-            }
-            .padding(.horizontal, 30)
-            .padding(.vertical, 15)
-            
-            HStack{
+                applicationStatus
+                    .padding(.leading, 32)
+                    .padding(.top, 25)
+                
                 Text("Recent Activity")
-                    .font(.system(size: 18))
-                    .fontWeight(.medium)
-                    .foregroundStyle(.black)
-                    .padding(.leading, 30)
+                    .scaledFont(size: 18, weight: .medium)
+                    .foregroundStyle(Color.siriusText)
+                    .padding(.leading, 32)
+                    .padding(.top, 16)
                 
-                Spacer()
-            }
-            
-            VStack(spacing: 12) {
-                if controller.allApplications.isEmpty {
-                    Text("No applications yet. You are applied automatically when a job matches you at 60% or more.")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.black.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 10)
-                } else {
-                    ForEach(controller.allApplications.prefix(5)) { app in
-                        JobApplicationCard(application: app)
+                VStack(spacing: 17) {
+                    if controller.allApplications.isEmpty {
+                        Text("No applications yet. You are applied automatically when a job matches you at 60% or more.")
+                            .scaledFont(size: 11)
+                            .foregroundStyle(.black.opacity(0.7))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 10)
+                            .fluidFrame(width: 333)
+                    } else {
+                        ForEach(controller.allApplications.prefix(5)) { app in
+                            JobApplicationCard(application: app)
+                        }
                     }
                 }
+                .padding(.leading, 34)
+                .padding(.top, 13)
+                .padding(.bottom, 120)          // room for the bottom bar
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 100)          // room for the bottom bar
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .ignoresSafeArea(.container, edges: .top)
         .appBg()
         .navigationBarBackButtonHidden(true)
+    }
+    
+    // "Top Match For You · Auto-applied" panel (#03527b, radius 10, 15pt padding)
+    private var topMatch: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Top Match For You \u{00B7} Auto-applied")
+                .scaledFont(size: 15, weight: .medium)
+                .foregroundStyle(Color.white)
+            
+            if let top = jobsController.topListing {
+                Button {
+                    selectedTab = .jobs
+                } label: {
+                    AplJobCard(
+                        jobTitle: top.job.jobPos,
+                        companyName: top.job.companyName.isEmpty ? "Company" : top.job.companyName,
+                        jobLocation: top.job.requiredLoc.isEmpty ? top.job.workSetup.rawValue : top.job.requiredLoc,
+                        jobSalary: top.job.salary > 0 ? "\(top.job.salaryText) / month" : "",
+                        matchPrct: Double(top.percentage),
+                        width: 333
+                    )
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text("No matching jobs yet. Jobs at 60% or more appear here.")
+                    .scaledFont(size: 11)
+                    .foregroundStyle(.white.opacity(0.85))
+                    .fluidFrame(width: 333, height: 88)
+            }
+        }
+        .padding(15)
+        .background(Color.siriusPanel)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .shadow(color: Color.black.opacity(0.25), radius: 5)
+    }
+    
+    // "Application Status" label + Applied | Interview | Accepted counts
+    private var applicationStatus: some View {
+        HStack {
+            Text("Application Status")
+                .scaledFont(size: 15, weight: .semibold)
+                .foregroundStyle(Color.siriusText)
+                .frame(width: 81, alignment: .leading)
+            
+            Spacer()
+            
+            HStack(spacing: 0) {
+                statusCell(count: controller.allApplications.count, label: "Applied")
+                Rectangle().fill(Color.black).frame(width: 0.5)
+                statusCell(count: controller.count(of: .interview), label: "Interview")
+                Rectangle().fill(Color.black).frame(width: 0.5)
+                statusCell(count: controller.count(of: .accepted), label: "Accepted")
+            }
+            .frame(height: 53)
+            .background(Color.siriusSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .shadow(color: Color.black.opacity(0.25), radius: 2)
+        }
+        .fluidFrame(width: 333)
+    }
+    
+    private func statusCell(count: Int, label: String) -> some View {
+        VStack(spacing: 3) {
+            Text("\(count)")
+                .scaledFont(size: 15, weight: .bold)
+            Text(label)
+                .scaledFont(size: 8)
+        }
+        .foregroundStyle(Color.siriusText)
+        .frame(width: 81, height: 53)
     }
 }
 

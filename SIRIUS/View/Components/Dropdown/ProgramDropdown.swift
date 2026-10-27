@@ -13,15 +13,15 @@ struct ProgramDropdown: View {
     let title: String
     let programs: [City]                // ProgramsList.programs (stored as City: id + name)
     @Binding var selectedProgram: String
-    var borderColor: Color = .gray
+    var borderColor: Color = .siriusBorder
     
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .fontWeight(.medium)
-                .foregroundStyle(Color.black)
-                .padding(2)
+                .foregroundStyle(Color.siriusInk)
+                .padding(.leading, 11)
             
             Menu {
                 ForEach(programs) { program in
@@ -38,19 +38,20 @@ struct ProgramDropdown: View {
             } label: {
                 HStack(spacing: 10) {
                     Text(selectedProgram.isEmpty ? "Select program" : selectedProgram)
-                        .font(.system(size: 14, weight: .light))
+                        .scaledFont(size: 14, weight: .light)
                         .foregroundStyle(Color.siriusTextSecondary)
                         .lineLimit(1)
                     
                     Spacer()
                     
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 16, weight: .semibold))
+                        .scaledFont(size: 16, weight: .semibold)
                         .foregroundStyle(Color.gray)
                 }
                 .padding(.horizontal, 10)
-                .frame(width: 300, height: 35)
-                .background(Color.white)
+                .frame(width: 300)
+                    .frame(minHeight: 35)
+                .background(Color.siriusSurface)
                 .cornerRadius(10)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)

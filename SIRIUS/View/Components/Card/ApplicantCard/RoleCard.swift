@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// Role option on Choose Role (Figma "Final": 88pt high, radius 18, radio at the bottom right)
 struct RoleCard: View {
     
     let title: String
@@ -17,51 +18,60 @@ struct RoleCard: View {
     
     var body: some View {
         Button(action: action) {
-            HStack{
+            HStack(spacing: 14) {
                 Image(systemName: icon)
-                    .padding(12)
-                    .background(.white)
-                    .cornerRadius(10)
+                    .scaledFont(size: 22)
+                    .foregroundStyle(Color.siriusAction)
+                    .frame(width: 52, height: 52)
+                    .background(isSelected ? Color.white : Color.siriusRoleTile)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                 
-                VStack(alignment: .leading){
+                VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(size: 15))
-                        .fontWeight(.semibold)
-                        .foregroundStyle(isSelected ? Color.black : Color.white)
-                        .padding(.bottom, 5)
+                        .scaledFont(size: 16, weight: .bold)
+                        .foregroundStyle(isSelected ? Color.white : Color.siriusInk)
+                        .lineLimit(1)
                     
                     Text(description)
-                        .font(Font.system(size: 9.5))
-                        .foregroundStyle(isSelected ? Color.black : Color.white)
+                        .scaledFont(size: 12)
+                        .lineSpacing(0)
+                        .foregroundStyle(isSelected ? Color.siriusRoleSub : Color.siriusMuted)
                         .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 
-                Spacer()
+                Spacer(minLength: 0)
             }
-            .padding(18)
-            .frame(maxWidth: 350, minHeight: 70)
-            .background(isSelected ? Color.blue : Color(red: 10/255, green: 85/255, blue: 128/255))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(isSelected ? Color(red: 20/255, green: 110/255, blue:245/255) : Color.clear, lineWidth: 2))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity)
+            .frame(height: 88)
+            .background(isSelected ? Color.siriusAction : Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .strokeBorder(isSelected ? Color.clear : Color.siriusFieldBorder, lineWidth: 1.5)
+            )
+            .shadow(color: isSelected ? Color(red: 0, green: 38/255, blue: 64/255).opacity(0.35) : .clear, radius: 5, x: 0, y: 4)
             .overlay(alignment: .bottomTrailing) { selectionIndicator }
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
     
-    // SIRIUS 2.0: small circle at the bottom right. Selected = white circle with a checkmark.
+    // Radio: white circle with a checkmark when selected, ring when not
     private var selectionIndicator: some View {
         ZStack {
             if isSelected {
-                Circle().fill(Color.white)
+                Circle().fill(Color.siriusSurface)
                 Image(systemName: "checkmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Color(red: 10/255, green: 85/255, blue: 128/255))
+                    .scaledFont(size: 9, weight: .bold)
+                    .foregroundStyle(Color.siriusAction)
             } else {
-                Circle().stroke(Color.white, lineWidth: 1.5)
+                Circle().strokeBorder(Color.siriusFieldBorder, lineWidth: 1.5)
             }
         }
         .frame(width: 18, height: 18)
-        .padding(10)
+        .padding(.trailing, 16)
+        .padding(.bottom, 10)
     }
 }

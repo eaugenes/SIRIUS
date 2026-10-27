@@ -7,12 +7,11 @@
 
 import Foundation
 
+// The signed-in user. `id` is the Supabase Auth user id; passwords are never kept in the app.
 struct UserAccount: Identifiable, Hashable {
-    var id = UUID()
+    var id: UUID
     var role: UserRole
-    var username: String
-    var salt: String
-    var passwordHash: String
+    var email: String
     var applicant: Applicant? = nil
     var employer: Employer? = nil
     var company: Company? = nil
@@ -21,26 +20,32 @@ struct UserAccount: Identifiable, Hashable {
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
-enum AuthError: LocalizedError, Equatable {
-    case missingUsername
-    case invalidUsername
+enum AccountError: LocalizedError, Equatable {
+    case missingEmail
+    case invalidEmail
     case missingPassword
     case weakPassword
     case passwordMismatch
-    case usernameTaken
+    case emailTaken
     case invalidCredentials
+    case confirmEmail
+    case network
     case saveFailed
+    case server(String)
     
     var errorDescription: String? {
         switch self {
-        case .missingUsername: return "Please enter a username."
-        case .invalidUsername: return "Username must be at least 3 characters with no spaces."
+        case .missingEmail: return "Please enter your email address."
+        case .invalidEmail: return "Please enter a valid email address."
         case .missingPassword: return "Please enter a password."
         case .weakPassword: return "Password must be at least 6 characters."
         case .passwordMismatch: return "Passwords do not match."
-        case .usernameTaken: return "That username is already taken."
-        case .invalidCredentials: return "Incorrect username or password."
-        case .saveFailed: return "Your account could not be saved on this device. Please try again."
+        case .emailTaken: return "That email is already registered. Try logging in instead."
+        case .invalidCredentials: return "Incorrect email or password."
+        case .confirmEmail: return "Check your email and confirm your address, then log in."
+        case .network: return "Can't reach the server. Check your internet connection and try again."
+        case .saveFailed: return "Your account could not be saved. Please try again."
+        case .server(let message): return message
         }
     }
 }

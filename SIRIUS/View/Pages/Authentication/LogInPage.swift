@@ -9,101 +9,79 @@ import SwiftUI
 
 struct LogInPage: View {
     
-    @State private var logInUsername: String = ""
+    @State private var logInEmail: String = ""
     @State private var logInPassword: String = ""
     @State private var signUpScreen = false
     @State private var loggedInAccount: UserAccount?        // set after a successful log in
     @State private var errorMessage: String?
+    @State private var isWorking = false
     
     @ObservedObject private var auth = AuthController.shared
     
     var body: some View {
         NavigationStack{
-            VStack(alignment: .center){
-                Image("sirius-logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 180, height: 180)
-                    .padding(.top, 50)
-                
-                Text("SIRIUS")
-                    .font(.system(size: 64))
-                    .fontWeight(.medium)
-                    .tracking(15.0)
-                    .padding(.leading, 20)
-                
-                Text("In a sky full of opportunities, let the right one find you.")
-                    .font(.system(size: 11))
-                    .fontWeight(.light)
-                    .padding(.bottom, 50)
-                
-                AppTextField(
-                    title: "Username",
-                    placeholder: "Enter your username",
-                    text: $logInUsername,
-                    isSecure: false
-                )
-                
-                AppTextField(
-                    title: "Password",
-                    placeholder: "Enter your password",
-                    text: $logInPassword,
-                    isSecure: true
-                )
-                
-                FormErrorText(message: errorMessage)
-                    .padding(.top, 8)
-                
-                Button {
-                    logIn()
-                } label: {
-                    Text("Continue")
-                        .fontWeight(.regular)
-                        .padding(.horizontal, 20)
-                        .frame(width: 280, height: 38)
-                        .foregroundStyle(Color.white)
-                        .background(Color(red: 10/255, green: 85/255, blue: 128/255))
-                        .cornerRadius(10)
-                        .padding(.top, errorMessage == nil ? 50 : 16)
-                }
-                
-                HStack{
-                    VStack{Divider().background(Color.black)}
+            ScrollView {
+                VStack(spacing: 0) {
+                    AuthBrandHeader()
                     
-                    Text("or continue with")
-                        .font(.system(size: 12))
-                        .lineLimit(1)
-                        .fixedSize()
-                        .padding()
-                    
-                    VStack{Divider().background(Color.black)}
-                }
-                .padding(.horizontal, 32)
-                
-                Text("Google")
-                    .font(.system(size: 15))
-                    .frame(width: 150, height: 25)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .padding(.bottom, 90)
-                
-                HStack{
-                    Text("Don't have an account yet?")
-                        .font(.system(size: 15))
-                        .fontWeight(.regular)
-                        .foregroundColor(.white)
-                        .padding(5)
-                    
-                    Button{
-                        signUpScreen = true
-                    } label: {
-                        Text("Sign Up")
-                            .font(.system(size: 15))
-                            .fontWeight(.medium)
-                            .foregroundColor(.blue)
+                    AuthPanel(heading: "Welcome back", subheading: "Log in to continue to SIRIUS") {
+                        AuthField(
+                            title: "Email",
+                            placeholder: "Enter your email",
+                            text: $logInEmail,
+                            keyboardType: .emailAddress
+                        )
+                        
+                        AuthField(
+                            title: "Password",
+                            placeholder: "Enter your password",
+                            text: $logInPassword,
+                            isSecure: true
+                        )
+                        
+                        FormErrorText(message: errorMessage)
+                        
+                        AuthButton(title: isWorking ? "Logging in\u{2026}" : "Continue", isEnabled: !isWorking) {
+                            logIn()
+                        }
+                        
+                        HStack(spacing: 10) {
+                            Rectangle().fill(Color.siriusFieldBorder).frame(height: 1)
+                            Text("or continue with")
+                                .scaledFont(size: 13)
+                                .foregroundStyle(Color.siriusMuted)
+                                .fixedSize()
+                            Rectangle().fill(Color.siriusFieldBorder).frame(height: 1)
+                        }
+                        
+                        // TODO(Supabase): wire to Supabase Auth Google OAuth (signInWithOAuth(provider: .google))
+                        Button {
+                            errorMessage = "Google sign in will be available once Supabase is connected."
+                        } label: {
+                            HStack(spacing: 10) {
+                                GoogleLogo(size: 22)
+                                Text("Google")
+                                    .scaledFont(size: 16, weight: .medium)
+                                    .foregroundStyle(Color.siriusInk)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 52)
+                            .background(Color.siriusSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.siriusFieldBorder, lineWidth: 1.5))
+                        }
                     }
+                    
+                    AuthFooterLink(prompt: "Don\u{2019}t have an account yet?", link: "Sign Up") {
+                        signUpScreen = true
+                    }
+                    .padding(.top, 43)
+                    .padding(.bottom, 40)
                 }
+                .frame(maxWidth: .infinity)
             }
+            .ignoresSafeArea(.container, edges: .top)
+            .scrollDismissesKeyboard(.interactively)
             .appBg()
             .navigationBarBackButtonHidden(true)
             .navigationDestination(isPresented: $signUpScreen) {
@@ -112,17 +90,27 @@ struct LogInPage: View {
             .navigationDestination(item: $loggedInAccount) { account in
                 MainTabView(account: account)
             }
+            .task {
+                // Reopen the saved session (once per app launch)
+                if let account = await auth.restoreSession() {
+                    loggedInAccount = account
+                }
+            }
         }
     }
     
     private func logIn() {
-        switch auth.login(username: logInUsername, password: logInPassword) {
-        case .failure(let error):
-            errorMessage = error.errorDescription
-        case .success(let account):
-            errorMessage = nil
-            logInPassword = ""
-            loggedInAccount = account
+        isWorking = true
+        errorMessage = nil
+        Task {
+            switch await auth.login(email: logInEmail, password: logInPassword) {
+            case .failure(let error):
+                errorMessage = error.errorDescription
+            case .success(let account):
+                logInPassword = ""
+                loggedInAccount = account
+            }
+            isWorking = false
         }
     }
 }

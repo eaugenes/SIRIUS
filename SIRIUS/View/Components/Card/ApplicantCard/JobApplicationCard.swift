@@ -7,65 +7,52 @@
 
 import SwiftUI
 
+// "Qualified Card" in My Applications / Recent Activity (Figma "Final": 333 x 88)
 struct JobApplicationCard: View {
     let application: JobApplication
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(application.role)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.black)
-                Text(application.company)
-                    .font(.system(size: 13))
-                    .foregroundColor(.black)
-                Text("Applied on \(application.dateApplied)")
-                    .font(.system(size: 11, weight: .light))
-                    .foregroundColor(.black)
-            }
-            Spacer()
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 10).fill(Color.siriusSurface)
             
-            // Status Tag
+            VStack(alignment: .leading, spacing: 0) {
+                Text(application.role)
+                    .scaledFont(size: 14, weight: .bold)
+                    .foregroundColor(Color.siriusText)
+                    .lineLimit(1)
+                    .frame(width: 155, height: 22, alignment: .leading)
+                    .padding(.top, 16.5)
+                
+                Text(application.company)
+                    .scaledFont(size: 10, weight: .medium)
+                    .foregroundColor(Color.siriusText)
+                    .lineLimit(1)
+                    .frame(width: 155, height: 15, alignment: .leading)
+                    .padding(.top, 2)
+                
+                Text("Applied on \(application.dateApplied)")
+                    .scaledFont(size: 10, weight: .light)
+                    .foregroundColor(Color.siriusText)
+                    .lineLimit(1)
+                    .frame(width: 170, alignment: .leading)
+                    .padding(.top, 5)
+            }
+            .padding(.leading, 18)
+            
+            MatchPill(percentage: application.matchPercentage)
+                .offset(x: 250, y: 17)
+            
             Text(application.status.rawValue)
-                .font(.system(size: 10, weight: .medium))
-                .padding(.vertical, 6)
-                .padding(.horizontal, 12)
-                .foregroundStyle(.white)
-                .background(statusColor(for: application.status))
-                .cornerRadius(10)
+                .scaledFont(size: 8, weight: .bold)
+                .foregroundStyle(Color.white)
+                .frame(width: 70, height: 20)
+                .background(Color.siriusPanel)
+                .clipShape(RoundedRectangle(cornerRadius: 15))
+                .offset(x: 250, y: 43)
         }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(12)
-    }
-    
-    private func statusColor(for status: ApplicationStatus) -> Color {
-        switch status {
-        case .applied: return Color(
-                                red: 3/255,
-                                green: 82/255,
-                                blue: 123/255
-                            )
-        case .interview: return Color(
-                                red: 3/255,
-                                green: 82/255,
-                                blue: 123/255
-                            )
-        case .accepted: return Color(
-                                red: 3/255,
-                                green: 82/255,
-                                blue: 123/255
-                            )
-        case .rejected: return Color(
-                                red: 3/255,
-                                green: 82/255,
-                                blue: 123/255
-                            )
-        case .all: return Color(
-                                red: 3/255,
-                                green: 82/255,
-                                blue: 123/255
-                            )
-        }
+        .fluidFrame(width: 333, height: 88)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(application.role) at \(application.company), applied on \(application.dateApplied), \(application.matchPercentage) percent match, \(application.status.rawValue)")
+        .accessibilityHint("Opens application details")
     }
 }

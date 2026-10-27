@@ -33,14 +33,10 @@ struct EmpCompanyInfoPage: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                PageHeader(title: "Company Information") {
-                    infoController.clearError()
-                    dismiss()
-                }
-                .padding(.top, 12)
-                .padding(.bottom, 80)
-                
+            SignUpPanel(title: "Company Information") {
+                infoController.clearError()
+                dismiss()
+            } content: {
                 VStack(spacing: 10) {
                     AppTextField(
                         title: "Company Name",
@@ -87,9 +83,10 @@ struct EmpCompanyInfoPage: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                 }
+                .padding(.top, 27)
                 
                 FormErrorText(message: infoController.signUpError)
-                    .padding(.top, 16)
+                    .padding(.top, 10)
                 
                 SiriusButton(title: mode == .signUp ? "Continue" : "Save") {
                     infoController.company = draft
@@ -101,11 +98,12 @@ struct EmpCompanyInfoPage: View {
                     case .edit: dismiss()
                     }
                 }
-                .padding(.top, infoController.signUpError == nil ? 60 : 16)
-                .padding(.bottom, 40)
+                .padding(.top, 43)
             }
             .frame(maxWidth: .infinity)
         }
+        .ignoresSafeArea(.container, edges: .top)
+
         .scrollDismissesKeyboard(.interactively)
         .appBg()
         .navigationBarBackButtonHidden(true)

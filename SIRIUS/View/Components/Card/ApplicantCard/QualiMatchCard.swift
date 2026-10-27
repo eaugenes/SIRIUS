@@ -7,10 +7,13 @@
 
 import SwiftUI
 
+// Home "Average Qualification Match" (100 high, big %) when subtext is given;
+// otherwise the 37pt "N% Qualification Match · status" banner used on job details.
 struct QualiMatchCard: View {
     var percentage: String
     var title: String
     var subtext: String?
+    var endColor: Color = Color.siriusMatchGreen.opacity(0.8)       // gradient end (green / orange / red by tier)
     
     private var hasSubtext: Bool {
         if let subtext = subtext {
@@ -20,58 +23,53 @@ struct QualiMatchCard: View {
         return false
     }
     
-    var body: some View {
-        HStack{
-            Text(percentage)
-                .font(.system(size: hasSubtext ? 40: 16, weight: hasSubtext ? .bold : .semibold))
-                .foregroundColor(.white)
-                .padding(.leading, 25)
-                .padding(.trailing, hasSubtext ? 15 : 1)
-            
-            VStack(alignment: .leading) {
-                Text(title)
-                    .font(.system(size: hasSubtext ? 14 : 16, weight: hasSubtext ? .bold : .semibold))
-                    .foregroundColor(.white)
-                    .padding(.bottom, hasSubtext ? 5 : 0)
-                
-                if hasSubtext, let subtext = subtext {
-                    Text(subtext)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white)
-                }
-            }
-            
-            Spacer()
-                .frame(width: 30)
-        }
-        .frame(width: 360, height: hasSubtext ? 100 : 40)
-        .background(
-            LinearGradient(
-                gradient: Gradient(
-                    colors: [
-                        Color(
-                            red: 4/255,
-                            green: 48/255,
-                            blue: 96/255
-                        ),
-                        Color(
-                            red: 139/255,
-                            green: 255/255,
-                            blue: 149/255
-                        )
-                    ]),
-                startPoint: .leading,
-                endPoint: .trailing
-            )
+    private var gradient: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: Color(red: 4/255, green: 48/255, blue: 96/255).opacity(0.8), location: 0.1),
+                .init(color: endColor, location: 1.0)
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
         )
-        .cornerRadius(12)
+    }
+    
+    var body: some View {
+        Group {
+            if hasSubtext, let subtext = subtext {
+                HStack(spacing: 26) {
+                    Text(percentage)
+                        .scaledFont(size: 42, weight: .medium)
+                        .foregroundColor(.white)
+                        .frame(width: 94)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(title)
+                            .scaledFont(size: 14, weight: .bold)
+                            .foregroundColor(.white)
+                        
+                        Text(subtext)
+                            .scaledFont(size: 13, weight: .medium)
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 182, alignment: .leading)
+                }
+                .fluidFrame(width: 360, height: 100)
+            } else {
+                Text("\(percentage) \(title)")
+                    .scaledFont(size: 15, weight: .medium)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 37)
+            }
+        }
+        .background(gradient)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(
-            color: Color(
-                red: 4/255,
-                green: 48/255,
-                blue: 96/255
-            ),
-            radius: 3,
+            color: Color(red: 4/255, green: 48/255, blue: 96/255),
+            radius: hasSubtext ? 1.5 : 2.5,
             x: 3,
             y: 3
         )
@@ -79,9 +77,10 @@ struct QualiMatchCard: View {
 }
 
 #Preview {
-    QualiMatchCard(
-        percentage: "90%",
-        title: "Average Qualification Match",
-//        subtext: "12 matched positions in total"
-    )
+    VStack {
+        QualiMatchCard(percentage: "90%", title: "Average Qualification Match", subtext: "12 matched \u{00B7} auto-applied")
+        QualiMatchCard(percentage: "90%", title: "Qualification Match \u{00B7} Auto-applied")
+            .fluidFrame(width: 370)
+    }
+    .appBg()
 }

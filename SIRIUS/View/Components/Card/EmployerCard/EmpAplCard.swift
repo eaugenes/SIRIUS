@@ -18,6 +18,7 @@ struct EmpAplCard: View {
     var onRemove: () -> Void
     var onOpen: () -> Void = {}             // tap on the card: show applicant details
     var onHire: () -> Void = {}             // shown for applicants in the Interview stage
+    var onReschedule: () -> Void = {}       // shown for applicants in the Interview stage
     var animationDelay: Double = 0          // staggers the fill animation between cards
     
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -28,8 +29,10 @@ struct EmpAplCard: View {
     private let actionSize: CGFloat = 52
     private let actionSpacing: CGFloat = 4
     
+    private var actionCount: CGFloat { applicant.status == .interview ? 3 : 2 }
+    
     private var slideDistance: CGFloat {
-        actionSize * 2 + actionSpacing * 2
+        actionSize * actionCount + actionSpacing * actionCount
     }
     
     private var experienceText: String { applicant.experienceText }
@@ -41,21 +44,32 @@ struct EmpAplCard: View {
                 if applicant.status == .interview {
                     Button(action: onHire) {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 22))
-                            .foregroundStyle(Color.black)
+                            .scaledFont(size: 22)
+                            .foregroundStyle(Color.siriusText)
                             .frame(width: actionSize, height: actionSize)
-                            .background(Color.white)
+                            .background(Color.siriusSurface)
                             .cornerRadius(10)
                             .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
                     }
                     .accessibilityLabel("Hire applicant")
+                    
+                    Button(action: onReschedule) {
+                        Image(systemName: "calendar.badge.clock")
+                            .scaledFont(size: 22)
+                            .foregroundStyle(Color.siriusText)
+                            .frame(width: actionSize, height: actionSize)
+                            .background(Color.siriusSurface)
+                            .cornerRadius(10)
+                            .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
+                    }
+                    .accessibilityLabel("Reschedule interview")
                 } else {
                     Button(action: onSchedule) {
                         Image(systemName: "envelope")
-                            .font(.system(size: 22))
-                            .foregroundStyle(Color.black)
+                            .scaledFont(size: 22)
+                            .foregroundStyle(Color.siriusText)
                             .frame(width: actionSize, height: actionSize)
-                            .background(Color.white)
+                            .background(Color.siriusSurface)
                             .cornerRadius(10)
                             .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
                     }
@@ -66,20 +80,24 @@ struct EmpAplCard: View {
                 
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 22, weight: .regular))
+                        .scaledFont(size: 22, weight: .regular)
                         .foregroundStyle(Color.white)
                         .frame(width: actionSize, height: actionSize)
                         .background(Color.siriusDanger)
                         .cornerRadius(10)
                         .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
                 }
-                .accessibilityLabel("Remove applicant")
+                .accessibilityLabel("Reject applicant")
             }
             .frame(width: cardWidth, alignment: .trailing)
             .opacity(isSelected ? 1 : 0)
             .allowsHitTesting(isSelected)
             
             card
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(applicant.name), \(applicant.degree), \(applicant.experienceText), \(applicant.matchPercentage) percent match, \(applicant.status.rawValue)")
+                .accessibilityHint("Opens applicant details. Swipe left for actions.")
+                .accessibilityAddTraits(.isButton)
                 .offset(x: isSelected ? -slideDistance : 0)
                 .onTapGesture { isSelected ? onSelect() : onOpen() }
                 .simultaneousGesture(
@@ -93,6 +111,7 @@ struct EmpAplCard: View {
                 )
         }
         .frame(width: cardWidth, height: cardHeight + 10)
+        .accessibilityElement(children: .contain)
         .animation(.spring(duration: 0.3, bounce: 0.2), value: isSelected)
     }
     
@@ -100,17 +119,17 @@ struct EmpAplCard: View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(applicant.name)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.black)
+                    .scaledFont(size: 13, weight: .medium)
+                    .foregroundStyle(Color.siriusText)
                     .lineLimit(1)
                 
                 Text(applicant.degree)
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.black)
+                    .scaledFont(size: 10)
+                    .foregroundStyle(Color.siriusText)
                 
                 Text(experienceText)
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.black)
+                    .scaledFont(size: 10)
+                    .foregroundStyle(Color.siriusText)
             }
             
             Spacer(minLength: 4)
@@ -118,7 +137,7 @@ struct EmpAplCard: View {
             VStack(spacing: 3) {
                 ForEach(Array(applicant.coreLanguages.prefix(3)), id: \.self) { language in
                     Text(language)
-                        .font(.system(size: 8, weight: .medium))
+                        .scaledFont(size: 8, weight: .medium)
                         .foregroundStyle(Color.white)
                         .lineLimit(1)
                         .frame(width: 74, height: 12)
@@ -133,7 +152,7 @@ struct EmpAplCard: View {
         .padding(.leading, 11)
         .padding(.trailing, 10)
         .frame(width: cardWidth, height: cardHeight)
-        .background(Color.white)
+        .background(Color.siriusSurface)
         .cornerRadius(15)
         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 4)
     }
@@ -145,15 +164,15 @@ struct EmpAplCard: View {
     private var fillColor: Color {
         applicant.matchPercentage >= 80
             ? Color.siriusMatchBar
-            : Color(red: 243/255, green: 121/255, blue: 0/255)
+            : Color.siriusBarAmber
     }
     
     private var matchIndicator: some View {
         let height: CGFloat = 58
         
         return ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 10).fill(fillColor.opacity(0.2))
-            RoundedRectangle(cornerRadius: 10).fill(fillColor).frame(height: height * fillProgress)
+            RoundedRectangle(cornerRadius: 6).fill(Color.siriusBarTrack)
+            RoundedRectangle(cornerRadius: 6).fill(fillColor).frame(height: height * fillProgress)
         }
         .frame(width: 12, height: height)
         .shadow(color: Color.black.opacity(0.25), radius: 1.5, x: 0, y: 3)

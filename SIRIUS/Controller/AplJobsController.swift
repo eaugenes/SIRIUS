@@ -12,6 +12,7 @@ struct AplJobListing: Identifiable {
     let job: Job
     let breakdown: MatchBreakdown
     let hasApplied: Bool
+    var profile: MatchProfile = MatchProfile(program: "", yearsExperience: 0, languages: [])
     
     var id: String { job.jobID }
     var percentage: Int { breakdown.total }
@@ -45,7 +46,8 @@ final class AplJobsController: ObservableObject {
                 AplJobListing(
                     job: job,
                     breakdown: board.breakdown(for: applicant, job: job),
-                    hasApplied: board.hasApplied(applicantID: applicant.id, jobID: job.jobID)
+                    hasApplied: board.hasActiveApplication(applicantID: applicant.id, jobID: job.jobID),
+                    profile: applicant.matchProfile
                 )
             }
             .sorted {

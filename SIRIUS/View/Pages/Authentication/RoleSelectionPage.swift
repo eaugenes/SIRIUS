@@ -12,65 +12,41 @@ struct RoleSelectionPage: View {
     @State private var selectedRole: UserRole?
     @State private var nextScreen = false
     
+    @Environment(\.dismiss) private var dismiss
+    
     var body: some View {
         NavigationStack{
-            VStack(alignment: .center){
-                Image("sirius-logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 180, height: 180)
-                    .padding(.top, 50)
-                
-                Text("SIRIUS")
-                    .font(.system(size: 64))
-                    .fontWeight(.medium)
-                    .tracking(15.0)
-                    .padding(.leading, 20)
-                
-                Text("In a sky full of opportunities, let the right one find you.")
-                    .font(.system(size: 11))
-                    .fontWeight(.light)
-                    .padding(.bottom, 40)
-                
-                VStack(alignment: .leading){
-                    Text("Choose Your Role")
-                        .font(.system(size: 18))
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.black)
+            ScrollView {
+                VStack(spacing: 0) {
+                    AuthBrandHeader()
                     
-                    VStack(spacing: 16){
+                    AuthPanel(heading: "Choose your role", subheading: "Tell us how you\u{2019}ll use SIRIUS") {
                         RoleCard(
-                            title:"APPLICANT",
-                            description: "Find opportunities that match your qualifications.",
+                            title: "APPLICANT",
+                            description: "Find opportunities that match your qualifications",
                             icon: "person",
-                            isSelected: selectedRole == .applicant) {selectedRole = .applicant}
+                            isSelected: selectedRole == .applicant) { selectedRole = .applicant }
                         
                         RoleCard(
-                            title:"EMPLOYER",
+                            title: "EMPLOYER",
                             description: "Find qualified candidates faster.",
-                            icon: "person",
-                            isSelected: selectedRole == .employer) {selectedRole = .employer}
+                            icon: "briefcase",
+                            isSelected: selectedRole == .employer) { selectedRole = .employer }
                         
-                        Button {
+                        AuthButton(title: "Continue", fontSize: 16, isEnabled: selectedRole != nil) {
                             nextScreen = true
-                        } label: {
-                            Text("Continue")
-                                .fontWeight(.regular)
-                                .padding(.horizontal, 20)
-                                .frame(width: 325, height: 50)
-                                .foregroundStyle(Color.black)
-                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1))
                         }
-                        .disabled(selectedRole == nil)
                     }
+                    
+                    AuthFooterLink(prompt: "Have an account already?", link: "Log In") {
+                        dismiss()
+                    }
+                    .padding(.top, 43)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .frame(width: 365,height: 320)
-                .background(Color.white)
-                .cornerRadius(10)
-                .padding(.bottom, 90)
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea(.container, edges: .top)
             .appBg()
             .navigationDestination(isPresented: $nextScreen) {
                 if selectedRole == .applicant {

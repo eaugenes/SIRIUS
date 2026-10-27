@@ -15,25 +15,28 @@ class AplApplicationsController: ObservableObject {
     @Published private(set) var allApplications: [JobApplication] = []
     
     private let applicantID: UUID?
+    private let board: JobBoard
     private var cancellables = Set<AnyCancellable>()
     
     init(applicantID: UUID? = nil, board: JobBoard = .shared) {
         self.applicantID = applicantID
+        self.board = board
         allApplications = AplApplicationsController.makeApplications(
-            jobs: board.jobs, records: board.applications, applicantID: applicantID
+            jobs: board.jobs, records: board.applications, applicantID: applicantID, interviews: board.interviews
         )
         board.$jobs
-            .combineLatest(board.$applications)
-            .sink { [weak self] jobs, records in
+            .combineLatest(board.$applications, board.$interviews)
+            .sink { [weak self] jobs, records, interviews in
                 guard let self else { return }
                 self.allApplications = AplApplicationsController.makeApplications(
-                    jobs: jobs, records: records, applicantID: self.applicantID
+                    jobs: jobs, records: records, applicantID: self.applicantID, interviews: interviews
                 )
             }
             .store(in: &cancellables)
     }
     
     static func status(for record: ApplicationRecord) -> ApplicationStatus {
+        if record.isWithdrawn { return .withdrawn }
         if record.isRemoved { return .rejected }
         switch record.status {
         case .toReview: return .applied
@@ -42,7 +45,7 @@ class AplApplicationsController: ObservableObject {
         }
     }
     
-    private static func makeApplications(jobs: [Job], records: [ApplicationRecord], applicantID: UUID?) -> [JobApplication] {
+    private static func makeApplications(jobs: [Job], records: [ApplicationRecord], applicantID: UUID?, interviews: [Interview]) -> [JobApplication] {
         guard let applicantID else { return [] }
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM dd, yyyy"
@@ -59,7 +62,12 @@ class AplApplicationsController: ObservableObject {
                     dateApplied: formatter.string(from: record.dateApplied),
                     status: status(for: record),
                     jobID: job.jobID,
-                    matchPercentage: record.percentage
+                    matchPercentage: record.percentage,
+                    job: job,
+                    profile: record.matchProfile,
+                    breakdown: record.breakdown,
+                    interview: interviews.last { $0.applicantID == record.id },
+                    rejectionReason: record.rejectionReason
                 )
             }
     }
@@ -70,6 +78,12 @@ class AplApplicationsController: ObservableObject {
         } else {
             return allApplications.filter { $0.status == selectedStatus }
         }
+    }
+    
+    // The applicant withdraws an application (not possible once hired)
+    @discardableResult
+    func withdraw(_ application: JobApplication) -> Bool {
+        board.withdraw(recordID: application.id)
     }
     
     // Counts for the Application Status card on Home

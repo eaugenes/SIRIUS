@@ -11,7 +11,9 @@ import SwiftUI
 struct SIRIUSApp: App {
     var body: some Scene {
         WindowGroup {
-            LogInPage()
+            AdaptiveRoot {
+                LogInPage()
+            }
         }
     }
 }

@@ -17,7 +17,8 @@ struct EmpManageApplicantsPage: View {
     @EnvironmentObject private var aplController: EmpAplStatusController
     @Environment(\.dismiss) private var dismiss
     
-    @State private var applicantToRemove: EmpApplicant?
+    @State private var applicantToReject: EmpApplicant?
+    @State private var openedApplicantID: UUID?
     
     private var applicants: [EmpApplicant] {
         aplController.filteredApplicants(forPosition: job?.jobPos)
@@ -35,7 +36,11 @@ struct EmpManageApplicantsPage: View {
                     selection: $aplController.selectedFilter
                 )
                 .frame(maxWidth: .infinity)
-                .padding(.bottom, 12)
+                .padding(.bottom, 8)
+                
+                filterBar
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 10)
                 
                 if applicants.isEmpty {
                     emptyState
@@ -48,7 +53,10 @@ struct EmpManageApplicantsPage: View {
                                     isSelected: aplController.isSelected(applicant),
                                     onSelect: { aplController.toggleSelection(applicant) },
                                     onSchedule: { aplController.beginScheduling(applicant) },
-                                    onRemove: { applicantToRemove = applicant }
+                                    onRemove: { applicantToReject = applicant },
+                                    onOpen: { openedApplicantID = applicant.id },
+                                    onHire: { withAnimation { aplController.hire(applicant) } },
+                                    onReschedule: { aplController.beginRescheduling(applicant) }
                                 )
                             }
                         }
@@ -70,6 +78,9 @@ struct EmpManageApplicantsPage: View {
                 
                 ScheduleInterviewDialog(
                     applicantName: target.name,
+                    title: aplController.isRescheduling ? "Reschedule Interview" : "Schedule Interview",
+                    sendTitle: aplController.isRescheduling ? "Save" : "Send",
+                    initial: aplController.isRescheduling ? aplController.interview(for: target) : nil,
                     onSend: { date, location, message in
                         withAnimation(.easeInOut(duration: 0.2)) {
                             aplController.scheduleInterview(date: date, location: location, message: message)
@@ -88,23 +99,75 @@ struct EmpManageApplicantsPage: View {
         .appBg()
         .navigationBarBackButtonHidden(true)
         .onDisappear { aplController.clearSelection() }
-        .alert(
-            "Remove applicant?",
-            isPresented: Binding(
-                get: { applicantToRemove != nil },
-                set: { if !$0 { applicantToRemove = nil } }
-            ),
-            presenting: applicantToRemove
-        ) { applicant in
-            Button("Remove", role: .destructive) {
-                withAnimation { aplController.removeApplicant(applicant) }
-                applicantToRemove = nil
+        .boardLoadState()
+        .navigationDestination(item: $openedApplicantID) { id in
+            EmpApplicantDetailsPage(applicantID: id)
+        }
+        .sheet(item: $applicantToReject) { applicant in
+            RejectApplicantDialog(
+                applicantName: applicant.name,
+                onReject: { reason in
+                    withAnimation { aplController.removeApplicant(applicant, reason: reason) }
+                    applicantToReject = nil
+                },
+                onCancel: { applicantToReject = nil }
+            )
+        }
+        .alert("Couldn't complete that", isPresented: Binding(
+            get: { aplController.actionError != nil },
+            set: { if !$0 { aplController.actionError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(aplController.actionError ?? "")
+        }
+    }
+    
+    // Search + sort + minimum-match filter
+    private var filterBar: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(Color.siriusMuted)
+                    .accessibilityHidden(true)
+                TextField("", text: $aplController.searchText,
+                          prompt: Text("Search name, program or language").foregroundColor(Color.siriusMuted))
+                    .scaledFont(size: 13)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .accessibilityLabel("Search applicants")
+                if !aplController.searchText.isEmpty {
+                    Button {
+                        aplController.searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(Color.siriusMuted)
+                    }
+                    .accessibilityLabel("Clear search")
+                }
             }
-            Button("Cancel", role: .cancel) {
-                applicantToRemove = nil
+            .padding(.horizontal, 12)
+            .frame(height: 38)
+            .background(Capsule().fill(Color.siriusSurface))
+            
+            Menu {
+                Picker("Sort by", selection: $aplController.sortOption) {
+                    ForEach(EmpApplicantSort.allCases) { Text($0.rawValue).tag($0) }
+                }
+                Picker("Match", selection: $aplController.matchFilter) {
+                    ForEach(EmpMatchFilter.allCases) { Text($0.rawValue).tag($0) }
+                }
+                if aplController.hasActiveFilters {
+                    Button("Reset", role: .destructive) { aplController.resetFilters() }
+                }
+            } label: {
+                Image(systemName: aplController.hasActiveFilters
+                      ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                    .scaledFont(size: 24)
+                    .foregroundStyle(Color.white)
+                    .frame(width: 38, height: 38)
             }
-        } message: { applicant in
-            Text("\(applicant.name) will be removed from your applicants.")
+            .accessibilityLabel("Sort and filter applicants")
+            .accessibilityValue("\(aplController.sortOption.rawValue), \(aplController.matchFilter.rawValue)")
         }
     }
     
@@ -117,21 +180,21 @@ struct EmpManageApplicantsPage: View {
                         dismiss()
                     } label: {
                         Image(systemName: "chevron.backward")
-                            .font(.system(size: 24))
+                            .scaledFont(size: 24)
                             .foregroundStyle(Color.white)
                             .frame(width: 30, height: 44, alignment: .leading)
                     }
                     .accessibilityLabel("Back")
                     
                     Text("Manage Applicants")
-                        .font(.system(size: 30, weight: .medium))
+                        .scaledFont(size: 30, weight: .medium)
                         .foregroundStyle(Color.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
                 
                 Text(job.jobPos)
-                    .font(.system(size: 14, weight: .light))
+                    .scaledFont(size: 14, weight: .light)
                     .foregroundStyle(Color.white)
                     .padding(.leading, 38)
             }
@@ -139,7 +202,7 @@ struct EmpManageApplicantsPage: View {
             .padding(.top, 12)
         } else {
             Text("Manage Applicants")
-                .font(.system(size: 30, weight: .medium))
+                .scaledFont(size: 30, weight: .medium)
                 .foregroundStyle(Color.white)
                 .padding(.horizontal, 32)
                 .padding(.top, 20)
@@ -147,15 +210,24 @@ struct EmpManageApplicantsPage: View {
     }
     
     private var emptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "person.2")
-                .font(.system(size: 32))
-            Text("No applicants here yet")
-                .font(.system(size: 15, weight: .medium))
+        Group {
+            if aplController.hasActiveFilters {
+                EmptyStateView(
+                    icon: "line.3.horizontal.decrease.circle",
+                    title: "No applicants match your filters",
+                    message: "Try a different search or lower the minimum match.",
+                    actionTitle: "Reset filters",
+                    action: { aplController.resetFilters() }
+                )
+            } else {
+                EmptyStateView(
+                    icon: "person.2",
+                    title: "No applicants here yet",
+                    message: "Applicants who match 60% or more are added automatically."
+                )
+            }
         }
-        .foregroundStyle(Color.siriusNavy)
-        .frame(maxWidth: .infinity)
-        .padding(.top, 80)
+        .padding(.top, 70)
     }
 }
 

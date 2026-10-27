@@ -18,7 +18,6 @@ struct JobDetailsView: View {
     private var job: Job { listing.job }
     private var breakdown: MatchBreakdown { listing.breakdown }
     
-    private let navy = Color(red: 0/255, green: 61/255, blue: 92/255)
     
     private var yearsText: String {
         let years = job.requiredYrExp
@@ -28,189 +27,186 @@ struct JobDetailsView: View {
     }
     
     private var statusText: String {
-        if listing.hasApplied { return "Applied automatically" }
-        if breakdown.isEligible { return "Eligible: you will be applied automatically" }
-        return "Below the \(MatchRules.autoApplyThreshold)% minimum: not applied"
+        listing.hasApplied ? "Auto-applied" : "Not applied"
     }
     
+    private var bannerEndColor: Color {
+        switch breakdown.tier {
+        case .high: return Color.siriusMatchGreen.opacity(0.8)
+        case .medium: return Color(red: 239/255, green: 173/255, blue: 68/255)
+        case .low: return Color(red: 229/255, green: 69/255, blue: 69/255)      // #e54545
+        }
+    }
+    
+    // Figma "Final": Jobs Details Screen (back button, job frame, match banner, description + qualifications)
     var body: some View {
-        VStack{
-            HStack{
-                Button{
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(Color.black)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(Color.white))
-                }
-                .accessibilityLabel("Back")
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 12)
-            
-            VStack(alignment: .leading){
-                Text(job.jobPos)
-                    .font(.system(size: 20))
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                
-                Text(job.companyName.isEmpty ? "Company" : job.companyName)
-                    .font(.system(size: 12))
-                    .fontWeight(.medium)
-                    .foregroundStyle(.white)
-                    .padding(.bottom, 6)
-                
-                HStack{
-                    infoPill(job.requiredLoc.isEmpty ? "Any location" : job.requiredLoc)
-                    infoPill(job.workSetup.rawValue)
-                    infoPill("Max hire: \(job.maxHire)")
-                }
-            }
-            .padding(.horizontal, 40)
-            .padding(.vertical, 15)
-            .frame(width: 420, height: 123, alignment: .leading)
-            .background(
-                navy
-                    .cornerRadius(10)
-                    .offset(x: -20)
-            )
-            .cornerRadius(10)
-            
-            ScrollView{
+        ZStack(alignment: .topLeading) {
+            VStack(spacing: 28) {
                 QualiMatchCard(
                     percentage: "\(breakdown.total)%",
-                    title: "Qualification Match"
+                    title: "Qualification Match \u{00B7} \(statusText)",
+                    endColor: bannerEndColor
                 )
-                .padding(.bottom, 4)
                 
-                Text(statusText)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(statusColor)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 5)
-                    .background(Capsule().fill(Color.white))
-                    .padding(.bottom, 10)
-                
-                VStack(alignment: .leading){
-                    Text("Job Description")
-                        .font(.system(size: 18))
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
-                        .padding(.bottom, 5)
-                    
-                    Text(job.jobDesc.isEmpty ? "The employer did not add a description." : job.jobDesc)
-                        .font(.system(size: 12))
-                        .fontWeight(.regular)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.bottom, 15)
-                    
-                    Text("Qualifications")
-                        .font(.system(size: 18))
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
-                        .padding(.bottom, 5)
-                    
-                    card {
-                        scoreRow("Educational Attainment", points: breakdown.education, outOf: 20)
-                        chipRow([job.requiredEduc.isEmpty ? "Any program" : job.requiredEduc])
-                    }
-                    
-                    card {
-                        scoreRow("Minimum Work Experience", points: breakdown.experience, outOf: 20)
-                        Text(yearsText)
-                            .font(.system(size: 12))
-                            .foregroundStyle(.black)
-                    }
-                    
-                    card {
-                        scoreRow("Core Languages", points: breakdown.languages, outOf: 60)
-                        chipRow(job.requiredLang, matched: breakdown.matchedLanguages)
-                    }
-                }
-                .padding(.vertical, 20)
-                .padding(.horizontal, 30)
-                .frame(width: 360)
-                .background(navy)
-                .cornerRadius(15)
-                .padding(.bottom, 100)
+                descriptionPanel
             }
+            .fluidFrame(width: 370)
+            .padding(.leading, 16)
+            .padding(.top, 277)
+            
+            jobPositionFrame
+                .padding(.top, 135)
+            
+            Button{
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.backward")
+                    .scaledFont(size: 20)
+                    .foregroundStyle(Color.siriusText)
+                    .frame(width: 42, height: 42)
+                    .background(Color.siriusSurface)
+                    .clipShape(Circle())
+                    .shadow(color: Color.black.opacity(0.18), radius: 1.5, x: 0, y: 2)
+            }
+            .accessibilityLabel("Back")
+            .padding(.leading, 16)
+            .padding(.top, 75)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.top, 8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .ignoresSafeArea(.container, edges: .top)
         .appBg()
         .navigationBarBackButtonHidden(true)
     }
     
-    private var statusColor: Color {
-        switch breakdown.tier {
-        case .high: return Color(red: 0/255, green: 126/255, blue: 6/255)
-        case .medium: return Color(red: 243/255, green: 121/255, blue: 0/255)
-        case .low: return Color(red: 160/255, green: 0/255, blue: 0/255)
+    // Job Position Frame: x -11 ... 386, 123 high, title / company / info pills
+    private var jobPositionFrame: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(job.jobPos)
+                    .scaledFont(size: 20, weight: .semibold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text((job.companyName.isEmpty ? "Company" : job.companyName)
+                     + (job.salary > 0 ? "  |  \(job.salaryText) / month" : ""))
+                    .scaledFont(size: 12, weight: .medium)
+                    .lineLimit(1)
+            }
+            .foregroundStyle(Color.white)
+            
+            HStack(spacing: 11) {
+                infoPill("Max hire: \(job.maxHire)", width: 119)
+                infoPill(job.requiredLoc.isEmpty ? "Any location" : job.requiredLoc, width: 101)
+                infoPill(job.workSetup.rawValue, width: 101)
+            }
         }
+        .padding(.leading, 40)
+        .padding(.vertical, 15)
+        .frame(width: 397, height: 123, alignment: .leading)
+        .background(Color.siriusNavy)
+        .clipShape(RoundedRectangle(cornerRadius: 15))
+        .shadow(color: Color.black.opacity(0.25), radius: 2, x: 4, y: 4)
+        .offset(x: -11)
     }
     
-    private func infoPill(_ text: String) -> some View {
+    // Navy scroll panel (370 x 517, radius 20)
+    private var descriptionPanel: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 11) {
+                    Text("Job Description")
+                        .scaledFont(size: 18, weight: .bold)
+                    
+                    Text(job.jobDesc.isEmpty ? "The employer did not add a description." : job.jobDesc)
+                        .scaledFont(size: 12, weight: .medium)
+                        .lineSpacing(8)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .foregroundStyle(Color.white)
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Qualifications")
+                        .scaledFont(size: 18, weight: .bold)
+                        .foregroundStyle(Color.white)
+                    
+                    card {
+                        Text("Program")
+                            .scaledFont(size: 12)
+                            .foregroundStyle(Color.siriusText)
+                        chipRow(Matching.parsePrograms(job.requiredProgram).isEmpty ? ["Any program"] : Matching.parsePrograms(job.requiredProgram), width: 150)
+                    }
+                    
+                    HStack {
+                        Text("Minimum Work Experience: ")
+                        Spacer()
+                        Text(yearsText)
+                    }
+                    .scaledFont(size: 12)
+                    .foregroundStyle(Color.siriusText)
+                    .padding(.horizontal, 12)
+                    .frame(width: 322, height: 44)
+                    .background(Color.siriusSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .shadow(color: .black.opacity(0.25), radius: 4, x: 4, y: 4)
+                    
+                    card {
+                        Text("Core Languages")
+                            .scaledFont(size: 12)
+                            .foregroundStyle(Color.siriusText)
+                        chipRow(job.requiredLang, width: 100)
+                    }
+                }
+                
+                MatchExplanationCard(job: job, profile: listing.profile, breakdown: breakdown, onNavy: true)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(height: 517)
+        .background(Color.siriusNavy)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: Color.black.opacity(0.25), radius: 2, x: 4, y: 4)
+    }
+    
+    private func infoPill(_ text: String, width: CGFloat) -> some View {
         Text(text)
-            .font(.system(size: 8))
-            .fontWeight(.regular)
-            .foregroundStyle(.black)
+            .scaledFont(size: 8)
+            .foregroundStyle(Color.siriusText)
             .lineLimit(1)
-            .padding(.horizontal, 8)
-            .frame(width: 110, height: 20)
-            .background(Color.white)
-            .cornerRadius(50)
+            .frame(width: width, height: 20)
+            .background(Color.siriusSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
     private func card<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             content()
         }
-        .padding(.horizontal, 15)
+        .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .frame(width: 310, alignment: .leading)
-        .background(.white)
-        .cornerRadius(10)
-        .shadow(color: .black.opacity(0.8), radius: 4, x: 0, y: 4)
-        .padding(.bottom, 10)
+        .frame(width: 322, alignment: .leading)
+        .background(Color.siriusSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .shadow(color: .black.opacity(0.25), radius: 4, x: 4, y: 4)
     }
     
-    private func scoreRow(_ title: String, points: Int, outOf: Int) -> some View {
-        HStack {
-            Text(title)
-                .font(.system(size: 14))
-                .foregroundStyle(.black)
-            Spacer()
-            Text("\(points)/\(outOf)")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(points == outOf ? Color(red: 0/255, green: 126/255, blue: 6/255) : Color.black)
-        }
-    }
-    
-    // Required items; the ones the applicant has are highlighted
-    private func chipRow(_ items: [String], matched: [String] = []) -> some View {
+    // Required items as outlined chips (15 high, radius 5, navy border)
+    private func chipRow(_ items: [String], width: CGFloat) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack {
+            HStack(spacing: 10) {
                 ForEach(items, id: \.self) { item in
-                    let isMatched = matched.contains { Matching.normalized($0) == Matching.normalized(item) }
                     Text(item)
-                        .font(.system(size: 8))
-                        .fontWeight(isMatched ? .semibold : .regular)
-                        .foregroundStyle(.black)
-                        .padding(.horizontal, 10)
-                        .frame(minWidth: 60, minHeight: 15)
-                        .background(isMatched ? Color.siriusMatchGreen.opacity(0.6) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black, lineWidth: 1))
-                        .cornerRadius(5)
+                        .scaledFont(size: 10)
+                        .foregroundStyle(Color.siriusText)
+                        .lineLimit(1)
+                        .padding(.horizontal, 6)
+                        .frame(minWidth: width, minHeight: 15)
+                        .background(Color.siriusSurface)
+                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.siriusNavy, lineWidth: 1))
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
                 }
             }
         }
-        .frame(width: 270)
-        .clipped()
     }
 }

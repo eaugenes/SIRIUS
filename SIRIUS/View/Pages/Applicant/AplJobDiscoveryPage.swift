@@ -16,23 +16,23 @@ struct AplJobDiscoveryPage: View {
     
     var body: some View {
         NavigationStack{
-            VStack(alignment: .leading){
+            VStack(alignment: .leading, spacing: 0){
                 Text("Discover Jobs")
-                    .font(.system(size: 32))
-                    .fontWeight(.medium)
+                    .scaledFont(size: 32, weight: .medium)
                     .foregroundStyle(Color.white)
+                    .padding(.top, 75)
                 
-                HStack{
+                HStack(spacing: 10){
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 18))
+                        .scaledFont(size: 15)
                         .foregroundStyle(Color.white)
                     
                     TextField(
                         "",
                         text: $jobsController.searchText,
-                        prompt: Text("Search").foregroundColor(.white.opacity(0.8))
+                        prompt: Text("Search").foregroundColor(.white)
                     )
-                    .font(.system(size: 20))
+                    .scaledFont(size: 18)
                     .foregroundStyle(Color.white)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
@@ -47,16 +47,17 @@ struct AplJobDiscoveryPage: View {
                         .accessibilityLabel("Clear search")
                     }
                 }
-                .padding(10)
+                .padding(.horizontal, 20)
+                .fluidFrame(width: 343, height: 42)
                 .background(Color.white.opacity(0.1))
-                .cornerRadius(15)
-                .frame(width: 350, height: 42)
+                .clipShape(RoundedRectangle(cornerRadius: 15))
+                .padding(.top, 17)
                 
                 if jobsController.listings.isEmpty {
                     emptyState
                 } else {
                     ScrollView{
-                        VStack{
+                        VStack(spacing: 17){
                             ForEach(jobsController.listings) { listing in
                                 Button {
                                     selectedJobID = listing.id
@@ -65,22 +66,26 @@ struct AplJobDiscoveryPage: View {
                                         jobTitle: listing.job.jobPos,
                                         companyName: listing.job.companyName.isEmpty ? "Company" : listing.job.companyName,
                                         jobLocation: listing.job.requiredLoc.isEmpty ? listing.job.workSetup.rawValue : listing.job.requiredLoc,
-                                        matchPrct: Double(listing.percentage)
+                                        jobSalary: listing.job.salary > 0 ? "\(listing.job.salaryText) / month" : "",
+                                        matchPrct: Double(listing.percentage),
+                                        isAutoApplied: listing.hasApplied
                                     )
-                                    .padding(.bottom, 8)
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
-                        .padding(.top, 20)
-                        .padding(.bottom, 100)          // room for the bottom bar
+                        .padding(.top, 36)
+                        .padding(.bottom, 120)          // room for the bottom bar
                     }
+                    .scrollIndicators(.hidden)
+                    .padding(.leading, 4)
                 }
             }
-            .padding(.top, 15)
-            .padding(.horizontal, 30)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.leading, 30)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .ignoresSafeArea(.container, edges: .top)
             .appBg()
+            .boardLoadState()
             .navigationBarBackButtonHidden(true)
             .navigationDestination(item: $selectedJobID) { jobID in
                 if let listing = jobsController.allListings.first(where: { $0.id == jobID }) {
@@ -93,11 +98,11 @@ struct AplJobDiscoveryPage: View {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "briefcase")
-                .font(.system(size: 32))
+                .scaledFont(size: 32)
             Text(jobsController.searchText.isEmpty ? "No jobs posted yet" : "No jobs match your search")
-                .font(.system(size: 15, weight: .medium))
+                .scaledFont(size: 15, weight: .medium)
         }
-        .foregroundStyle(Color.siriusNavy)
+        .foregroundStyle(Color.siriusInk)
         .frame(maxWidth: .infinity)
         .padding(.top, 80)
     }

@@ -19,18 +19,14 @@ struct EmpSignUpPage: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                PageHeader(title: "Personal Information") {
-                    infoController.clearError()
-                    dismiss()
-                }
-                .padding(.top, 12)
-                .padding(.bottom, 30)
-                
+            SignUpPanel(title: "Personal Information") {
+                infoController.clearError()
+                dismiss()
+            } content: {
                 ProfileImagePicker(
                     image: $infoController.employer.profilePicture
                 )
-                .padding(.bottom, 30)
+                .padding(.top, 18)
                 
                 VStack(spacing: 10) {
                     AppTextField(
@@ -74,20 +70,22 @@ struct EmpSignUpPage: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                 }
+                .padding(.top, 18)
                 
                 FormErrorText(message: infoController.signUpError)
-                    .padding(.top, 16)
+                    .padding(.top, 10)
                 
                 SiriusButton(title: "Continue") {
                     if infoController.validatePersonalInfo() {
                         nextScreen = true
                     }
                 }
-                .padding(.top, infoController.signUpError == nil ? 60 : 16)
-                .padding(.bottom, 40)
+                .padding(.top, 43)
             }
             .frame(maxWidth: .infinity)
         }
+        .ignoresSafeArea(.container, edges: .top)
+
         .scrollDismissesKeyboard(.interactively)
         .appBg()
         .navigationBarBackButtonHidden(true)

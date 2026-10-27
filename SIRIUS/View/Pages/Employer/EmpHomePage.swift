@@ -46,8 +46,8 @@ struct EmpHomePage: View {
                     .padding(.bottom, 24)
                 
                 Text("Recent Activity")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(Color.black)
+                    .scaledFont(size: 18, weight: .medium)
+                    .foregroundStyle(Color.siriusText)
                     .padding(.bottom, 12)
                 
                 LazyVStack(spacing: 14) {
@@ -62,7 +62,7 @@ struct EmpHomePage: View {
         }
         .scrollIndicators(.hidden)
         .appBg()
-        .navigationDestination(isPresented: $jobPostingScreen) {
+        .sheet(isPresented: $jobPostingScreen) {
             EmpJobPostingPage()
         }
     }
@@ -71,10 +71,10 @@ struct EmpHomePage: View {
     private var greeting: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Greetings,")
-                .font(.system(size: 20, weight: .light))
+                .scaledFont(size: 20, weight: .light)
             
             Text("\(infoController.displayCompanyName)!")
-                .font(.system(size: 25, weight: .medium))
+                .scaledFont(size: 25, weight: .medium)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -85,8 +85,8 @@ struct EmpHomePage: View {
     private var quickActions: some View {
         HStack(spacing: 15) {
             Text("Quick Actions")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.black)
+                .scaledFont(size: 15, weight: .medium)
+                .foregroundStyle(Color.siriusText)
             
             HStack(spacing: 13) {
                 quickActionButton(title: "Job Posting", icon: "plus", fontSize: 10) {
@@ -103,7 +103,7 @@ struct EmpHomePage: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 50)
-        .background(Color.white)
+        .background(Color.siriusSurface)
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.25), radius: 1, x: 0, y: 4)
     }
@@ -112,7 +112,7 @@ struct EmpHomePage: View {
         Button(action: action) {
             HStack(spacing: 4) {
                 Text(title)
-                    .font(.system(size: fontSize, weight: .bold))
+                    .scaledFont(size: fontSize, weight: .bold)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(width: 50, alignment: .leading)
@@ -120,7 +120,7 @@ struct EmpHomePage: View {
                 Spacer(minLength: 0)
                 
                 Image(systemName: icon)
-                    .font(.system(size: 18))
+                    .scaledFont(size: 18)
             }
             .foregroundStyle(Color.white)
             .padding(.horizontal, 9)

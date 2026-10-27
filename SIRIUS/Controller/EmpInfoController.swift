@@ -44,7 +44,9 @@ final class EmpInfoController: ObservableObject {
     
     private func persistProfile() {
         guard isRegistered else { return }
-        auth.updateEmployer(employer, company: company)
+        let employer = self.employer
+        let company = self.company
+        Task { await auth.updateEmployer(employer, company: company) }
     }
     
     // MARK: - Display helpers
@@ -112,29 +114,17 @@ final class EmpInfoController: ObservableObject {
         return true
     }
     
-    // Step 3: Finish Sign Up. Returns true when registration succeeded.
-    func completeSignUp(confirmPassword: String) -> Bool {
-        let username = employer.username.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        if username.isEmpty {
-            signUpError = "Please enter a username."
-            return false
-        }
-        if employer.password.isEmpty {
-            signUpError = "Please enter a password."
-            return false
-        }
-        if employer.password != confirmPassword {
-            signUpError = "Passwords do not match."
-            return false
-        }
-        
-        employer.username = username
-        switch auth.registerEmployer(employer, company: company, confirm: confirmPassword) {
+    // Step 3: Finish Sign Up (password only; the email from step 1 is the login). Returns true when registration succeeded.
+    @MainActor
+    func completeSignUp(confirmPassword: String) async -> Bool {
+        switch await auth.registerEmployer(employer, company: company, password: employer.password, confirm: confirmPassword) {
         case .failure(let error):
             signUpError = error.errorDescription
             return false
-        case .success:
+        case .success(let account):
+            if let saved = account.employer { employer.id = saved.id; employer.username = saved.username }
+            if let savedCompany = account.company { company.id = savedCompany.id }
+            employer.password = ""
             signUpError = nil
             isRegistered = true
             return true

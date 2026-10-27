@@ -19,56 +19,41 @@ struct ProfileImagePicker: View {
     
     
     var body: some View {
-        ZStack{
+        ZStack(alignment: .bottomTrailing){
             Group{      //      Group{} - Invisible container for switching images
                 if let image = image {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 100, height: 100)
+                        .frame(width: 131, height: 131)
                 } else {
                     Image(systemName: "person")
-                        .resizable()
-                        .scaledToFit()
+                        .scaledFont(size: 35)
                         .foregroundColor(.white)
-                        .padding(30)
-                        .frame(width: 100, height: 100)
+                        .frame(width: 131, height: 131)
                 }
             }
-            .frame(width: 120, height: 120)
-            .background(
-                Color(
-                    red: 3 / 255,
-                    green: 82 / 255,
-                    blue: 123 / 255
-                )
-            )
+            .frame(width: 131, height: 131)
+            .background(Color.siriusPanel)
             .clipShape(Circle())
-            .overlay(
-                Circle()
-                    .stroke(Color.white, lineWidth: 3)
-            )
-            .shadow(radius: 4)
-            .overlay(
-                Button {
-                    showImageOptions = true
-                } label: {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 15))
-                        .foregroundStyle(Color.white)
-                        .frame(width: 50, height: 50)
-                        .background(
-                            Color(
-                                red: 3 / 255,
-                                green: 82 / 255,
-                                blue: 123 / 255
-                            )
-                        )
-                        .clipShape(Circle())
-                }
-                    .offset(x: 40, y: 40)
-            )
+            .shadow(color: Color.black.opacity(0.25), radius: 4, x: 0, y: 4)
+            
+            Button {
+                showImageOptions = true
+            } label: {
+                Image(systemName: "camera.fill")
+                    .scaledFont(size: 12)
+                    .foregroundStyle(Color.white)
+                    .frame(width: 28, height: 28)
+                    .background(Color.siriusNavy)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+            }
+            .padding(.trailing, 10)
+            .padding(.bottom, 10)
+            .accessibilityLabel("Change profile picture")
         }
+        .frame(width: 131, height: 131)
         .photosPicker(
             isPresented: $showImageOptions,
             selection: $selectedOption,

@@ -21,6 +21,9 @@ struct MainTabView: View {
     @StateObject private var jobsController: AplJobsController
     @StateObject private var applicationsController: AplApplicationsController
     
+    @StateObject private var network = NetworkMonitor()
+    @Environment(\.scenePhase) private var scenePhase
+    
     // Selected tab for each side
     @State private var aplTab: AplNavigationTab = .home
     @State private var empTab: EmpNavigationTab = .home
@@ -66,8 +69,15 @@ struct MainTabView: View {
                 employerTabs
             }
         }
+        .overlay(alignment: .top) {
+            StatusBanner(network: network)          // offline notice + failed-save message
+        }
         .ignoresSafeArea(.keyboard)     // to overlay components in the screen when keyboard is on
         .navigationBarBackButtonHidden(true)
+        .task { await JobBoard.shared.reload() }                                  // load jobs / applications from Supabase
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await JobBoard.shared.reload(silent: true) } }
+        }
     }
     
     // MARK: - Applicant

@@ -58,23 +58,23 @@ struct EmpAccountPage: View {
                         .scaledToFill()
                 } else {
                     Text(infoController.companyInitial)
-                        .font(.system(size: 25))
-                        .foregroundStyle(Color.black)
+                        .scaledFont(size: 25)
+                        .foregroundStyle(Color.siriusText)
                 }
             }
             .frame(width: 50, height: 50)
-            .background(Color.white)
+            .background(Color.siriusSurface)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .shadow(color: Color.black.opacity(0.25), radius: 1, x: 0, y: 4)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(infoController.displayCompanyName)
-                    .font(.system(size: 18))
+                    .scaledFont(size: 18)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 
                 Text(infoController.displayValue(infoController.displayEmail))
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .lineLimit(1)
             }
             .foregroundStyle(Color.white)
@@ -86,10 +86,10 @@ struct EmpAccountPage: View {
                 editScreen = true
             } label: {
                 Image(systemName: "pencil.line")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.siriusNavy)
+                    .scaledFont(size: 20)
+                    .foregroundStyle(Color.siriusInk)
                     .frame(width: 44, height: 44)
-                    .background(Color.white)
+                    .background(Color.siriusSurface)
                     .cornerRadius(10)
                     .shadow(color: Color.black.opacity(0.25), radius: 1, x: 0, y: 4)
             }
@@ -109,12 +109,12 @@ struct EmpAccountPage: View {
     private var aboutCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("About Company")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Color.black)
+                .scaledFont(size: 16, weight: .medium)
+                .foregroundStyle(Color.siriusText)
             
             Text(infoController.displayValue(infoController.company.cmpDesc))
-                .font(.system(size: 13, weight: .light))
-                .foregroundStyle(Color.black)
+                .scaledFont(size: 13, weight: .light)
+                .foregroundStyle(Color.siriusText)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 6)
@@ -122,9 +122,9 @@ struct EmpAccountPage: View {
         .padding(.horizontal, 19)
         .padding(.top, 16)
         .padding(.bottom, 24)
-        .frame(width: 352, alignment: .leading)
+        .fluidFrame(width: 352, alignment: .leading)
         .frame(minHeight: 221, alignment: .topLeading)
-        .background(Color.white)
+        .background(Color.siriusSurface)
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 4)
     }
@@ -132,8 +132,8 @@ struct EmpAccountPage: View {
     private var companyInfoCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Company Information")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.black)
+                .scaledFont(size: 14, weight: .medium)
+                .foregroundStyle(Color.siriusText)
                 .padding(.bottom, 10)
             
             infoRow(label: "Founded", value: infoController.company.founded)
@@ -144,8 +144,8 @@ struct EmpAccountPage: View {
         }
         .padding(.horizontal, 19)
         .padding(.vertical, 16)
-        .frame(width: 352, alignment: .leading)
-        .background(Color.white)
+        .fluidFrame(width: 352, alignment: .leading)
+        .background(Color.siriusSurface)
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 4)
     }
@@ -153,15 +153,15 @@ struct EmpAccountPage: View {
     private func infoRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
             
             Spacer()
             
             Text(infoController.displayValue(value))
-                .font(.system(size: 12, weight: .medium))
+                .scaledFont(size: 12, weight: .medium)
                 .lineLimit(1)
         }
-        .foregroundStyle(Color.black)
+        .foregroundStyle(Color.siriusText)
         .padding(.horizontal, 4)
         .frame(height: 45)
     }

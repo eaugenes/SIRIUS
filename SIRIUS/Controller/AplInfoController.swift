@@ -71,38 +71,74 @@ class AplInfoController: ObservableObject{
             return false
         }
         applicant.coreLang = languages
+        applicant.program = ProgramCatalog.complete(applicant.program)      // "BS CS" -> "BS Computer Science"
         applicant.location = city?.name ?? applicant.location
         signUpError = nil
         return true
     }
     
-    // Step 2: username + password. Saves the account, then applies the applicant to every matching job.
-    func completeSignUp(confirmPassword: String) -> Bool {
-        switch auth.registerApplicant(applicant, password: applicant.password, confirm: confirmPassword) {
+    // Step 2: password. Creates the Supabase account, then asks the server to apply the applicant to every matching job.
+    @MainActor
+    func completeSignUp(confirmPassword: String) async -> Bool {
+        switch await auth.registerApplicant(applicant, password: applicant.password, confirm: confirmPassword) {
         case .failure(let error):
             signUpError = error.errorDescription
             return false
         case .success(let account):
-            applicant.username = account.username
+            if let saved = account.applicant {
+                applicant.id = saved.id                 // the applicant id is the Supabase user id
+                applicant.email = saved.email
+                applicant.username = saved.username
+            }
             applicant.password = ""
             isRegistered = true
-            board.autoApply(applicant: applicant)
             signUpError = nil
+            await board.autoApply(applicant: applicant)
             return true
         }
     }
     
     // MARK: - Profile editing
     
-    // Saves edits and applies the applicant to any job they now match.
-    func saveProfile(coreLanguageText: String) -> Bool {
+    // Saves edits, then asks the server to apply the applicant to any job they now match.
+    @MainActor
+    func saveProfile(coreLanguageText: String) async -> Bool {
         guard validateProfile(coreLanguageText: coreLanguageText, city: nil) else { return false }
-        guard auth.updateApplicant(applicant) else {
-            signUpError = AuthError.saveFailed.errorDescription
+        guard await auth.updateApplicant(applicant) else {
+            signUpError = AccountError.saveFailed.errorDescription
             return false
         }
-        board.autoApply(applicant: applicant)
+        await board.autoApply(applicant: applicant)
         return true
+    }
+    
+    // MARK: - Resume
+    
+    static let maxResumeBytes = 5 * 1024 * 1024
+    
+    // Keeps the picked file in memory. TODO(Supabase Storage): upload `data` to a bucket and save the path.
+    @discardableResult
+    func setResume(from url: URL) -> Bool {
+        let didAccess = url.startAccessingSecurityScopedResource()
+        defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
+        
+        guard let data = try? Data(contentsOf: url) else {
+            signUpError = "That file couldn't be opened. Please choose another one."
+            return false
+        }
+        guard data.count <= AplInfoController.maxResumeBytes else {
+            signUpError = "Resume must be 5 MB or smaller."
+            return false
+        }
+        applicant.resumeData = data
+        applicant.resumeFileName = url.lastPathComponent
+        signUpError = nil
+        return true
+    }
+    
+    func removeResume() {
+        applicant.resumeData = nil
+        applicant.resumeFileName = ""
     }
     
     func signOut() {

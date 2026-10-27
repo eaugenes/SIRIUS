@@ -34,13 +34,13 @@ struct NavigationBar<Tab: SiriusNavigationTab>: View {
                         selectedTab = tab
                     }
                 } label: {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 0) {
                         Image(systemName: tab.iconTypes)
-                            .font(.system(size: 15, weight: .regular))
-                            .frame(height: 22)
+                            .scaledFont(size: 15, weight: .regular)
+                            .frame(height: 30)
                         
                         Text(tab.rawValue)
-                            .font(.system(size: 8, weight: .regular))
+                            .scaledFont(size: 8, weight: .regular)
                     }
                     .foregroundStyle(isActive ? Color.black : Color.white)
                     .frame(width: 66, height: 50)
@@ -54,6 +54,7 @@ struct NavigationBar<Tab: SiriusNavigationTab>: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(tab.rawValue)
+                .accessibilityAddTraits(isActive ? .isSelected : [])
                 
                 if tab.id != Tab.allCases.last?.id {
                     Spacer(minLength: 0)
