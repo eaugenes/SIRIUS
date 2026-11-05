@@ -84,18 +84,20 @@ final class EmpInfoController: ObservableObject {
     // MARK: - Sign up
     
     func validatePersonalInfo() -> Bool {
-        if employer.firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if isBlank(employer.firstName) {
             signUpError = "Please enter your first name."
             return false
         }
-        
-        if employer.lastName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if isBlank(employer.lastName) {
             signUpError = "Please enter your last name."
             return false
         }
-        
-        if employer.birthDate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if isBlank(employer.birthDate) {
             signUpError = "Please select your date of birth."
+            return false
+        }
+        if isBlank(employer.contactNumber) {
+            signUpError = "Please enter your contact number."
             return false
         }
         
@@ -103,18 +105,40 @@ final class EmpInfoController: ObservableObject {
         return true
     }
     
-    func validateCompanyInfo() -> Bool {
-        if company.cmpName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+    func validateCompanyInfo(requireAll: Bool = false) -> Bool {
+        if isBlank(company.cmpName) {
             signUpError = "Please enter your company name."
             return false
+        }
+        if requireAll {
+            if isBlank(company.cmpDesc) {
+                signUpError = "Please enter something about your company."
+                return false
+            }
+            if isBlank(company.founded) {
+                signUpError = "Please enter the year your company was founded."
+                return false
+            }
+            if isBlank(company.loc) {
+                signUpError = "Please enter your company location."
+                return false
+            }
         }
         let email = company.email.trimmingCharacters(in: .whitespacesAndNewlines)
         if !email.isEmpty && !isValidEmail(email) {
             signUpError = "Please enter a valid company email address."
             return false
         }
+        if requireAll && isBlank(company.website) {
+            signUpError = "Please enter your company website."
+            return false
+        }
         signUpError = nil
         return true
+    }
+    
+    private func isBlank(_ text: String) -> Bool {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
     @MainActor

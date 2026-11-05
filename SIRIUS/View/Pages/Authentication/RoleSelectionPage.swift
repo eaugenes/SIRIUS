@@ -15,43 +15,52 @@ struct RoleSelectionPage: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationStack{
-            ScrollView {
-                VStack(spacing: 0) {
-                    AuthBrandHeader()
-                    
-                    AuthPanel(heading: "Choose your role", subheading: "Tell us how you\u{2019}ll use SIRIUS") {
-                        RoleCard(
-                            title: "APPLICANT",
-                            description: "Find opportunities that match your qualifications",
-                            icon: "person",
-                            isSelected: selectedRole == .applicant) { selectedRole = .applicant }
+        NavigationStack {
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        AuthBrandHeader()
                         
-                        RoleCard(
-                            title: "EMPLOYER",
-                            description: "Find qualified candidates faster.",
-                            icon: "briefcase",
-                            isSelected: selectedRole == .employer) { selectedRole = .employer }
-                        
-                        AuthButton(title: "Continue", fontSize: 16, isEnabled: selectedRole != nil) {
-                            nextScreen = true
+                        AuthPanel(heading: "Choose your role", subheading: "Tell us how you\u{2019}ll use SIRIUS", fillsScreenBottom: true) {
+                            RoleCard(
+                                title: "APPLICANT",
+                                description: "Find opportunities that match your qualifications",
+                                icon: "person",
+                                isSelected: selectedRole == .applicant) { selectedRole = .applicant }
+                            
+                            RoleCard(
+                                title: "EMPLOYER",
+                                description: "Find qualified candidates faster.",
+                                icon: "briefcase",
+                                isSelected: selectedRole == .employer) { selectedRole = .employer }
+                            
+                            AuthButton(title: "Continue", fontSize: 16, isEnabled: selectedRole != nil) {
+                                nextScreen = true
+                            }
+                            
+                            Spacer(minLength: 24)
+                            
+                            AuthFooterLink(
+                                prompt: "Have an account already?",
+                                link: "Log In",
+                                promptColor: .siriusMuted,
+                                linkColor: .siriusAction
+                            ) {
+                                dismiss()
+                            }
+                            .frame(maxWidth: .infinity)
                         }
                     }
-                    
-                    AuthFooterLink(prompt: "Have an account already?", link: "Log In") {
-                        dismiss()
-                    }
-                    .padding(.top, 43)
-                    .padding(.bottom, 40)
+                    .frame(maxWidth: .infinity, minHeight: geo.size.height)
                 }
-                .frame(maxWidth: .infinity)
             }
-            .ignoresSafeArea(.container, edges: .top)
+            .ignoresSafeArea(.container)
+            .scrollDismissesKeyboard(.interactively)
             .appBg()
             .navigationDestination(isPresented: $nextScreen) {
                 if selectedRole == .applicant {
                     AplSignUpPage()
-                }  else if selectedRole == .employer {
+                } else if selectedRole == .employer {
                     EmpSignUpPage()
                 }
             }

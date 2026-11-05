@@ -32,11 +32,16 @@ struct EmpCompanyInfoPage: View {
     }
     
     var body: some View {
-        ScrollView {
-            SignUpPanel(title: "Company Information") {
+        GeometryReader { geo in
+            // same gap as between the panel and the sides of the phone
+            let sideGap = max((geo.size.width - 365) / 2, 0)
+            
+            SignUpPanel(title: "Company Information", fillsScreen: true, bottomGap: sideGap) {
                 infoController.clearError()
                 dismiss()
             } content: {
+                Spacer(minLength: 12)
+                
                 VStack(spacing: 10) {
                     AppTextField(
                         title: "Company Name",
@@ -66,15 +71,6 @@ struct EmpCompanyInfoPage: View {
                     )
                     
                     AppTextField(
-                        title: "Email Address",
-                        placeholder: "e.g., 123@gmail.com",
-                        text: $draft.email,
-                        keyboardType: .emailAddress
-                    )
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    
-                    AppTextField(
                         title: "Website",
                         placeholder: "e.g., company.com.ph",
                         text: $draft.website,
@@ -83,28 +79,25 @@ struct EmpCompanyInfoPage: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                 }
-                .padding(.top, 27)
                 
                 FormErrorText(message: infoController.signUpError)
                     .padding(.top, 10)
                 
+                Spacer(minLength: 16)
+                
                 SiriusButton(title: mode == .signUp ? "Continue" : "Save") {
                     infoController.company = draft
                     
-                    guard infoController.validateCompanyInfo() else { return }
-                    
+                    guard infoController.validateCompanyInfo(requireAll: mode == .signUp) else { return }
                     switch mode {
                     case .signUp: nextScreen = true
                     case .edit: dismiss()
                     }
                 }
-                .padding(.top, 43)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .ignoresSafeArea(.container, edges: .top)
-
-        .scrollDismissesKeyboard(.interactively)
+        .ignoresSafeArea(.container)
         .appBg()
         .navigationBarBackButtonHidden(true)
         .navigationDestination(isPresented: $nextScreen) {

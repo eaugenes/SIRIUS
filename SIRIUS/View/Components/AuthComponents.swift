@@ -191,11 +191,11 @@ struct CircleBackButton: View {
     }
 }
 
-// White panel used by the sign up steps (Figma "Form panel": x19, top 82, radius 24).
-// Title row (back circle + centered title) on top, caller content below.
 struct SignUpPanel<Content: View>: View {
     
     let title: String
+    var fillsScreen: Bool = false
+    var bottomGap: CGFloat = 0
     let onBack: () -> Void
     @ViewBuilder var content: () -> Content
     
@@ -217,14 +217,15 @@ struct SignUpPanel<Content: View>: View {
             
             content()
         }
-        .padding(.bottom, 20)
+        .padding(.bottom, fillsScreen ? 40 : 20)
         .fluidFrame(width: 365)
+        .frame(maxHeight: fillsScreen ? CGFloat.infinity : nil)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color.siriusSurface)
                 .shadow(color: Color(red: 0, green: 26/255, blue: 51/255).opacity(0.25), radius: 12, x: 0, y: 8)
         )
         .padding(.top, 82)
-        .padding(.bottom, 40)
+        .padding(.bottom, fillsScreen ? bottomGap : 40)
     }
 }

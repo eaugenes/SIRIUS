@@ -7,26 +7,24 @@
 
 import SwiftUI
 
-// Employer sign up — step 1 of 3: Personal Information
-// (Figma: Sign Up Screen (Employer))
 struct EmpSignUpPage: View {
-    
-    // Owns the employer controller for the whole sign up flow and the employer app after it
     @StateObject private var infoController = EmpInfoController()
-    
     @Environment(\.dismiss) private var dismiss
     @State private var nextScreen = false
     
     var body: some View {
-        ScrollView {
-            SignUpPanel(title: "Personal Information") {
+        GeometryReader { geo in
+            // same gap as between the panel and the sides of the phone
+            let sideGap = max((geo.size.width - 365) / 2, 0)
+            
+            SignUpPanel(title: "Personal Information", fillsScreen: true, bottomGap: sideGap) {
                 infoController.clearError()
                 dismiss()
             } content: {
                 ProfileImagePicker(
                     image: $infoController.employer.profilePicture
                 )
-                .padding(.top, 18)
+                .padding(.top, 28)
                 
                 VStack(spacing: 10) {
                     AppTextField(
@@ -59,23 +57,22 @@ struct EmpSignUpPage: View {
                         keyboardType: .phonePad
                     )
                 }
-                .padding(.top, 18)
+                .padding(.top, 24)
                 
                 FormErrorText(message: infoController.signUpError)
                     .padding(.top, 10)
+                
+                Spacer(minLength: 16)
                 
                 SiriusButton(title: "Continue") {
                     if infoController.validatePersonalInfo() {
                         nextScreen = true
                     }
                 }
-                .padding(.top, 43)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .ignoresSafeArea(.container, edges: .top)
-
-        .scrollDismissesKeyboard(.interactively)
+        .ignoresSafeArea(.container)
         .appBg()
         .navigationBarBackButtonHidden(true)
         .navigationDestination(isPresented: $nextScreen) {
