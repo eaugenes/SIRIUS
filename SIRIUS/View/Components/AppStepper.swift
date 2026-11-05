@@ -13,6 +13,7 @@ struct AppStepper: View {
     @Binding var value: Int
     var range: ClosedRange<Int> = 0...50
     var borderColor: Color = .siriusFieldBorder
+    var buttonFill: Color = .siriusFill
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -53,7 +54,7 @@ struct AppStepper: View {
                 .scaledFont(size: 13, weight: .bold)
                 .foregroundStyle(Color.black.opacity(isEnabled ? 1 : 0.3))
                 .frame(width: 40, height: 35)
-                .background(Color.siriusFill)
+                .background(buttonFill)
         }
         .disabled(!isEnabled)
     }

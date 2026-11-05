@@ -177,43 +177,6 @@ struct CircleBackButton: View {
     }
 }
 
-// Applicant "Finish Sign Up" credentials block: two 52pt rows (password, confirm) in one rounded container
-struct CredentialsGroup: View {
-    
-    @Binding var password: String
-    @Binding var confirmPassword: String
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            row { SecureField("", text: $password, prompt: prompt("Enter your password")) }
-            divider
-            row { SecureField("", text: $confirmPassword, prompt: prompt("Re-enter your password")) }
-        }
-        .frame(maxWidth: .infinity)
-        .background(Color.siriusFieldFill)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.siriusFieldBorder, lineWidth: 1))
-    }
-    
-    private func row<F: View>(@ViewBuilder _ field: () -> F) -> some View {
-        field()
-            .scaledFont(size: 16)
-            .padding(.horizontal, 16)
-            .frame(minHeight: 52)
-    }
-    
-    private var divider: some View {
-        Rectangle()
-            .fill(Color.siriusDivider)
-            .frame(height: 1)
-            .padding(.leading, 16)
-    }
-    
-    private func prompt(_ text: String) -> Text {
-        Text(text).font(.scaled(16)).foregroundColor(Color.siriusCredText)
-    }
-}
-
 // White panel used by the sign up steps (Figma "Form panel": x19, top 82, radius 24).
 // Title row (back circle + centered title) on top, caller content below.
 struct SignUpPanel<Content: View>: View {

@@ -13,15 +13,16 @@ struct AppTextField: View {
     let title: String
     let placeholder: String
     @Binding var text: String
-    var isSecure: Bool = false          // for SecureField
-    var isMultiline: Bool = false       // for multi-line text (e.g. Description/s)
+    var isSecure: Bool = false
+    var isMultiline: Bool = false
     
-    // Optional styling (defaults keep every existing call site unchanged)
-    var titleColor: Color = .siriusInk                      // white on dark panels (e.g. Schedule Interview)
-    var borderColor: Color = .siriusFieldBorder                      // Job Posting uses Color.siriusPanel
-    var multilineHeight: CGFloat = 100                  // About Company / Job Description / Message
-    var prefix: String? = nil                           // e.g. "₱" shown before the typed text
-    var keyboardType: UIKeyboardType = .default         // .numberPad for numbers, .emailAddress for emails
+    var titleColor: Color = .siriusInk
+    var borderColor: Color = .siriusFieldBorder
+    var multilineHeight: CGFloat = 100
+    var prefix: String? = nil                       // e.g. "₱" shown before the typed text
+    var keyboardType: UIKeyboardType = .default     // .numberPad for numbers, .emailAddress for emails
+    var widthField: CGFloat = 300
+    @State private var isRevealed = false
     
     // Figma "Final": Light 14 placeholder in the secondary text color
     private var promptText: Text {
@@ -55,7 +56,7 @@ struct AppTextField: View {
                             .allowsHitTesting(false)        // let taps reach the TextEditor underneath
                     }
                 }
-                .frame(width: 300, height: multilineHeight)
+                .frame(width: widthField, height: multilineHeight)
                 .background(Color.siriusFieldFill)
                 .cornerRadius(14)
                 .overlay(
@@ -63,18 +64,38 @@ struct AppTextField: View {
                         .strokeBorder(borderColor, lineWidth: 1)
                 )
             } else if isSecure {           // For Password
-                SecureField("", text: $text, prompt: promptText)
+                HStack(spacing: 8) {
+                    Group {
+                        if isRevealed {
+                            TextField("", text: $text, prompt: promptText)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                        } else {
+                            SecureField("", text: $text, prompt: promptText)
+                        }
+                    }
                     .accessibilityLabel(title)
                     .scaledFont(size: 14, weight: .light)
-                    .padding(10)
-                    .frame(width: 300)
-                    .frame(minHeight: 35)
-                    .background(Color.siriusFieldFill)
-                    .cornerRadius(14)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .strokeBorder(borderColor, lineWidth: 1)
-                    )
+                    
+                    Button {
+                        isRevealed.toggle()
+                    } label: {
+                        Image(systemName: isRevealed ? "eye.slash" : "eye")
+                            .scaledFont(size: 10, weight: .medium)
+                            .foregroundStyle(Color.gray)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isRevealed ? "Hide password" : "Show password")
+                }
+                .padding(10)
+                .frame(width: widthField)
+                .frame(minHeight: 35)
+                .background(Color.siriusFieldFill)
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(borderColor, lineWidth: 1)
+                )
             } else {                // For Any Type of TextField
                 HStack(spacing: 4) {
                     if let prefix {
@@ -88,7 +109,7 @@ struct AppTextField: View {
                         .keyboardType(keyboardType)
                 }
                     .padding(10)
-                    .frame(width: 300)
+                    .frame(width: widthField)
                     .frame(minHeight: 35)
                     .background(Color.siriusFieldFill)
                     .cornerRadius(14)

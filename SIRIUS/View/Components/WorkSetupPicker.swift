@@ -14,7 +14,8 @@ struct WorkSetupPicker: View {
     @Binding var selection: WorkSetup
     var borderColor: Color = .siriusFieldBorder
 
-    private let selectedFill = Color(red: 240/255, green:240/255, blue:240/255)
+    var selectedFill = Color(red: 240/255, green:240/255, blue:240/255)
+    var unselectedFill: Color = .white
     private let secondaryText = Color(red: 74/255, green:74/255, blue:74/255)
     private let options: [WorkSetup] = [.onSite, .remote, .hybrid]
     
@@ -65,6 +66,10 @@ struct WorkSetupPicker: View {
 }
 
 #Preview {
-    WorkSetupPicker(title: "Work Setup", selection: .constant(.onSite), borderColor: .blue)
-        .appBg()
+    WorkSetupPicker(
+        title: "Work Setup",
+        selection: .constant(.onSite),
+        selectedFill: .siriusRoleTile,
+        unselectedFill: .siriusFieldFill
+    ).appBg()
 }

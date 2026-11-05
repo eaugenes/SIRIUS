@@ -21,11 +21,35 @@ struct AplFinishSignUpPage: View {
             VStack(spacing: 0) {
                 AuthBrandHeader()
                 
-                AuthPanel(heading: "Create your account", subheading: "Choose a password for \(applicantController.applicant.email)") {
-                    CredentialsGroup(
-                        password: $applicantController.applicant.password,
-                        confirmPassword: $confirmPassword
-                    )
+                AuthPanel(heading: "Create your account", subheading: "Enter your email and choose a password") {
+                    VStack(spacing: 10) {
+                        AppTextField(
+                            title: "Email Address",
+                            placeholder: "e.g., 123@gmail.com",
+                            text: $applicantController.applicant.email,
+                            keyboardType: .emailAddress,
+                            widthField: 325
+                        )
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        
+                        AppTextField(
+                            title: "Password",
+                            placeholder: "Enter your password",
+                            text: $applicantController.applicant.password,
+                            isSecure: true,
+                            widthField: 325
+                        )
+                        
+                        AppTextField(
+                            title: "Confirm Password",
+                            placeholder: "Re-enter your password",
+                            text: $confirmPassword,
+                            isSecure: true,
+                            widthField: 325
+                        )
+                    }
+                    .frame(maxWidth: .infinity)
                     
                     FormErrorText(message: applicantController.signUpError)
                     

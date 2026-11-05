@@ -47,37 +47,34 @@ class AplInfoController: ObservableObject{
     
     // MARK: - Sign up
     
-    // Step 1: personal + qualification details. Stores the parsed languages and city on the applicant.
-    func validateProfile(coreLanguageText: String, city: City?) -> Bool {
-        if applicant.firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            signUpError = "Please enter your first name."
-            return false
+    func validateProfile(coreLanguageText: String, city: City?, isSignUp: Bool = false) -> Bool {
+        func isBlank(_ s: String) -> Bool { s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
+        if isBlank(applicant.firstName) { signUpError = "Please enter your first name."; return false }
+        if isBlank(applicant.lastName)  { signUpError = "Please enter your last name.";  return false }
+        
+        if isSignUp {
+            if isBlank(applicant.birthDate)     { signUpError = "Please select your date of birth.";   return false }
+            if isBlank(applicant.contactNumber) { signUpError = "Please enter your contact number.";   return false }
+            if city == nil                      { signUpError = "Please select your location.";        return false }
         }
-        if applicant.lastName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            signUpError = "Please enter your last name."
-            return false
-        }
-        if applicant.program.isEmpty {
-            signUpError = "Please select your program."
-            return false
-        }
+        
+        if isBlank(applicant.program) { signUpError = "Please select your program."; return false }
+        
         let languages = Matching.parseLanguages(coreLanguageText)
-        if languages.isEmpty {
-            signUpError = "Please enter at least one core language."
-            return false
-        }
-        if applicant.yrExp < 0 {
-            signUpError = "Years of experience can't be negative."
-            return false
-        }
+        if languages.isEmpty { signUpError = "Please enter at least one core language."; return false }
+        
+        if isSignUp, isBlank(applicant.workSetUp) { signUpError = "Please select your work setup."; return false }
+        
+        if applicant.yrExp < 0 { signUpError = "Years of experience can't be negative."; return false }
+        
         applicant.coreLang = languages
-        applicant.program = ProgramCatalog.complete(applicant.program)      // "BS CS" -> "BS Computer Science"
+        applicant.program = ProgramCatalog.complete(applicant.program)
         applicant.location = city?.name ?? applicant.location
         signUpError = nil
         return true
     }
     
-    // Step 2: password. Creates the Supabase account, then asks the server to apply the applicant to every matching job.
     @MainActor
     func completeSignUp(confirmPassword: String) async -> Bool {
         switch await auth.registerApplicant(applicant, password: applicant.password, confirm: confirmPassword) {
@@ -100,7 +97,6 @@ class AplInfoController: ObservableObject{
     
     // MARK: - Profile editing
     
-    // Saves edits, then asks the server to apply the applicant to any job they now match.
     @MainActor
     func saveProfile(coreLanguageText: String) async -> Bool {
         guard validateProfile(coreLanguageText: coreLanguageText, city: nil) else { return false }
@@ -116,7 +112,6 @@ class AplInfoController: ObservableObject{
     
     static let maxResumeBytes = 5 * 1024 * 1024
     
-    // Keeps the picked file in memory. TODO(Supabase Storage): upload `data` to a bucket and save the path.
     @discardableResult
     func setResume(from url: URL) -> Bool {
         let didAccess = url.startAccessingSecurityScopedResource()
