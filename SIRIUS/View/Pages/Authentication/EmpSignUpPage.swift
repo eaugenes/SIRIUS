@@ -47,11 +47,9 @@ struct EmpSignUpPage: View {
                         text: $infoController.employer.lastName
                     )
                     
-                    AppTextField(
+                    DateOfBirthField(
                         title: "Date of Birth",
-                        placeholder: "YYYY-MM-DD",
-                        text: $infoController.employer.birthDate,
-                        keyboardType: .numbersAndPunctuation
+                        text: $infoController.employer.birthDate
                     )
                     
                     AppTextField(
@@ -60,15 +58,6 @@ struct EmpSignUpPage: View {
                         text: $infoController.employer.contactNumber,
                         keyboardType: .phonePad
                     )
-                    
-                    AppTextField(
-                        title: "Email Address",
-                        placeholder: "e.g., 123@gmail.com",
-                        text: $infoController.employer.email,
-                        keyboardType: .emailAddress
-                    )
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
                 }
                 .padding(.top, 18)
                 

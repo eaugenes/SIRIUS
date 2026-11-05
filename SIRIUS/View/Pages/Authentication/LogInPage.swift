@@ -12,75 +12,58 @@ struct LogInPage: View {
     @State private var logInEmail: String = ""
     @State private var logInPassword: String = ""
     @State private var signUpScreen = false
-    @State private var loggedInAccount: UserAccount?        // set after a successful log in
+    @State private var loggedInAccount: UserAccount?
     @State private var errorMessage: String?
     @State private var isWorking = false
     
     @ObservedObject private var auth = AuthController.shared
     
     var body: some View {
-        NavigationStack{
-            ScrollView {
-                VStack(spacing: 0) {
-                    AuthBrandHeader()
-                    
-                    AuthPanel(heading: "Welcome back", subheading: "Log in to continue to SIRIUS") {
-                        AuthField(
-                            title: "Email",
-                            placeholder: "Enter your email",
-                            text: $logInEmail,
-                            keyboardType: .emailAddress
-                        )
+        NavigationStack {
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        AuthBrandHeader()
                         
-                        AuthField(
-                            title: "Password",
-                            placeholder: "Enter your password",
-                            text: $logInPassword,
-                            isSecure: true
-                        )
-                        
-                        FormErrorText(message: errorMessage)
-                        
-                        AuthButton(title: isWorking ? "Logging in\u{2026}" : "Continue", isEnabled: !isWorking) {
-                            logIn()
-                        }
-                        
-                        HStack(spacing: 10) {
-                            Rectangle().fill(Color.siriusFieldBorder).frame(height: 1)
-                            Text("or continue with")
-                                .scaledFont(size: 13)
-                                .foregroundStyle(Color.siriusMuted)
-                                .fixedSize()
-                            Rectangle().fill(Color.siriusFieldBorder).frame(height: 1)
-                        }
-                        
-                        // TODO(Supabase): wire to Supabase Auth Google OAuth (signInWithOAuth(provider: .google))
-                        Button {
-                            errorMessage = "Google sign in will be available once Supabase is connected."
-                        } label: {
-                            HStack(spacing: 10) {
-                                GoogleLogo(size: 22)
-                                Text("Google")
-                                    .scaledFont(size: 16, weight: .medium)
-                                    .foregroundStyle(Color.siriusInk)
+                        AuthPanel(heading: "Welcome back", subheading: "Log in to continue to SIRIUS", fillsScreenBottom: true) {
+                            AuthField(
+                                title: "Email",
+                                placeholder: "Enter your email",
+                                text: $logInEmail,
+                                keyboardType: .emailAddress
+                            )
+                            
+                            AuthField(
+                                title: "Password",
+                                placeholder: "Enter your password",
+                                text: $logInPassword,
+                                isSecure: true
+                            )
+                            
+                            FormErrorText(message: errorMessage)
+                            
+                            AuthButton(title: isWorking ? "Logging in\u{2026}" : "Continue", isEnabled: !isWorking) {
+                                logIn()
+                            }
+                            
+                            Spacer(minLength: 24)
+                            
+                            AuthFooterLink(
+                                prompt: "Don\u{2019}t have an account yet?",
+                                link: "Sign Up",
+                                promptColor: .siriusMuted,
+                                linkColor: .siriusAction
+                            ) {
+                                signUpScreen = true
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(minHeight: 52)
-                            .background(Color.siriusSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.siriusFieldBorder, lineWidth: 1.5))
+                            .padding(.top, 8)
                         }
                     }
-                    
-                    AuthFooterLink(prompt: "Don\u{2019}t have an account yet?", link: "Sign Up") {
-                        signUpScreen = true
-                    }
-                    .padding(.top, 43)
-                    .padding(.bottom, 40)
+                    .frame(maxWidth: .infinity, minHeight: geo.size.height)     // lets the panel stretch to the bottom
                 }
-                .frame(maxWidth: .infinity)
             }
-            .ignoresSafeArea(.container, edges: .top)
+            .ignoresSafeArea(.container)
             .scrollDismissesKeyboard(.interactively)
             .appBg()
             .navigationBarBackButtonHidden(true)

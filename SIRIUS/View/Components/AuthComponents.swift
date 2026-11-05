@@ -11,9 +11,7 @@
 
 import SwiftUI
 
-// Logo + "SIRIUS" + tagline, positioned like the Final frames (logo top 104, panel top 392)
 struct AuthBrandHeader: View {
-    
     var body: some View {
         VStack(spacing: 0) {
             Image("sirius-logo")
@@ -40,14 +38,13 @@ struct AuthBrandHeader: View {
     }
 }
 
-// White rounded panel (radius 24, shadow 0/8/24) with the heading block on top
 struct AuthPanel<Content: View>: View {
-    
     let heading: String
     let subheading: String
+    var fillsScreenBottom: Bool = false
     @ViewBuilder var content: () -> Content
     
-    var body: some View {
+    private var inner: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(heading)
@@ -61,19 +58,35 @@ struct AuthPanel<Content: View>: View {
             
             content()
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 22)
-        .padding(.bottom, 20)
-        .fluidFrame(width: 365, alignment: .leading)
-        .background(Color.siriusSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: Color(red: 0, green: 26/255, blue: 51/255).opacity(0.25), radius: 12, x: 0, y: 8)
+    }
+    
+    var body: some View {
+        if fillsScreenBottom {
+            inner
+                .frame(width: 325, alignment: .leading)
+                .padding(.top, 28)
+                .padding(.bottom, 40)
+                .frame(maxWidth: 375, maxHeight: 425, alignment: .top)
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.siriusSurface)
+                        .shadow(color: Color(red: 0, green: 26/255, blue: 51/255).opacity(0.25), radius: 12, x: 0, y: 8)
+                )
+        } else {
+            inner
+                .padding(.horizontal, 20)
+                .padding(.top, 22)
+                .padding(.bottom, 20)
+                .fluidFrame(width: 365, alignment: .leading)
+                .background(Color.siriusSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .shadow(color: Color(red: 0, green: 26/255, blue: 51/255).opacity(0.25), radius: 12, x: 0, y: 8)
+        }
     }
 }
 
-// Labeled field used inside AuthPanel (325 wide, 35 high, radius 14)
+
 struct AuthField: View {
-    
     let title: String
     let placeholder: String
     @Binding var text: String
@@ -85,7 +98,7 @@ struct AuthField: View {
             Text(title)
                 .scaledFont(size: 13, weight: .medium)
                 .foregroundStyle(Color.siriusInk)
-                .padding(.leading, 23)
+                .padding(.leading, 11)
             
             Group {
                 if isSecure {
@@ -139,21 +152,22 @@ struct AuthButton: View {
 
 // "Don't have an account yet?  Sign Up" footer link
 struct AuthFooterLink: View {
-    
     let prompt: String
     let link: String
+    var promptColor: Color = .white
+    var linkColor: Color = .siriusLink
     let action: () -> Void
     
     var body: some View {
         HStack(spacing: 5) {
             Text(prompt)
                 .scaledFont(size: 15)
-                .foregroundStyle(Color.white)
+                .foregroundStyle(promptColor)
             Button(action: action) {
                 Text(link)
                     .scaledFont(size: 15, weight: .medium)
                     .underline()
-                    .foregroundStyle(Color.siriusLink)
+                    .foregroundStyle(linkColor)
             }
         }
     }
@@ -212,44 +226,5 @@ struct SignUpPanel<Content: View>: View {
         )
         .padding(.top, 82)
         .padding(.bottom, 40)
-    }
-}
-
-// Multi-colour Google "G" drawn in SwiftUI (no image asset needed)
-struct GoogleLogo: View {
-    
-    var size: CGFloat = 22
-    
-    private let red = Color(red: 234/255, green: 67/255, blue: 53/255)
-    private let yellow = Color(red: 251/255, green: 188/255, blue: 5/255)
-    private let green = Color(red: 52/255, green: 168/255, blue: 83/255)
-    private let blue = Color(red: 66/255, green: 133/255, blue: 244/255)
-    
-    var body: some View {
-        let line = size * 0.2
-        let box = size - line
-        
-        ZStack {
-            // trim starts at 3 o'clock and runs clockwise: 0.25 = bottom, 0.5 = left, 0.75 = top
-            arc(from: 0.0, to: 0.12, color: blue, line: line)        // right, below the bar
-            arc(from: 0.12, to: 0.37, color: green, line: line)      // bottom
-            arc(from: 0.37, to: 0.55, color: yellow, line: line)     // lower left
-            arc(from: 0.55, to: 0.80, color: red, line: line)        // upper left + top
-            arc(from: 0.80, to: 0.875, color: red, line: line)       // top right tip
-            // horizontal bar of the G
-            Rectangle()
-                .fill(blue)
-                .frame(width: box / 2 + line / 2, height: line)
-                .offset(x: box / 4 - line / 4 + line / 2, y: 0)
-        }
-        .frame(width: box, height: box)
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
-    }
-    
-    private func arc(from: Double, to: Double, color: Color, line: CGFloat) -> some View {
-        Circle()
-            .trim(from: from, to: to)
-            .stroke(color, style: StrokeStyle(lineWidth: line, lineCap: .butt))
     }
 }

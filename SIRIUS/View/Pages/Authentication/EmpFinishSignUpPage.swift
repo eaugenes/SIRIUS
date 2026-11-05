@@ -23,7 +23,14 @@ struct EmpFinishSignUpPage: View {
             VStack(spacing: 0) {
                 AuthBrandHeader()
                 
-                AuthPanel(heading: "Create your account", subheading: "Choose a password for \(infoController.employer.email)") {
+                AuthPanel(heading: "Create your account", subheading: "Enter your email and choose a password") {
+                    AuthField(
+                       title: "Email Address",
+                       placeholder: "e.g., 123@gmail.com",
+                       text: $infoController.employer.email,
+                       keyboardType: .emailAddress
+                    )
+                    
                     AuthField(
                         title: "Password",
                         placeholder: "Enter your password",

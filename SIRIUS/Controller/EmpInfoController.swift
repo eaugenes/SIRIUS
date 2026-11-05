@@ -73,33 +73,36 @@ final class EmpInfoController: ObservableObject {
         return trimmed.isEmpty ? "—" : trimmed
     }
     
+    
     // MARK: - Profile picture
     
     func updateProfile(_ image: UIImage) {
         employer.profilePicture = image
     }
     
-    // MARK: - Sign up (3 steps)
     
-    // Step 1: Personal Information
+    // MARK: - Sign up
+    
     func validatePersonalInfo() -> Bool {
         if employer.firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             signUpError = "Please enter your first name."
             return false
         }
+        
         if employer.lastName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             signUpError = "Please enter your last name."
             return false
         }
-        if !isValidEmail(employer.email) {
-            signUpError = "Please enter a valid email address."
+        
+        if employer.birthDate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            signUpError = "Please select your date of birth."
             return false
         }
+        
         signUpError = nil
         return true
     }
     
-    // Step 2: Company Information (also used when editing from the Account screen)
     func validateCompanyInfo() -> Bool {
         if company.cmpName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             signUpError = "Please enter your company name."
@@ -114,7 +117,6 @@ final class EmpInfoController: ObservableObject {
         return true
     }
     
-    // Step 3: Finish Sign Up (password only; the email from step 1 is the login). Returns true when registration succeeded.
     @MainActor
     func completeSignUp(confirmPassword: String) async -> Bool {
         switch await auth.registerEmployer(employer, company: company, password: employer.password, confirm: confirmPassword) {
