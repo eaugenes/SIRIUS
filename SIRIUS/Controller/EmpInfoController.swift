@@ -48,9 +48,7 @@ final class EmpInfoController: ObservableObject {
         let company = self.company
         Task { await auth.updateEmployer(employer, company: company) }
     }
-    
-    // MARK: - Display helpers
-    
+  
     var displayCompanyName: String {
         let name = company.cmpName.trimmingCharacters(in: .whitespacesAndNewlines)
         return name.isEmpty ? "Your Company" : name
@@ -60,21 +58,16 @@ final class EmpInfoController: ObservableObject {
         String(displayCompanyName.prefix(1)).uppercased()
     }
     
-    // Company email first, then the employer's personal email
     var displayEmail: String {
         let companyEmail = company.email.trimmingCharacters(in: .whitespacesAndNewlines)
         if !companyEmail.isEmpty { return companyEmail }
         return employer.email.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
-    // Shows "—" for empty fields on the Account screen
     func displayValue(_ value: String) -> String {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "—" : trimmed
     }
-    
-    
-    // MARK: - Profile picture
     
     func updateProfile(_ image: UIImage) {
         employer.profilePicture = image
@@ -84,6 +77,10 @@ final class EmpInfoController: ObservableObject {
     // MARK: - Sign up
     
     func validatePersonalInfo() -> Bool {
+        if employer.profilePicture == nil {
+            signUpError = "Please choose a profile picture."
+            return false
+        }
         if isBlank(employer.firstName) {
             signUpError = "Please enter your first name."
             return false

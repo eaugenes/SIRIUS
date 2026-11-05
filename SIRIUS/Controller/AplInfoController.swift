@@ -50,6 +50,7 @@ class AplInfoController: ObservableObject{
     func validateProfile(coreLanguageText: String, city: City?, isSignUp: Bool = false) -> Bool {
         func isBlank(_ s: String) -> Bool { s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         
+        if isSignUp && applicant.profilePicture == nil { signUpError = "Please choose a profile picture."; return false }
         if isBlank(applicant.firstName) { signUpError = "Please enter your first name."; return false }
         if isBlank(applicant.lastName)  { signUpError = "Please enter your last name.";  return false }
         

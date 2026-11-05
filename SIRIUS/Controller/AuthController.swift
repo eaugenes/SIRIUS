@@ -63,6 +63,7 @@ final class AuthController: ObservableObject {
             profile.password = ""                       // never kept
             profile.username = email.split(separator: "@").first.map(String.init) ?? ""
             try await SupabaseStore.saveApplicant(profile)
+            if let image = applicant.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: result.userID) }
             
             let account = UserAccount(id: result.userID, role: .applicant, email: email, applicant: profile)
             currentAccount = account
@@ -90,6 +91,7 @@ final class AuthController: ObservableObject {
             var companyProfile = company
             companyProfile.id = result.userID.uuidString.lowercased()      // the company id IS the employer's user id
             try await SupabaseStore.saveEmployer(profile, company: companyProfile, userID: result.userID)
+            if let image = employer.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: result.userID) }
             
             let account = UserAccount(id: result.userID, role: .employer, email: email, employer: profile, company: companyProfile)
             currentAccount = account
@@ -136,6 +138,7 @@ final class AuthController: ObservableObject {
             var employer = loaded?.0 ?? Employer()
             employer.id = profile.id
             employer.email = email
+            employer.profilePicture = await SupabaseStore.downloadAvatar(userID: profile.id)
             var company = loaded?.1 ?? Company()
             company.id = profile.id.uuidString.lowercased()
             return UserAccount(id: profile.id, role: .employer, email: email, employer: employer, company: company)
@@ -143,6 +146,7 @@ final class AuthController: ObservableObject {
         var applicant = try await SupabaseStore.fetchApplicant(id: profile.id, email: email) ?? AplInfoController.blankApplicant()
         applicant.id = profile.id
         applicant.email = email
+        applicant.profilePicture = await SupabaseStore.downloadAvatar(userID: profile.id)
         return UserAccount(id: profile.id, role: .applicant, email: email, applicant: applicant)
     }
     
@@ -159,6 +163,7 @@ final class AuthController: ObservableObject {
     func updateApplicant(_ applicant: Applicant) async -> Bool {
         do {
             try await SupabaseStore.saveApplicant(applicant)
+            if let image = applicant.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: applicant.id) }
             if var account = currentAccount, account.applicant?.id == applicant.id {
                 var profile = applicant
                 profile.password = ""

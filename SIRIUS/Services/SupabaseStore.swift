@@ -9,6 +9,7 @@
 // Table and column names match supabase_schema.sql + supabase_migration_2.sql.
 
 import Foundation
+import UIKit
 import Supabase
 
 // MARK: - Rows
@@ -351,6 +352,39 @@ enum SupabaseStore {
         guard let employerRow = employers.first, let companyRow = companies.first else { return nil }
         return (employerRow.employer(email: email), companyRow.company())
     }
+    
+    // Profile pictures (Storage bucket "avatars", one file per user: <user id>/profile.jpg)
+        
+        private static func avatarPath(for userID: UUID) -> String {
+            "\(userID.uuidString.lowercased())/profile.jpg"       // lowercase: the storage policy compares it to auth.uid()
+        }
+        
+        // Shrinks the photo (max 512 px) and saves it as JPEG
+        private static func avatarData(_ image: UIImage) -> Data? {
+            let longest = max(image.size.width, image.size.height)
+            guard longest > 0 else { return nil }
+            let scale = min(1, 512 / longest)
+            let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+                image.draw(in: CGRect(origin: .zero, size: size))
+            }
+            return resized.jpegData(compressionQuality: 0.8)
+        }
+        
+        static func uploadAvatar(_ image: UIImage, userID: UUID) async throws {
+            guard let data = avatarData(image) else { return }
+            try await db.storage
+                .from("avatars")
+                .upload(avatarPath(for: userID), data: data, options: FileOptions(contentType: "image/jpeg", upsert: true))
+        }
+        
+        // nil when the user has no picture yet
+        static func downloadAvatar(userID: UUID) async -> UIImage? {
+            guard let data = try? await db.storage.from("avatars").download(path: avatarPath(for: userID)) else { return nil }
+            return UIImage(data: data)
+        }
     
     // MARK: Board (jobs, applications, interviews)
     
