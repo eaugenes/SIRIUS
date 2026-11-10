@@ -12,7 +12,8 @@ import SwiftUI
 struct AplJobDiscoveryPage: View {
     
     @EnvironmentObject private var jobsController: AplJobsController
-    @State private var selectedJobID: String?           // pushes that job's details
+    @State private var selectedJobID: String?
+    @State private var isApplying = false
     
     var body: some View {
         NavigationStack{
@@ -52,6 +53,26 @@ struct AplJobDiscoveryPage: View {
                 .background(Color.white.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 15))
                 .padding(.top, 17)
+                
+                if jobsController.pendingCount > 0 {
+                    SiriusButton(
+                        title: isApplying ? "Applying\u{2026}" : "Apply to \(jobsController.nextBatchCount) more",
+                        width: 343
+                    ) {
+                        guard !isApplying else { return }
+                        isApplying = true
+                        Task {
+                            await jobsController.applyToMore()
+                            isApplying = false
+                        }
+                    }
+                    .padding(.top, 12)
+
+                    Text("\(jobsController.pendingCount) qualified job(s) not applied to yet")
+                        .scaledFont(size: 11)
+                        .foregroundStyle(Color.white.opacity(0.85))
+                        .padding(.top, 6)
+                }
                 
                 if jobsController.listings.isEmpty {
                     emptyState

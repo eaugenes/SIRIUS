@@ -178,6 +178,7 @@ final class AuthController: ObservableObject {
     func signOut() {
         currentAccount = nil
         JobBoard.shared.clear()
+        InterviewReminders.cancelAll()
         Task { try? await SupabaseAuthService.signOut() }
     }
     

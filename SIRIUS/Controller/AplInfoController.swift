@@ -115,7 +115,7 @@ class AplInfoController: ObservableObject{
             applicant.password = ""
             isRegistered = true
             signUpError = nil
-            await board.autoApply(applicant: applicant)
+            await board.applyToQualifiedJobs(applicant: applicant)
             return true
         }
     }
@@ -129,7 +129,7 @@ class AplInfoController: ObservableObject{
             signUpError = AccountError.saveFailed.errorDescription
             return false
         }
-        await board.autoApply(applicant: applicant)
+        await board.reload(silent: true)
         return true
     }
     

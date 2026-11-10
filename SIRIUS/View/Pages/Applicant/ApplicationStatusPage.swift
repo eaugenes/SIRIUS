@@ -70,7 +70,7 @@ struct ApplicationStatusPage: View {
                             Button {
                                 selectedApplicationID = app.id
                             } label: {
-                                JobApplicationCard(application: app)
+                                JobApplicationCard(application: app, showsNewBadge: controller.hasNewInterview(app))
                             }
                             .buttonStyle(.plain)
                         }
@@ -80,6 +80,7 @@ struct ApplicationStatusPage: View {
                     .padding(.bottom, 120)          // room for the bottom bar
                 }
                 .scrollIndicators(.hidden)
+                .refreshable { await JobBoard.shared.reload(silent: true) }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

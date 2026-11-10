@@ -72,6 +72,8 @@ struct ApplicationDetailsPage: View {
         .scrollIndicators(.hidden)
         .appBg()
         .navigationBarBackButtonHidden(true)
+        .onAppear { markSeen() }
+        .onChange(of: application?.interview?.date) { _, _ in markSeen() }
         .alert("Withdraw this application?", isPresented: $confirmWithdraw) {
             Button("Withdraw", role: .destructive) {
                 if let application { controller.withdraw(application) }
@@ -81,6 +83,10 @@ struct ApplicationDetailsPage: View {
         } message: {
             Text("The employer will no longer see your application. You won't be applied to this job again automatically.")
         }
+    }
+    
+    private func markSeen() {
+        if let application { controller.markInterviewSeen(application) }
     }
     
     private func panel<Content: View>(@ViewBuilder content: () -> Content) -> some View {

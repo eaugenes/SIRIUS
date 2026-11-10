@@ -105,7 +105,10 @@ struct MainTabView: View {
         .environmentObject(jobsController)
         .environmentObject(applicationsController)
         
-        NavigationBar(selectedTab: $aplTab)
+        NavigationBar(
+            selectedTab: $aplTab,
+            badges: [.applications: applicationsController.newInterviewCount]
+        )
             .padding(10)
     }
     

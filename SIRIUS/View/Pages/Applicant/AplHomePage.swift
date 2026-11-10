@@ -67,7 +67,7 @@ struct AplHomePage: View {
                             .fluidFrame(width: 333)
                     } else {
                         ForEach(controller.allApplications.prefix(5)) { app in
-                            JobApplicationCard(application: app)
+                            JobApplicationCard(application: app, showsNewBadge: controller.hasNewInterview(app))
                         }
                     }
                 }
@@ -78,6 +78,7 @@ struct AplHomePage: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .ignoresSafeArea(.container, edges: .top)
+        .refreshable { await JobBoard.shared.reload(silent: true) }
         .appBg()
         .navigationBarBackButtonHidden(true)
     }

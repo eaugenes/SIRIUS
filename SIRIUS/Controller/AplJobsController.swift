@@ -78,4 +78,16 @@ final class AplJobsController: ObservableObject {
     }
     
     var topListing: AplJobListing? { allListings.first { $0.breakdown.isEligible } }
+    
+    // Qualified jobs (60%+) the applicant has not applied to yet
+    var pendingCount: Int { board.pendingQualifiedJobs(for: info.applicant).count }
+
+    // How many the next tap of the button will send
+    var nextBatchCount: Int { min(pendingCount, JobBoard.applyBatchSize) }
+
+    @MainActor
+    @discardableResult
+    func applyToMore() async -> Int {
+        await board.applyToQualifiedJobs(applicant: info.applicant)
+    }
 }

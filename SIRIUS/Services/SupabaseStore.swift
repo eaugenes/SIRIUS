@@ -5,14 +5,9 @@
 //  Created by Mac-LAB on 10/27/26.
 //
 
-// All database reads / writes for accounts, jobs and applications.
-// Table and column names match supabase_schema.sql + supabase_migration_2.sql.
-
 import Foundation
 import UIKit
 import Supabase
-
-// MARK: - Rows
 
 struct ApplicantRow: Codable, Sendable {
     var id: UUID
@@ -295,6 +290,11 @@ private struct JobParam: Encodable, Sendable {
     var p_job: UUID
 }
 
+private struct ApplyParams: Encodable, Sendable {
+    var p_jobs: [UUID]
+    var p_scores: [Int]
+}
+
 private struct WithdrawParam: Encodable, Sendable {
     var p_id: UUID
 }
@@ -388,8 +388,7 @@ enum SupabaseStore {
     
     // MARK: Board (jobs, applications, interviews)
     
-    // Row Level Security decides what each user gets: an applicant sees active jobs and their own
-    // applications; an employer sees their own jobs and the applications on them.
+    // Row Level Security decides what each user gets: an applicant sees active jobs and their own applications; an employer sees their own jobs and the applications on them.
     static func fetchBoard() async throws -> (jobs: [Job], applications: [ApplicationRecord], interviews: [Interview]) {
         let jobRows: [JobRow] = try await db.from("jobs")
             .select("*, companies(name)")
@@ -470,18 +469,17 @@ enum SupabaseStore {
         try await db.from("jobs").delete().eq("id", value: id).execute()
     }
     
-    // Server-side matching: applies every matching applicant (and refreshes scores) for one job
-    static func autoApply(jobID: String) async throws {
-        guard let id = UUID(uuidString: jobID) else { return }
-        try await db.rpc("auto_apply_for_job", params: JobParam(p_job: id)).execute()
-    }
-    
-    // Server-side matching for the signed-in applicant against every active job
-    static func autoApplyCurrentApplicant() async throws {
-        try await db.rpc("auto_apply_for_applicant").execute()
-    }
-    
     // MARK: Applications
+    
+    // Applies the signed-in applicant to the chosen jobs (the server allows at most 10 per call)
+    static func applyToJobs(_ picks: [(jobID: String, score: Int)]) async throws {
+        let pairs = picks.compactMap { pick -> (UUID, Int)? in
+            guard let id = UUID(uuidString: pick.jobID) else { return nil }
+            return (id, pick.score)
+        }
+        guard !pairs.isEmpty else { return }
+        try await db.rpc("apply_to_jobs", params: ApplyParams(p_jobs: pairs.map { $0.0 }, p_scores: pairs.map { $0.1 })).execute()
+    }
     
     static func setInterview(recordID: UUID, date: Date, location: String, message: String) async throws {
         let update = InterviewUpdate(

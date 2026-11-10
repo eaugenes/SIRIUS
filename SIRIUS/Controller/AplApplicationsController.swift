@@ -8,11 +8,13 @@
 import Foundation
 import Combine
 
-// The applicant's applications. They are created automatically by the JobBoard
-// when the applicant matches a job at 60% or more.
+// The applicant's applications. They are created when the applicant applies
+// (the first batch at sign up, then "Apply to 10 more" on the Jobs tab).
 class AplApplicationsController: ObservableObject {
     @Published var selectedStatus: ApplicationStatus = .all
     @Published private(set) var allApplications: [JobApplication] = []
+    // Interviews the applicant has already opened (recordID -> what they saw), kept on this phone
+    @Published private(set) var seenInterviews: [String: String] = [:]
     
     private let applicantID: UUID?
     private let board: JobBoard
@@ -21,6 +23,7 @@ class AplApplicationsController: ObservableObject {
     init(applicantID: UUID? = nil, board: JobBoard = .shared) {
         self.applicantID = applicantID
         self.board = board
+        seenInterviews = UserDefaults.standard.dictionary(forKey: Self.seenKey(applicantID)) as? [String: String] ?? [:]
         allApplications = AplApplicationsController.makeApplications(
             jobs: board.jobs, records: board.applications, applicantID: applicantID, interviews: board.interviews
         )
@@ -33,7 +36,40 @@ class AplApplicationsController: ObservableObject {
                 )
             }
             .store(in: &cancellables)
+        
+        // Keep the 1-hour reminders in step with the interviews (after the data has really loaded)
+        $allApplications
+            .combineLatest(board.$didLoad)
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+            .sink { applications, didLoad in
+                if didLoad { InterviewReminders.sync(applications) }
+            }
+            .store(in: &cancellables)
     }
+    
+    // MARK: - "New interview" badge
+    
+    private static func seenKey(_ id: UUID?) -> String { "seenInterviews.\(id?.uuidString ?? "none")" }
+    
+    // Changes when the employer sends or reschedules (date, place or message)
+    private static func signature(_ interview: Interview) -> String {
+        "\(Int(interview.date.timeIntervalSince1970))|\(interview.location)|\(interview.message)"
+    }
+    
+    func hasNewInterview(_ application: JobApplication) -> Bool {
+        guard application.status == .interview, let interview = application.interview else { return false }
+        return seenInterviews[application.id.uuidString] != Self.signature(interview)
+    }
+    
+    var newInterviewCount: Int { allApplications.filter(hasNewInterview).count }
+    
+    func markInterviewSeen(_ application: JobApplication) {
+        guard application.status == .interview, let interview = application.interview else { return }
+        seenInterviews[application.id.uuidString] = Self.signature(interview)
+        UserDefaults.standard.set(seenInterviews, forKey: Self.seenKey(applicantID))
+    }
+    
+    // MARK: - Applications
     
     static func status(for record: ApplicationRecord) -> ApplicationStatus {
         if record.isWithdrawn { return .withdrawn }

@@ -22,6 +22,7 @@ extension EmpNavigationTab: SiriusNavigationTab {}
 // Works for any tab enum conforming to SiriusNavigationTab.
 struct NavigationBar<Tab: SiriusNavigationTab>: View {
     @Binding var selectedTab: Tab
+    var badges: [Tab: Int] = [:]
     @Namespace private var animation
     
     var body: some View {
@@ -49,6 +50,16 @@ struct NavigationBar<Tab: SiriusNavigationTab>: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .fill(Color.siriusHover)
                                 .matchedGeometryEffect(id: "siriusActivePill", in: animation)
+                        }
+                    }
+                    .overlay(alignment: .topTrailing) {
+                        if let count = badges[tab], count > 0 {
+                            Text(count > 9 ? "9+" : "\(count)")
+                                .scaledFont(size: 9, weight: .bold)
+                                .foregroundStyle(Color.white)
+                                .frame(minWidth: 16, minHeight: 16)
+                                .background(Circle().fill(Color.red))
+                                .offset(x: -6, y: 2)
                         }
                     }
                 }

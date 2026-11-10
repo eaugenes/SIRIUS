@@ -10,6 +10,7 @@ import SwiftUI
 // "Qualified Card" in My Applications / Recent Activity (Figma "Final": 333 x 88)
 struct JobApplicationCard: View {
     let application: JobApplication
+    var showsNewBadge: Bool = false
     
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -49,10 +50,20 @@ struct JobApplicationCard: View {
                 .background(Color.siriusPanel)
                 .clipShape(RoundedRectangle(cornerRadius: 15))
                 .offset(x: 250, y: 43)
+            
+            if showsNewBadge {
+                Text("New interview")
+                    .scaledFont(size: 8, weight: .bold)
+                    .foregroundStyle(Color.white)
+                    .frame(width: 70, height: 16)
+                    .background(Color.red)
+                    .clipShape(RoundedRectangle(cornerRadius: 15))
+                    .offset(x: 250, y: 66)
+            }
         }
         .fluidFrame(width: 333, height: 88)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(application.role) at \(application.company), applied on \(application.dateApplied), \(application.matchPercentage) percent match, \(application.status.rawValue)")
+        .accessibilityLabel("\(application.role) at \(application.company), applied on \(application.dateApplied), \(application.matchPercentage) percent match, \(application.status.rawValue)\(showsNewBadge ? ", new interview" : "")")
         .accessibilityHint("Opens application details")
     }
 }

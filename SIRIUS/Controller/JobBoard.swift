@@ -15,6 +15,7 @@ final class JobBoard: ObservableObject {
     @Published private(set) var jobs: [Job] = []
     @Published private(set) var applications: [ApplicationRecord] = []
     @Published private(set) var interviews: [Interview] = []
+    @Published private(set) var didLoad = false              // true after the first successful load
     
     // Loading / error state for the lists (screens show a spinner or a retry card)
     @Published private(set) var loadState: LoadState = .loaded
@@ -58,6 +59,7 @@ final class JobBoard: ObservableObject {
             applications = board.applications
             interviews = board.interviews
             loadState = .loaded
+            didLoad = true
         } catch {
             if silent { return }
             loadState = .failed(SupabaseAuthService.accountError(from: error).errorDescription ?? "Couldn't load your data.")
@@ -72,6 +74,7 @@ final class JobBoard: ObservableObject {
         applications = []
         interviews = []
         loadState = .loaded
+        didLoad = false
         syncError = nil
     }
     
@@ -131,30 +134,24 @@ final class JobBoard: ObservableObject {
     
     // MARK: - Jobs
     
-    // Adds a job. The server then applies every matching applicant (>= 60%).
     func addJob(_ job: Job) {
         jobs.insert(job, at: 0)
-        remote {
-            try await SupabaseStore.insertJob(job)
-            try await SupabaseStore.autoApply(jobID: job.jobID)
-        }
+        remote { try await SupabaseStore.insertJob(job) }
     }
     
-    // Replaces an edited job (same jobID). The server refreshes scores and applies any applicant who now matches.
     func updateJob(_ job: Job) {
         guard let index = jobs.firstIndex(where: { $0.jobID == job.jobID }) else { return }
         var merged = job
-        merged.isActive = jobs[index].isActive          // status changes only through setActive
+        merged.isActive = jobs[index].isActive
         merged.datePosted = jobs[index].datePosted
         merged.companyID = jobs[index].companyID
         merged.companyName = jobs[index].companyName
-        merged.isFilled = jobs[index].isFilled
-        // Raising the maximum above the current hires lifts the "filled" flag (job stays inactive until reactivated)
+        merged.isFilled = jobs[index].isFilled          // Raising the maximum above the current hires lifts the "filled" flag (job stays inactive until reactivated)
         if merged.isFilled && count(forJob: merged.jobID, status: .hired) < merged.maxHire {
             merged.isFilled = false
         }
+        
         jobs[index] = merged
-        // Stored percentages follow the new requirements
         for position in applications.indices where applications[position].jobID == merged.jobID {
             let record = applications[position]
             applications[position].breakdown = Matching.evaluate(record.matchProfile, against: merged.matchRequirements)
@@ -162,7 +159,6 @@ final class JobBoard: ObservableObject {
         let saved = merged
         remote {
             try await SupabaseStore.updateJob(saved)
-            try await SupabaseStore.autoApply(jobID: saved.jobID)
         }
     }
     
@@ -177,7 +173,6 @@ final class JobBoard: ObservableObject {
         jobs[index].isActive = isActive
         remote {
             try await SupabaseStore.setJobStatus(jobID: jobID, isActive: isActive, isFilled: false)
-            if isActive { try await SupabaseStore.autoApply(jobID: jobID) }
         }
         return true
     }
@@ -190,18 +185,41 @@ final class JobBoard: ObservableObject {
         remote { try await SupabaseStore.deleteJob(jobID: jobID) }
     }
     
-    // MARK: - Automatic applications
-    
-    // Asks the server to apply the signed-in applicant to every active job they match at 60% or more
-    // (and to refresh the stored scores after a profile edit), then reloads.
+    // MARK: - Controlled applications
+
+    static let applyBatchSize = 10
+
+    // Active jobs the applicant qualifies for (>= 60%) but has no application for yet.
+    // Withdrawn / removed applications count as "has one", so they are never re-applied.
+    // Best match first; same match: preferred location first, then newest.
+    func pendingQualifiedJobs(for applicant: Applicant) -> [(job: Job, breakdown: MatchBreakdown)] {
+        func locationRank(_ b: MatchBreakdown) -> Int { (b.locationMatches ?? false) ? 0 : 1 }
+        return activeJobs()
+            .filter { !hasApplied(applicantID: applicant.id, jobID: $0.jobID) }
+            .map { (job: $0, breakdown: breakdown(for: applicant, job: $0)) }
+            .filter { $0.breakdown.isEligible }
+            .sorted {
+                if $0.breakdown.total != $1.breakdown.total { return $0.breakdown.total > $1.breakdown.total }
+                if locationRank($0.breakdown) != locationRank($1.breakdown) { return locationRank($0.breakdown) < locationRank($1.breakdown) }
+                return $0.job.datePosted > $1.job.datePosted
+            }
+    }
+
+    // Applies to the next `limit` best qualified jobs. Returns how many were sent.
     @MainActor
-    func autoApply(applicant: Applicant) async {
+    @discardableResult
+    func applyToQualifiedJobs(applicant: Applicant, limit: Int = JobBoard.applyBatchSize) async -> Int {
+        await reload(silent: true)          // fresh jobs + applications first (also needed right after sign up)
+        let picks = Array(pendingQualifiedJobs(for: applicant).prefix(limit))
+        guard !picks.isEmpty else { return 0 }
         do {
-            try await SupabaseStore.autoApplyCurrentApplicant()
+            try await SupabaseStore.applyToJobs(picks.map { (jobID: $0.job.jobID, score: $0.breakdown.total) })
         } catch {
-            syncError = "Couldn't check your matches. Check your connection and try again."
+            syncError = "Couldn't send your applications. Check your connection and try again."
+            return 0
         }
         await reload(silent: true)
+        return picks.count
     }
     
     // MARK: - Employer actions
