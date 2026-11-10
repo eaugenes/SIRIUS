@@ -8,7 +8,6 @@
 import SwiftUI
 import UIKit           // UIKeyboardType / UIImage
 
-// Employer "Profile" tab (Figma: Account (Employer))
 struct EmpAccountPage: View {
     
     @EnvironmentObject private var infoController: EmpInfoController

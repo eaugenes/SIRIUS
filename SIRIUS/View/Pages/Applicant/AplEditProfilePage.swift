@@ -28,8 +28,10 @@ struct AplEditProfilePage: View {
                 .padding(.top, 12)
                 .padding(.bottom, 20)
                 
-                ProfileImagePicker(image: $applicantController.applicant.profilePicture)
-                    .padding(.bottom, 10)
+                ProfileImagePicker(
+                    image: $applicantController.applicant.profilePicture,
+                    defaultAvatar: applicantController.applicant.firstName.defaultAvatar
+                )
                 
                 AppTextField(title: "First Name", placeholder: "Enter your first name", text: $applicantController.applicant.firstName)
                 AppTextField(title: "Middle Name", placeholder: "Enter your middle name", text: $applicantController.applicant.middleName)

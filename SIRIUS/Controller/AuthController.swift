@@ -48,24 +48,48 @@ final class AuthController: ObservableObject {
     // MARK: - Sign up
     
     @MainActor
-    func registerApplicant(_ applicant: Applicant, password: String, confirm: String) async -> Result<UserAccount, AccountError> {
+    func sendSignUpCode(email: String, password: String, confirm: String) async -> Result<Void, AccountError> {
+        if let error = validateCredentials(email: email, password: password, confirm: confirm) {
+            return .failure(error)
+        }
+        do {
+            try await SupabaseAuthService.sendSignUpCode(email: Self.normalizedEmail(email), password: password)
+            return .success(())
+        } catch {
+            return .failure(SupabaseAuthService.accountError(from: error))
+        }
+    }
+
+    @MainActor
+    func resendSignUpCode(email: String) async -> Result<Void, AccountError> {
+        do {
+            try await SupabaseAuthService.resendSignUpCode(email: Self.normalizedEmail(email))
+            return .success(())
+        } catch {
+            return .failure(SupabaseAuthService.accountError(from: error))
+        }
+    }
+    
+    @MainActor
+    func registerApplicant(_ applicant: Applicant, password: String, confirm: String, code: String) async -> Result<UserAccount, AccountError> {
         if let error = validateCredentials(email: applicant.email, password: password, confirm: confirm) {
             return .failure(error)
         }
+        let token = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        if token.isEmpty { return .failure(.missingCode) }
         let email = Self.normalizedEmail(applicant.email)
         do {
-            let result = try await SupabaseAuthService.signUp(email: email, password: password, role: .applicant)
-            if result.needsEmailConfirmation { return .failure(.confirmEmail) }
-            
+            let userID = try await SupabaseAuthService.verifySignUpCode(email: email, code: token, role: .applicant)
+
             var profile = applicant
-            profile.id = result.userID                  // the applicant id IS the Supabase user id
+            profile.id = userID                          // the applicant id IS the Supabase user id
             profile.email = email
-            profile.password = ""                       // never kept
+            profile.password = ""                        // never kept
             profile.username = email.split(separator: "@").first.map(String.init) ?? ""
             try await SupabaseStore.saveApplicant(profile)
-            if let image = applicant.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: result.userID) }
-            
-            let account = UserAccount(id: result.userID, role: .applicant, email: email, applicant: profile)
+            if let image = applicant.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: userID) }
+
+            let account = UserAccount(id: userID, role: .applicant, email: email, applicant: profile)
             currentAccount = account
             return .success(account)
         } catch {
@@ -74,26 +98,27 @@ final class AuthController: ObservableObject {
     }
     
     @MainActor
-    func registerEmployer(_ employer: Employer, company: Company, password: String, confirm: String) async -> Result<UserAccount, AccountError> {
+    func registerEmployer(_ employer: Employer, company: Company, password: String, confirm: String, code: String) async -> Result<UserAccount, AccountError> {
         if let error = validateCredentials(email: employer.email, password: password, confirm: confirm) {
             return .failure(error)
         }
+        let token = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        if token.isEmpty { return .failure(.missingCode) }
         let email = Self.normalizedEmail(employer.email)
         do {
-            let result = try await SupabaseAuthService.signUp(email: email, password: password, role: .employer)
-            if result.needsEmailConfirmation { return .failure(.confirmEmail) }
-            
+            let userID = try await SupabaseAuthService.verifySignUpCode(email: email, code: token, role: .employer)
+
             var profile = employer
-            profile.id = result.userID
+            profile.id = userID
             profile.email = email
             profile.password = ""
             profile.username = email.split(separator: "@").first.map(String.init) ?? ""
             var companyProfile = company
-            companyProfile.id = result.userID.uuidString.lowercased()      // the company id IS the employer's user id
-            try await SupabaseStore.saveEmployer(profile, company: companyProfile, userID: result.userID)
-            if let image = employer.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: result.userID) }
-            
-            let account = UserAccount(id: result.userID, role: .employer, email: email, employer: profile, company: companyProfile)
+            companyProfile.id = userID.uuidString.lowercased()      // the company id IS the employer's user id
+            try await SupabaseStore.saveEmployer(profile, company: companyProfile, userID: userID)
+            if let image = employer.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: userID) }
+
+            let account = UserAccount(id: userID, role: .employer, email: email, employer: profile, company: companyProfile)
             currentAccount = account
             return .success(account)
         } catch {

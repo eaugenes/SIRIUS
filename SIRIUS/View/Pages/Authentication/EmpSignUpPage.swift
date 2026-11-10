@@ -22,7 +22,8 @@ struct EmpSignUpPage: View {
                 dismiss()
             } content: {
                 ProfileImagePicker(
-                    image: $infoController.employer.profilePicture
+                    image: $infoController.employer.profilePicture,
+                    defaultAvatar: infoController.employer.firstName.defaultAvatar
                 )
                 .padding(.top, 28)
                 

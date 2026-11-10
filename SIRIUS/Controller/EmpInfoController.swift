@@ -139,8 +139,32 @@ final class EmpInfoController: ObservableObject {
     }
     
     @MainActor
-    func completeSignUp(confirmPassword: String) async -> Bool {
-        switch await auth.registerEmployer(employer, company: company, password: employer.password, confirm: confirmPassword) {
+    func sendVerificationCode(confirmPassword: String) async -> Bool {
+        switch await auth.sendSignUpCode(email: employer.email, password: employer.password, confirm: confirmPassword) {
+        case .failure(let error):
+            signUpError = error.errorDescription
+            return false
+        case .success:
+            signUpError = nil
+            return true
+        }
+    }
+
+    @MainActor
+    func resendVerificationCode() async -> Bool {
+        switch await auth.resendSignUpCode(email: employer.email) {
+        case .failure(let error):
+            signUpError = error.errorDescription
+            return false
+        case .success:
+            signUpError = nil
+            return true
+        }
+    }
+
+    @MainActor
+    func completeSignUp(confirmPassword: String, code: String) async -> Bool {      // CHANGED: added `code`
+        switch await auth.registerEmployer(employer, company: company, password: employer.password, confirm: confirmPassword, code: code) {
         case .failure(let error):
             signUpError = error.errorDescription
             return false

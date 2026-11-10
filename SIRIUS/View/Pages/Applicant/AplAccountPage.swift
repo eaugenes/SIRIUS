@@ -109,8 +109,8 @@ struct AplAccountPage: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Image(systemName: "person.fill")
-                    .scaledFont(size: 28)
+                Text(applicant.firstName.defaultAvatar.isEmpty ? "?" : applicant.firstName.defaultAvatar)
+                    .scaledFont(size: 28, weight: .semibold)
                     .foregroundStyle(Color.white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color.siriusPanel)

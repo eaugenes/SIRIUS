@@ -8,8 +8,6 @@
 import SwiftUI
 
 extension View {
-    // The Figma frames are 402 wide. `fluidFrame` keeps that size on a 402 iPhone but lets the view
-    // shrink on narrower phones (iPhone SE / mini) instead of overflowing the screen.
     func fluidFrame(width: CGFloat, height: CGFloat? = nil, alignment: Alignment = .center) -> some View {
         self
             .frame(maxWidth: width, alignment: alignment)
@@ -21,7 +19,6 @@ extension View {
     }
 }
 
-// iPad / large windows: keep the phone layout in a centred column instead of stretching it.
 struct AdaptiveRoot<Content: View>: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @ViewBuilder var content: () -> Content

@@ -17,20 +17,33 @@ struct ProfileRow: Codable {
 }
 
 enum SupabaseAuthService {
-    
     private static var auth: AuthClient { SupabaseService.client.auth }
     
-    // Creates the auth user and its `profiles` row. If email confirmation is ON in Supabase,
-    // there is no session yet and `needsEmailConfirmation` is true.
-    static func signUp(email: String, password: String, role: UserRole) async throws -> (userID: UUID, needsEmailConfirmation: Bool) {
+    static func sendSignUpCode(email: String, password: String) async throws {
         let response = try await auth.signUp(email: email, password: password)
-        let userID = response.user.id
-        if response.session == nil {
-            return (userID, true)
+
+        // Supabase hides duplicates: for an email that is already registered it returns
+        // a "fake" user with NO identities instead of an error.
+        if response.user.identities?.isEmpty == true {
+            throw AccountError.emailTaken
         }
-        try await createProfile(userID: userID, email: email, role: role)
-        return (userID, false)
+        // A session here means "Confirm email" is OFF in Supabase, so no code was sent.
+        if response.session != nil {
+            throw AccountError.server("Email confirmation is off in Supabase. Turn on 'Confirm email' to use OTP.")
+        }
     }
+
+    static func resendSignUpCode(email: String) async throws {
+        try await auth.resend(email: email, type: .signup)
+    }
+
+    static func verifySignUpCode(email: String, code: String, role: UserRole) async throws -> UUID {
+        let response = try await auth.verifyOTP(email: email, token: code, type: .signup)
+        let userID = response.user.id
+        try await createProfile(userID: userID, email: email, role: role)
+        return userID
+    }
+    
     
     static func signIn(email: String, password: String) async throws -> ProfileRow {
         let session = try await auth.signIn(email: email, password: password)
@@ -67,12 +80,13 @@ enum SupabaseAuthService {
             .value
     }
     
-    // Turns a Supabase / network error into a message the app can show
     static func accountError(from error: Error) -> AccountError {
+        if let known = error as? AccountError { return known }          // This passes emailTaken through
         if error is URLError { return .network }
         let text = error.localizedDescription.lowercased()
         if text.contains("invalid login") || text.contains("invalid credentials") { return .invalidCredentials }
         if text.contains("already registered") || text.contains("already been registered") { return .emailTaken }
+        if text.contains("token has expired") || text.contains("otp") || text.contains("invalid token") { return .invalidCode }  // NEW
         if text.contains("not confirmed") { return .confirmEmail }
         if text.contains("password") && (text.contains("least") || text.contains("weak")) { return .weakPassword }
         if text.contains("offline") || text.contains("internet") || text.contains("network") || text.contains("timed out") {

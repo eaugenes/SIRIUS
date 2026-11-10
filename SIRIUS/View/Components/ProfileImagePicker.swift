@@ -12,6 +12,7 @@ import PhotosUI         // for PhotosPickerItem to show the photo the user selec
 struct ProfileImagePicker: View {
     
     @Binding var image: UIImage?
+    var defaultAvatar: String = ""
     @State private var showImageOptions: Bool = false
     @State private var showPhotoAlbum: Bool = false
     @State private var showCamera: Bool = false
@@ -20,11 +21,16 @@ struct ProfileImagePicker: View {
     
     var body: some View {
         ZStack(alignment: .bottomTrailing){
-            Group{      //      Group{} - Invisible container for switching images
+            Group{
                 if let image = image {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
+                        .frame(width: 131, height: 131)
+                } else if !defaultAvatar.isEmpty {
+                    Text(defaultAvatar)
+                        .scaledFont(size: 56, weight: .semibold)
+                        .foregroundColor(.white)
                         .frame(width: 131, height: 131)
                 } else {
                     Image(systemName: "person")
@@ -72,5 +78,11 @@ struct ProfileImagePicker: View {
                         }
                     }
                 }
+    }
+}
+
+extension String {
+    var defaultAvatar: String {
+        trimmingCharacters(in: .whitespacesAndNewlines).first.map { String($0).uppercased() } ?? ""
     }
 }

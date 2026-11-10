@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-// Applicant sign up — step 1 of 2: Personal Information + qualifications
-// (the qualifications are what jobs are matched against)
 struct AplSignUpPage: View {
     
     @StateObject private var applicantController = AplInfoController(
@@ -30,7 +28,8 @@ struct AplSignUpPage: View {
                 dismiss()
             } content: {
                 ProfileImagePicker(
-                    image: $applicantController.applicant.profilePicture
+                    image: $applicantController.applicant.profilePicture,
+                    defaultAvatar: applicantController.applicant.firstName.defaultAvatar
                 )
                 .padding(.top, 18)
                 

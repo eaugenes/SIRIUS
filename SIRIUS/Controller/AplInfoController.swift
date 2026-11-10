@@ -77,14 +77,38 @@ class AplInfoController: ObservableObject{
     }
     
     @MainActor
-    func completeSignUp(confirmPassword: String) async -> Bool {
-        switch await auth.registerApplicant(applicant, password: applicant.password, confirm: confirmPassword) {
+    func sendVerificationCode(confirmPassword: String) async -> Bool {
+        switch await auth.sendSignUpCode(email: applicant.email, password: applicant.password, confirm: confirmPassword) {
+        case .failure(let error):
+            signUpError = error.errorDescription
+            return false
+        case .success:
+            signUpError = nil
+            return true
+        }
+    }
+
+    @MainActor
+    func resendVerificationCode() async -> Bool {
+        switch await auth.resendSignUpCode(email: applicant.email) {
+        case .failure(let error):
+            signUpError = error.errorDescription
+            return false
+        case .success:
+            signUpError = nil
+            return true
+        }
+    }
+
+    @MainActor
+    func completeSignUp(confirmPassword: String, code: String) async -> Bool {
+        switch await auth.registerApplicant(applicant, password: applicant.password, confirm: confirmPassword, code: code) {
         case .failure(let error):
             signUpError = error.errorDescription
             return false
         case .success(let account):
             if let saved = account.applicant {
-                applicant.id = saved.id                 // the applicant id is the Supabase user id
+                applicant.id = saved.id
                 applicant.email = saved.email
                 applicant.username = saved.username
             }

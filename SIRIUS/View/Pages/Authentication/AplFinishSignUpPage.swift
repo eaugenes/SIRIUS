@@ -13,6 +13,8 @@ struct AplFinishSignUpPage: View {
     
     @Environment(\.dismiss) private var dismiss
     @State private var confirmPassword = ""
+    @State private var otpCode = ""
+    @State private var codeSent = false
     @State private var homeScreen = false
     @State private var isWorking = false
     
@@ -32,7 +34,8 @@ struct AplFinishSignUpPage: View {
                         )
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        
+                        .disabled(codeSent)
+
                         AppTextField(
                             title: "Password",
                             placeholder: "Enter your password",
@@ -40,7 +43,8 @@ struct AplFinishSignUpPage: View {
                             isSecure: true,
                             widthField: 325
                         )
-                        
+                        .disabled(codeSent)
+
                         AppTextField(
                             title: "Confirm Password",
                             placeholder: "Re-enter your password",
@@ -48,16 +52,57 @@ struct AplFinishSignUpPage: View {
                             isSecure: true,
                             widthField: 325
                         )
+                        .disabled(codeSent)
+
+                        // NEW: OTP field, directly below Confirm Password
+                        if codeSent {
+                            AppTextField(
+                                title: "Verification Code",
+                                placeholder: "Enter the code sent to your email",
+                                text: $otpCode,
+                                keyboardType: .numberPad,
+                                widthField: 325
+                            )
+                            .textContentType(.oneTimeCode)
+                            .onChange(of: otpCode) { _, newValue in
+                                otpCode = String(newValue.filter(\.isNumber).prefix(6))
+                            }
+
+                            HStack {
+                                Button("Resend code") {
+                                    Task {
+                                        if await applicantController.resendVerificationCode() { otpCode = "" }
+                                    }
+                                }
+                                Spacer()
+                                Button("Change email") {
+                                    codeSent = false
+                                    otpCode = ""
+                                    applicantController.clearError()
+                                }
+                            }
+                            .font(.footnote)
+                            .padding(.horizontal, 11)
+                        }
                     }
                     .frame(maxWidth: .infinity)
-                    
+
                     FormErrorText(message: applicantController.signUpError)
-                    
-                    AuthButton(title: isWorking ? "Creating account\u{2026}" : "Complete Profile", isEnabled: !isWorking) {
+
+                    AuthButton(
+                        title: isWorking
+                            ? (codeSent ? "Creating account\u{2026}" : "Sending code\u{2026}")
+                            : (codeSent ? "Complete Profile" : "Send Verification Code"),
+                        isEnabled: !isWorking
+                    ) {
                         isWorking = true
                         Task {
-                            if await applicantController.completeSignUp(confirmPassword: confirmPassword) {
-                                homeScreen = true
+                            if codeSent {
+                                if await applicantController.completeSignUp(confirmPassword: confirmPassword, code: otpCode) {
+                                    homeScreen = true
+                                }
+                            } else {
+                                codeSent = await applicantController.sendVerificationCode(confirmPassword: confirmPassword)
                             }
                             isWorking = false
                         }

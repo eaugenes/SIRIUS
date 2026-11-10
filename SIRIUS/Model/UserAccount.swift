@@ -29,6 +29,8 @@ enum AccountError: LocalizedError, Equatable {
     case emailTaken
     case invalidCredentials
     case confirmEmail
+    case missingCode
+    case invalidCode
     case network
     case saveFailed
     case server(String)
@@ -40,7 +42,9 @@ enum AccountError: LocalizedError, Equatable {
         case .missingPassword: return "Please enter a password."
         case .weakPassword: return "Password must be at least 6 characters."
         case .passwordMismatch: return "Passwords do not match."
-        case .emailTaken: return "That email is already registered. Try logging in instead."
+        case .emailTaken: return "Email is already registered. Try logging in instead."
+        case .missingCode: return "Please enter the verification code sent to your email."
+        case .invalidCode: return "The code is incorrect or has expired."
         case .invalidCredentials: return "Incorrect email or password."
         case .confirmEmail: return "Check your email and confirm your address, then log in."
         case .network: return "Can't reach the server. Check your internet connection and try again."
