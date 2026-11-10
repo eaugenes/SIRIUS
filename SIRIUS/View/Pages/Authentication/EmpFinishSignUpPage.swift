@@ -58,7 +58,7 @@ struct EmpFinishSignUpPage: View {
                         )
                         .textContentType(.oneTimeCode)
                         .onChange(of: otpCode) { _, newValue in
-                            otpCode = String(newValue.filter(\.isNumber).prefix(6))
+                            otpCode = String(newValue.filter(\.isNumber).prefix(8))
                         }
 
                         HStack {
