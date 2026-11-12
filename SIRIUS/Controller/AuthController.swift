@@ -88,6 +88,16 @@ final class AuthController: ObservableObject {
             profile.username = email.split(separator: "@").first.map(String.init) ?? ""
             try await SupabaseStore.saveApplicant(profile)
             if let image = applicant.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: userID) }
+            
+            // Projects (title, description, pictures). The account already exists at this point, so a
+            // failure here is reported on the banner instead of failing the whole sign up.
+            if !profile.projects.isEmpty {
+                do {
+                    profile.projects = try await SupabaseStore.saveProjects(profile.projects, applicantID: userID)
+                } catch {
+                    JobBoard.shared.syncError = "Your account was created, but your projects couldn't be saved. Add them again from Edit Profile."
+                }
+            }
 
             let account = UserAccount(id: userID, role: .applicant, email: email, applicant: profile)
             currentAccount = account
@@ -172,33 +182,37 @@ final class AuthController: ObservableObject {
         applicant.id = profile.id
         applicant.email = email
         applicant.profilePicture = await SupabaseStore.downloadAvatar(userID: profile.id)
+        applicant.projects = await SupabaseStore.fetchProjects(applicantID: profile.id)
         return UserAccount(id: profile.id, role: .applicant, email: email, applicant: applicant)
     }
     
     func signOut() {
         currentAccount = nil
         JobBoard.shared.clear()
+        InboxController.shared.clear()
         InterviewReminders.cancelAll()
         Task { try? await SupabaseAuthService.signOut() }
     }
     
     // MARK: - Profile updates
     
+    // Saves the profile, the photo and the projects. Returns the saved applicant (projects now hold their
+    // picture paths), or nil when something could not be saved.
     @MainActor
-    @discardableResult
-    func updateApplicant(_ applicant: Applicant) async -> Bool {
+    func updateApplicant(_ applicant: Applicant) async -> Applicant? {
         do {
             try await SupabaseStore.saveApplicant(applicant)
             if let image = applicant.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: applicant.id) }
+            var saved = applicant
+            saved.password = ""
+            saved.projects = try await SupabaseStore.saveProjects(applicant.projects, applicantID: applicant.id)
             if var account = currentAccount, account.applicant?.id == applicant.id {
-                var profile = applicant
-                profile.password = ""
-                account.applicant = profile
+                account.applicant = saved
                 currentAccount = account
             }
-            return true
+            return saved
         } catch {
-            return false
+            return nil
         }
     }
     
@@ -208,6 +222,7 @@ final class AuthController: ObservableObject {
         guard let userID = currentAccount?.id else { return false }
         do {
             try await SupabaseStore.saveEmployer(employer, company: company, userID: userID)
+            if let image = employer.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: userID) }
             return true
         } catch {
             return false

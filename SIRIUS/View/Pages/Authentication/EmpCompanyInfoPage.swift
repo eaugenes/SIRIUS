@@ -10,38 +10,28 @@ import UIKit           // UIKeyboardType / UIImage
 
 // Employer sign up — step 2 of 3: Company Information
 // (Figma: Continue Sign Up Screen (Employer))
-// Also reused from the employer Account screen (pencil button) to edit the company.
+// Editing an existing account is done on EmpEditProfilePage (the pencil on the Account screen).
 struct EmpCompanyInfoPage: View {
     
-    enum Mode {
-        case signUp     // "Continue" → Finish Sign Up
-        case edit       // "Save" → back to Account
-    }
-    
     @ObservedObject var infoController: EmpInfoController
-    let mode: Mode
     
     @Environment(\.dismiss) private var dismiss
-    @State private var draft: Company           // edited copy, saved to the controller on Continue/Save
+    @State private var draft: Company           // edited copy, saved to the controller on Continue
     @State private var nextScreen = false
     
-    init(infoController: EmpInfoController, mode: Mode) {
+    init(infoController: EmpInfoController) {
         self.infoController = infoController
-        self.mode = mode
         _draft = State(initialValue: infoController.company)
     }
     
     var body: some View {
-        GeometryReader { geo in
-            // same gap as between the panel and the sides of the phone
-            let sideGap = max((geo.size.width - 365) / 2, 0)
-            
-            SignUpPanel(title: "Company Information", fillsScreen: true, bottomGap: sideGap) {
+        // The gradient background (.appBg) is applied to the ScrollView, so it stays fixed while the
+        // white Company Information container scrolls on top of it.
+        ScrollView {
+            SignUpPanel(title: "Company Information") {
                 infoController.clearError()
                 dismiss()
             } content: {
-                Spacer(minLength: 12)
-                
                 VStack(spacing: 10) {
                     AppTextField(
                         title: "Company Name",
@@ -79,25 +69,22 @@ struct EmpCompanyInfoPage: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                 }
+                .padding(.top, 24)
                 
                 FormErrorText(message: infoController.signUpError)
                     .padding(.top, 10)
                 
-                Spacer(minLength: 16)
-                
-                SiriusButton(title: mode == .signUp ? "Continue" : "Save") {
+                SiriusButton(title: "Continue") {
                     infoController.company = draft
                     
-                    guard infoController.validateCompanyInfo(requireAll: mode == .signUp) else { return }
-                    switch mode {
-                    case .signUp: nextScreen = true
-                    case .edit: dismiss()
-                    }
+                    guard infoController.validateCompanyInfo(requireAll: true) else { return }
+                    nextScreen = true
                 }
+                .padding(.top, 30)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .ignoresSafeArea(.container)
+        .ignoresSafeArea(.container, edges: .top)
+        .scrollDismissesKeyboard(.interactively)
         .appBg()
         .navigationBarBackButtonHidden(true)
         .navigationDestination(isPresented: $nextScreen) {
@@ -108,6 +95,6 @@ struct EmpCompanyInfoPage: View {
 
 #Preview {
     NavigationStack {
-        EmpCompanyInfoPage(infoController: EmpInfoController(), mode: .signUp)
+        EmpCompanyInfoPage(infoController: EmpInfoController())
     }
 }

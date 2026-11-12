@@ -8,10 +8,17 @@
 import Foundation
 
 enum MatchRules {
-    static let autoApplyThreshold = 60          // minimum % for an automatic application
+    // Colour bands of a percentage: green >= 80, orange 60-79, red < 60
+    static let greenMinimum = 80
+    static let orangeMinimum = 60
+    // Only jobs in the GREEN band are applied to automatically
+    static let autoApplyThreshold = greenMinimum
+    
+    // Points per category (they add up to 100)
     static let programPoints = 20.0
     static let experiencePoints = 20.0
-    static let languagePoints = 60.0
+    static let languagePoints = 50.0
+    static let workSetupPoints = 10.0
 }
 
 // What the matcher needs to know about an applicant
@@ -20,6 +27,7 @@ struct MatchProfile: Equatable {
     var yearsExperience: Double
     var languages: [String]
     var location: String = ""
+    var workSetup: String = ""          // "On-site", "Remote" or "Hybrid"
 }
 
 // What the matcher needs to know about a job
@@ -28,13 +36,15 @@ struct MatchRequirements: Equatable {
     var minYearsExperience: Double
     var languages: [String]
     var location: String = ""
+    var workSetup: String = ""          // "On-site", "Remote" or "Hybrid"
 }
 
 // Per-category result shown on the applicant details / job details screens
 struct MatchBreakdown: Equatable, Codable {
     var program: Int                // out of 20
     var experience: Int             // out of 20
-    var languages: Int              // out of 60
+    var languages: Int              // out of 50
+    var workSetup: Int              // out of 10
     var matchedLanguages: [String]
     var missingLanguages: [String]
     var total: Int                  // 0...100
@@ -46,16 +56,16 @@ struct MatchBreakdown: Equatable, Codable {
     var tier: MatchTier { MatchTier(percentage: total) }
 }
 
-// Colour band of a percentage: green >= 80, orange 60-79, red < 60
+// Colour band of a percentage: green >= 80 (auto-applied), orange 60-79, red < 60
 enum MatchTier: Equatable {
-    case high           // 80...100
-    case medium         // 60...79
-    case low            // below 60 (not eligible)
+    case high           // 80...100  green: eligible for auto-apply
+    case medium         // 60...79   orange: shown, but not auto-applied
+    case low            // below 60  red
     
     init(percentage: Int) {
-        if percentage >= 80 {
+        if percentage >= MatchRules.greenMinimum {
             self = .high
-        } else if percentage >= MatchRules.autoApplyThreshold {
+        } else if percentage >= MatchRules.orangeMinimum {
             self = .medium
         } else {
             self = .low
@@ -63,12 +73,12 @@ enum MatchTier: Equatable {
     }
     
     // Manage Applicants fill level: 100% -> full, 80-99% -> two thirds,
-    // 60-79% -> one third, below 60% -> empty (not eligible).
+    // 60-79% -> one third, below 60% -> empty.
     // This is a visual level only; the real percentage is shown separately.
     static func fillFraction(for percentage: Int) -> Double {
         if percentage >= 100 { return 1.0 }
-        if percentage >= 80 { return 2.0 / 3.0 }
-        if percentage >= MatchRules.autoApplyThreshold { return 1.0 / 3.0 }
+        if percentage >= MatchRules.greenMinimum { return 2.0 / 3.0 }
+        if percentage >= MatchRules.orangeMinimum { return 1.0 / 3.0 }
         return 0
     }
 }
@@ -115,21 +125,38 @@ enum Matching {
             ? MatchRules.languagePoints
             : MatchRules.languagePoints * Double(matched.count) / Double(required.count)
         
+        // Work setup: same setup = full marks, Hybrid with On-site / Remote = half, On-site vs Remote = none
+        let workSetupScore = MatchRules.workSetupPoints * workSetupFactor(applicant: profile.workSetup, job: job.workSetup)
+        
         // Each category is rounded once; the total is the sum of the displayed parts,
-        // so the breakdown (e.g. 20 + 15 + 40) always adds up to the overall percentage.
+        // so the breakdown (e.g. 20 + 15 + 40 + 10) always adds up to the overall percentage.
         let program = Int(programScore.rounded(.toNearestOrAwayFromZero))
         let experience = Int(experienceScore.rounded(.toNearestOrAwayFromZero))
         let languages = Int(languageScore.rounded(.toNearestOrAwayFromZero))
+        let workSetup = Int(workSetupScore.rounded(.toNearestOrAwayFromZero))
         
         return MatchBreakdown(
             program: program,
             experience: experience,
             languages: languages,
+            workSetup: workSetup,
             matchedLanguages: matched,
             missingLanguages: missing,
-            total: min(100, max(0, program + experience + languages)),
+            total: min(100, max(0, program + experience + languages + workSetup)),
             locationMatches: locationMatches(applicant: profile.location, job: job.location)
         )
+    }
+    
+    // 1 = same setup (or the job did not set one), 0.5 = one side is Hybrid, 0 = On-site vs Remote / not chosen
+    static func workSetupFactor(applicant: String, job: String) -> Double {
+        let wanted = normalized(job)
+        guard !wanted.isEmpty else { return 1 }
+        let have = normalized(applicant)
+        guard !have.isEmpty else { return 0 }
+        if have == wanted { return 1 }
+        let hybrid = normalized(WorkSetup.hybrid.rawValue)
+        if have == hybrid || wanted == hybrid { return 0.5 }
+        return 0
     }
     
     // Splits "BS CS, BS IT or BS IS" style input into the accepted program names
@@ -188,10 +215,22 @@ enum Matching {
             languageDetail = parts.joined(separator: "; ") + "."
         }
         
+        let jobSetup = job.workSetup.isEmpty ? "any" : job.workSetup
+        let applicantSetup = profile.workSetup.isEmpty ? "none chosen" : profile.workSetup
+        let workSetupDetail: String
+        if breakdown.workSetup == Int(MatchRules.workSetupPoints) {
+            workSetupDetail = "The job is \(jobSetup); your preference (\(applicantSetup)) fits."
+        } else if breakdown.workSetup > 0 {
+            workSetupDetail = "The job is \(jobSetup); you prefer \(applicantSetup). Hybrid counts as a partial fit."
+        } else {
+            workSetupDetail = "The job is \(jobSetup); you prefer \(applicantSetup)."
+        }
+        
         return [
-            MatchExplanationLine(title: "Program", score: breakdown.program, outOf: 20, detail: programDetail),
-            MatchExplanationLine(title: "Work experience", score: breakdown.experience, outOf: 20, detail: experienceDetail),
-            MatchExplanationLine(title: "Programming languages", score: breakdown.languages, outOf: 60, detail: languageDetail)
+            MatchExplanationLine(title: "Program", score: breakdown.program, outOf: Int(MatchRules.programPoints), detail: programDetail),
+            MatchExplanationLine(title: "Work experience", score: breakdown.experience, outOf: Int(MatchRules.experiencePoints), detail: experienceDetail),
+            MatchExplanationLine(title: "Programming languages", score: breakdown.languages, outOf: Int(MatchRules.languagePoints), detail: languageDetail),
+            MatchExplanationLine(title: "Work setup", score: breakdown.workSetup, outOf: Int(MatchRules.workSetupPoints), detail: workSetupDetail)
         ]
     }
     

@@ -22,7 +22,9 @@ struct MainTabView: View {
     @StateObject private var applicationsController: AplApplicationsController
     
     @StateObject private var network = NetworkMonitor()
+    @StateObject private var navBarVisibility = NavBarVisibility()      // pushed pages hide the bottom bar
     @Environment(\.scenePhase) private var scenePhase
+    @State private var showInbox = false
     
     // Selected tab for each side
     @State private var aplTab: AplNavigationTab = .home
@@ -69,14 +71,37 @@ struct MainTabView: View {
                 employerTabs
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: navBarVisibility.isHidden)
         .overlay(alignment: .top) {
-            StatusBanner(network: network)          // offline notice + failed-save message
+            VStack(spacing: 6) {
+                StatusBanner(network: network)          // offline notice + failed-save message
+                InboxToastView { showInbox = true }     // banner when a new notification arrives
+            }
+        }
+        .environment(\.navBarVisibility, navBarVisibility)
+        .sheet(isPresented: $showInbox) {
+            NotificationsPage()
         }
         .ignoresSafeArea(.keyboard)     // to overlay components in the screen when keyboard is on
         .navigationBarBackButtonHidden(true)
-        .task { await JobBoard.shared.reload() }                                  // load jobs / applications from Supabase
+        .task {
+            // Load jobs / applications / notifications from Supabase, then keep them fresh while the app is open
+            await JobBoard.shared.reload()
+            await InboxController.shared.reload()
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(20))
+                guard !Task.isCancelled else { break }
+                await JobBoard.shared.reload(silent: true)
+                await InboxController.shared.reload()
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await JobBoard.shared.reload(silent: true) } }
+            if phase == .active {
+                Task {
+                    await JobBoard.shared.reload(silent: true)
+                    await InboxController.shared.reload()
+                }
+            }
         }
     }
     
@@ -105,11 +130,15 @@ struct MainTabView: View {
         .environmentObject(jobsController)
         .environmentObject(applicationsController)
         
-        NavigationBar(
-            selectedTab: $aplTab,
-            badges: [.applications: applicationsController.newInterviewCount]
-        )
-            .padding(10)
+        // Hidden while a pushed page (Edit Profile, details ...) is open so it never covers that page's buttons
+        if !navBarVisibility.isHidden {
+            NavigationBar(
+                selectedTab: $aplTab,
+                badges: [.applications: applicationsController.newInterviewCount]
+            )
+                .padding(10)
+                .transition(.opacity)
+        }
     }
     
     // MARK: - Employer
@@ -137,8 +166,9 @@ struct MainTabView: View {
         .environmentObject(jobController)
         .environmentObject(aplController)
         
-        // Hidden while the Schedule Interview modal is open so the dimmed overlay covers it
-        if aplController.interviewTarget == nil {
+        // Hidden while the Schedule Interview modal is open so the dimmed overlay covers it,
+        // and while a pushed page (Edit Profile, details, Interviews ...) is open
+        if aplController.interviewTarget == nil && !navBarVisibility.isHidden {
             NavigationBar(selectedTab: $empTab)
                 .padding(10)
                 .transition(.opacity)

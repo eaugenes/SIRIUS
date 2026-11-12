@@ -57,6 +57,6 @@ struct Job: Identifiable, Hashable, Codable {
     }
     
     var matchRequirements: MatchRequirements {
-        MatchRequirements(program: requiredProgram, minYearsExperience: requiredYrExp, languages: requiredLang, location: requiredLoc)
+        MatchRequirements(program: requiredProgram, minYearsExperience: requiredYrExp, languages: requiredLang, location: requiredLoc, workSetup: workSetup.rawValue)
     }
 }

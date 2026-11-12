@@ -65,7 +65,7 @@ final class AplJobsController: ObservableObject {
         }
     }
     
-    // Jobs at or above the 60% auto-apply threshold
+    // Jobs in the green band (80% or more): the only ones that are applied automatically
     var matchedListings: [AplJobListing] {
         allListings.filter { $0.breakdown.isEligible }
     }
@@ -79,15 +79,18 @@ final class AplJobsController: ObservableObject {
     
     var topListing: AplJobListing? { allListings.first { $0.breakdown.isEligible } }
     
-    // Qualified jobs (60%+) the applicant has not applied to yet
+    // Green-match jobs (80%+) the applicant has not applied to yet
     var pendingCount: Int { board.pendingQualifiedJobs(for: info.applicant).count }
 
     // How many the next tap of the button will send
     var nextBatchCount: Int { min(pendingCount, JobBoard.applyBatchSize) }
 
+    // Applies to up to 10 green-match jobs, then refreshes the inbox so the new notification shows up
     @MainActor
     @discardableResult
-    func applyToMore() async -> Int {
-        await board.applyToQualifiedJobs(applicant: info.applicant)
+    func applyToMore() async -> AutoApplyOutcome {
+        let outcome = await board.autoApply(applicant: info.applicant)
+        if !outcome.applied.isEmpty { await InboxController.shared.reload() }
+        return outcome
     }
 }

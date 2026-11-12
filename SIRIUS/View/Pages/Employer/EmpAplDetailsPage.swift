@@ -1,5 +1,5 @@
 //
-//  EmpApplicantDetailsPage.swift
+//  EmpAplDetailsPage.swift
 //  SIRIUS
 //
 //  Created by Mac-LAB on 10/27/26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct EmpApplicantDetailsPage: View {
+struct EmpAplDetailsPage: View {
     
     let applicantID: UUID
     
@@ -15,6 +15,7 @@ struct EmpApplicantDetailsPage: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var showReject = false
+    @State private var projects: [Project] = []
     
     private var applicant: EmpApplicant? {
         aplController.applicants.first { $0.id == applicantID }
@@ -36,7 +37,9 @@ struct EmpApplicantDetailsPage: View {
             }
         }
         .appBg()
+        .scheduleInterviewOverlay(aplController)         // the Schedule Interview dialog opens right here
         .navigationBarBackButtonHidden(true)
+        .hidesSiriusNavBar()
         .sheet(isPresented: $showReject) {
             if let applicant {
                 RejectApplicantDialog(
@@ -51,6 +54,10 @@ struct EmpApplicantDetailsPage: View {
             }
         }
         .boardLoadState()
+        .task(id: applicant?.applicantID) {
+            guard let id = applicant?.applicantID else { return }
+            projects = await SupabaseStore.fetchProjects(applicantID: id)
+        }
     }
     
     private func content(for applicant: EmpApplicant) -> some View {
@@ -60,6 +67,8 @@ struct EmpApplicantDetailsPage: View {
                 Text("Applicant Details")
                     .scaledFont(size: 24, weight: .medium)
                     .foregroundStyle(Color.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -68,18 +77,22 @@ struct EmpApplicantDetailsPage: View {
             ScrollView {
                 VStack(spacing: 14) {
                     mainCard(applicant)
-                    extrasCard(applicant)
+                    detailsCard(applicant)
+                    projectsCard
                     FormErrorText(message: aplController.actionError)
                     actions(applicant)
                 }
                 .frame(maxWidth: .infinity)
+                .padding(.horizontal, 16)
                 .padding(.bottom, 40)
             }
             .scrollIndicators(.hidden)
         }
     }
     
-    // Single white card: profile, compatibility rows, language chips, overall match
+    // MARK: - Profile + compatibility
+    
+    // White card: profile, compatibility banner and rows, language chips, overall match
     private func mainCard(_ applicant: EmpApplicant) -> some View {
         let result = applicant.breakdown
         let matched = result?.matchedLanguages ?? []
@@ -92,6 +105,8 @@ struct EmpApplicantDetailsPage: View {
             Text(applicant.name)
                 .scaledFont(size: 24, weight: .semibold)
                 .foregroundStyle(Color.siriusInk)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
             Text(applicant.degree)
                 .scaledFont(size: 14)
                 .foregroundStyle(Color.siriusMuted)
@@ -106,19 +121,20 @@ struct EmpApplicantDetailsPage: View {
             
             Divider().padding(.vertical, 14)
             
-            Text("Compatibility with the job")
-                .scaledFont(size: 16, weight: .semibold)
-                .foregroundStyle(Color.siriusAction)
+            // Blue-to-green gradient: the greener it is, the more compatible the applicant is
+            CompatibilityBanner(percentage: result?.total ?? applicant.matchPercentage)
             
             if let result {
                 VStack(alignment: .leading, spacing: 12) {
-                    scoreRow("Program", result.program, 20, programs.isEmpty ? "Required: Any program" : "Required: \(programs)")
-                    scoreRow("Work experience", result.experience, 20, "Required: \(yearsText)")
-                    scoreRow("Programming languages", result.languages, 60, langs.isEmpty ? "Required: Any" : "Required: \(langs)")
+                    scoreRow("Program", result.program, Int(MatchRules.programPoints), programs.isEmpty ? "Required: Any program" : "Required: \(programs)")
+                    scoreRow("Work experience", result.experience, Int(MatchRules.experiencePoints), "Required: \(yearsText)")
+                    scoreRow("Programming languages", result.languages, Int(MatchRules.languagePoints), langs.isEmpty ? "Required: Any" : "Required: \(langs)")
+                    scoreRow("Work setup", result.workSetup, Int(MatchRules.workSetupPoints), applicant.jobWorkSetup.isEmpty ? "Required: Any" : "Required: \(applicant.jobWorkSetup) (applicant prefers \(applicant.workSetup.isEmpty ? "none" : applicant.workSetup))")
                 }
-                .padding(.top, 12)
+                .padding(.top, 14)
                 
-                HStack(spacing: 6) {
+                // Language chips wrap onto more lines instead of running off the card
+                FlowLayout(spacing: 6) {
                     ForEach(applicant.coreLanguages, id: \.self) { item in
                         let isMatched = matched.contains { Matching.normalized($0) == Matching.normalized(item) }
                         Text(isMatched ? "✓ \(item)" : item)
@@ -138,7 +154,7 @@ struct EmpApplicantDetailsPage: View {
                         Text("Overall match")
                             .scaledFont(size: 16, weight: .semibold)
                             .foregroundStyle(Color.siriusInk)
-                        Text("Minimum qualification: \(MatchRules.autoApplyThreshold)% match")
+                        Text("Auto-apply minimum: \(MatchRules.autoApplyThreshold)% match")
                             .scaledFont(size: 11)
                             .foregroundStyle(Color.siriusMuted)
                     }
@@ -170,21 +186,31 @@ struct EmpApplicantDetailsPage: View {
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
     
-    // Location (shown, not scored), resume and the scheduled interview
-    private func extrasCard(_ applicant: EmpApplicant) -> some View {
+    // MARK: - Applicant details
+    
+    // Program, experience, work setup, location (shown, not scored), contact details and the interview
+    private func detailsCard(_ applicant: EmpApplicant) -> some View {
         let interview = aplController.interview(for: applicant)
-        return VStack(alignment: .leading, spacing: 10) {
-            extraRow("mappin.and.ellipse", "Location",
-                     applicant.location.isEmpty ? "Not provided" : applicant.location,
-                     note: locationNote(applicant))
-            extraRow("doc.text", "Resume",
-                     applicant.resumeFileName.isEmpty ? "No resume uploaded" : applicant.resumeFileName,
-                     note: nil)
-            if applicant.status == .interview, let interview {
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Applicant Details")
+                .scaledFont(size: 16, weight: .semibold)
+                .foregroundStyle(Color.siriusAction)
+            
+            detailRow("graduationcap", "Program", applicant.degree)
+            detailRow("briefcase", "Work experience", applicant.experienceText.replacingOccurrences(of: " work experience", with: ""))
+            detailRow("desktopcomputer", "Work setup", applicant.workSetup)
+            detailRow("mappin.and.ellipse", "Location", applicant.location, note: locationNote(applicant))
+            
+            Divider()
+            
+            detailRow("phone", "Contact number", applicant.contactNumber, selectable: true)
+            detailRow("envelope", "Email", applicant.email, selectable: true)
+            
+            if applicant.status != .toReview, let interview {
                 Divider()
-                extraRow("calendar", "Interview",
-                         interview.date.formatted(date: .abbreviated, time: .shortened) + " \u{00B7} " + interview.location,
-                         note: interview.message.isEmpty ? nil : interview.message)
+                detailRow("calendar", "Interview",
+                          interview.date.formatted(date: .abbreviated, time: .shortened) + " \u{00B7} " + interview.location,
+                          note: interview.message.isEmpty ? nil : interview.message)
             }
         }
         .padding(20)
@@ -198,21 +224,48 @@ struct EmpApplicantDetailsPage: View {
         return matches ? "In the preferred area" : "Outside the preferred area (not part of the score)"
     }
     
-    private func extraRow(_ icon: String, _ title: String, _ value: String, note: String?) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+    private func detailRow(_ icon: String, _ title: String, _ value: String, note: String? = nil, selectable: Bool = false) -> some View {
+        let shown = value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Not provided" : value
+        return HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
                 .foregroundStyle(Color.siriusAction)
                 .frame(width: 20)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).scaledFont(size: 12).foregroundStyle(Color.siriusMuted)
-                Text(value).scaledFont(size: 14, weight: .semibold).foregroundStyle(Color.siriusInk)
+                if selectable {
+                    Text(shown)
+                        .scaledFont(size: 14, weight: .semibold)
+                        .foregroundStyle(Color.siriusInk)
+                        .textSelection(.enabled)
+                } else {
+                    Text(shown)
+                        .scaledFont(size: 14, weight: .semibold)
+                        .foregroundStyle(Color.siriusInk)
+                }
                 if let note {
                     Text(note).scaledFont(size: 11).foregroundStyle(Color.siriusMuted)
                 }
             }
+            Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
+    }
+    
+    // MARK: - Projects
+    
+    // The applicant's projects (title, description, pictures); replaces the old resume row
+    private var projectsCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Projects")
+                .scaledFont(size: 16, weight: .semibold)
+                .foregroundStyle(Color.siriusAction)
+            ProjectsSection(projects: projects, emptyText: "This applicant has not added any projects.")
+        }
+        .padding(20)
+        .frame(maxWidth: 370, alignment: .leading)
+        .background(Color.siriusSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
     }
     
     private func scoreRow(_ title: String, _ points: Int, _ outOf: Int, _ caption: String) -> some View {
@@ -232,13 +285,14 @@ struct EmpApplicantDetailsPage: View {
         }
     }
     
+    // MARK: - Actions
+    
     @ViewBuilder
     private func actions(_ applicant: EmpApplicant) -> some View {
         VStack(spacing: 10) {
             if applicant.status == .toReview {
                 SiriusButton(title: "Schedule Interview") {
-                    aplController.beginScheduling(applicant)
-                    dismiss()                       // the dialog opens on the applicants list
+                    aplController.beginScheduling(applicant)        // opens the dialog on this page
                 }
             }
             if applicant.status == .interview {
@@ -247,7 +301,6 @@ struct EmpApplicantDetailsPage: View {
                 }
                 SiriusButton(title: "Reschedule Interview", isFilled: false) {
                     aplController.beginRescheduling(applicant)
-                    dismiss()                       // the dialog opens on the applicants list
                 }
             }
             SiriusButton(title: "Reject Applicant", isFilled: false) {
@@ -261,6 +314,50 @@ struct EmpApplicantDetailsPage: View {
         case .high: return Color.siriusMatchBar
         case .medium: return Color(red: 243/255, green: 121/255, blue: 0/255)
         case .low: return Color.siriusDanger
+        }
+    }
+}
+
+// Simple wrapping row (chips that do not fit move to the next line)
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var widest: CGFloat = 0
+        
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0 && x + size.width > maxWidth {
+                y += rowHeight + spacing
+                x = 0
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            widest = max(widest, x - spacing)
+        }
+        return CGSize(width: proposal.width ?? widest, height: y + rowHeight)
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+        
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > bounds.minX && x + size.width > bounds.maxX {
+                y += rowHeight + spacing
+                x = bounds.minX
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
         }
     }
 }

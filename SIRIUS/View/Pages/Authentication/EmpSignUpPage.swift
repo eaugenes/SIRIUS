@@ -13,11 +13,10 @@ struct EmpSignUpPage: View {
     @State private var nextScreen = false
     
     var body: some View {
-        GeometryReader { geo in
-            // same gap as between the panel and the sides of the phone
-            let sideGap = max((geo.size.width - 365) / 2, 0)
-            
-            SignUpPanel(title: "Personal Information", fillsScreen: true, bottomGap: sideGap) {
+        // The gradient background (.appBg) is applied to the ScrollView, so it stays fixed while the
+        // white Personal Information container scrolls on top of it.
+        ScrollView {
+            SignUpPanel(title: "Personal Information") {
                 infoController.clearError()
                 dismiss()
             } content: {
@@ -63,21 +62,20 @@ struct EmpSignUpPage: View {
                 FormErrorText(message: infoController.signUpError)
                     .padding(.top, 10)
                 
-                Spacer(minLength: 16)
-                
                 SiriusButton(title: "Continue") {
                     if infoController.validatePersonalInfo() {
                         nextScreen = true
                     }
                 }
+                .padding(.top, 30)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .ignoresSafeArea(.container)
+        .ignoresSafeArea(.container, edges: .top)
+        .scrollDismissesKeyboard(.interactively)
         .appBg()
         .navigationBarBackButtonHidden(true)
         .navigationDestination(isPresented: $nextScreen) {
-            EmpCompanyInfoPage(infoController: infoController, mode: .signUp)
+            EmpCompanyInfoPage(infoController: infoController)
         }
     }
 }

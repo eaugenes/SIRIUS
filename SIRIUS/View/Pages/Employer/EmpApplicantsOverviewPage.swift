@@ -13,6 +13,7 @@ struct EmpApplicantsOverviewPage: View {
     @EnvironmentObject private var aplController: EmpAplStatusController
     
     @State private var selectedJob: Job?
+    @State private var interviewsScreen = false
     
     // Only active jobs appear here
     private var activeJobs: [Job] {
@@ -25,12 +26,30 @@ struct EmpApplicantsOverviewPage: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Manage Applicants")
-                .scaledFont(size: 30, weight: .medium)
-                .foregroundStyle(Color.white)
-                .padding(.horizontal, 32)
-                .padding(.top, 20)
-                .padding(.bottom, 16)
+            HStack {
+                Text("Manage Applicants")
+                    .scaledFont(size: 30, weight: .medium)
+                    .foregroundStyle(Color.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                
+                Spacer()
+                
+                // Interviews: schedule and status tracker
+                Button {
+                    interviewsScreen = true
+                } label: {
+                    Image(systemName: "calendar")
+                        .scaledFont(size: 17, weight: .semibold)
+                        .foregroundStyle(Color.siriusInk)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(Color.siriusSurface))
+                }
+                .accessibilityLabel("Interviews")
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
             
             summary
                 .padding(.horizontal, 32)
@@ -51,7 +70,7 @@ struct EmpApplicantsOverviewPage: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.bottom, 100)          // room for the bottom bar
+                    .padding(.bottom, NavBarMetrics.clearance + 8)          // room for the bottom bar
                 }
                 .scrollIndicators(.hidden)
             }
@@ -60,7 +79,14 @@ struct EmpApplicantsOverviewPage: View {
         .appBg()
         .boardLoadState()
         .navigationDestination(item: $selectedJob) { job in
+            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
+            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
             EmpManageApplicantsPage(job: job)
+                .environmentObject(aplController)
+        }
+        .navigationDestination(isPresented: $interviewsScreen) {
+            EmpInterviewsPage()
+                .environmentObject(aplController)
         }
     }
     

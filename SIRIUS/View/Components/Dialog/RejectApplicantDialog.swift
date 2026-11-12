@@ -7,10 +7,7 @@
 
 import SwiftUI
 
-// Employer picks a reason before rejecting / removing an applicant.
-// The reason is saved on the application and shown to the applicant.
 struct RejectApplicantDialog: View {
-    
     let applicantName: String
     var onReject: (_ reason: String) -> Void
     var onCancel: () -> Void
@@ -19,7 +16,7 @@ struct RejectApplicantDialog: View {
         "Does not meet the job requirements",
         "Another candidate was a better match",
         "Position has been filled",
-        "Incomplete profile or resume",
+        "Incomplete profile or projects",
         "Other"
     ]
     
@@ -72,7 +69,8 @@ struct RejectApplicantDialog: View {
                         placeholder: "Add a short note for the applicant",
                         text: $note,
                         isMultiline: true,
-                        multilineHeight: 80
+                        multilineHeight: 80,
+                        widthField: nil             // same width as the reason rows above
                     )
                     
                     HStack(spacing: 12) {

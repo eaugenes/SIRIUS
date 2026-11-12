@@ -28,78 +28,88 @@ struct AplAccountPage: View {
     }
     
     var body: some View {
-        NavigationStack{
-            ZStack(alignment: .top) {
-                // White header (avatar, name, username, edit)
-                VStack {
-                    Rectangle().fill(Color.siriusSurface).frame(height: 180)
-                    Spacer()
-                }
-                .ignoresSafeArea()
-                
-                VStack(spacing: 0) {
-                    ZStack(alignment: .topLeading) {
-                        Color.clear.frame(width: 402, height: 180)
-                        
-                        avatar
-                            .offset(x: 33, y: 88)
-                        
-                        VStack(spacing: 2) {
-                            Text(value(applicant.fullName))
-                                .scaledFont(size: 18)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.6)
-                            Text("@\(applicant.username)")
-                                .scaledFont(size: 12)
-                        }
-                        .foregroundStyle(Color.siriusText)
-                        .frame(width: 199)
-                        .offset(x: 116, y: 96)
-                        
-                        Button{
-                            editAccountScreen = true
-                        } label: {
-                            Image(systemName: "pencil.line")
-                                .scaledFont(size: 17)
-                                .foregroundStyle(Color.white)
-                                .padding(10)
-                                .background(Color.siriusPanel)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .shadow(color: Color.black.opacity(0.25), radius: 4, x: 2, y: 3)
-                        }
-                        .accessibilityLabel("Edit profile")
-                        .offset(x: 329, y: 101)
-                    }
-                    .frame(width: 402, height: 180)
-                    
+        NavigationStack {
+            VStack(spacing: 0) {
+                header
+                ScrollView {     // NOTE: The header stays on top and Sign Out stays above the bottom bar
                     infoCard
-                        .padding(.top, 27)
-                    
-                    Button{
-                        applicantController.signOut()
-                        logInScreen = true
-                    } label: {
-                        Text("Sign Out")
-                            .scaledFont(size: 12)
-                            .foregroundStyle(Color.siriusText)
-                            .fluidFrame(width: 333, height: 34)
-                            .background(Color.siriusSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    }
-                    .padding(.top, 26)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 20)
+                        .padding(.bottom, 16)
+                        .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .scrollIndicators(.hidden)
+                
+                Button {
+                    applicantController.signOut()
+                    logInScreen = true
+                } label: {
+                    Text("Sign Out")
+                        .scaledFont(size: 12)
+                        .foregroundStyle(Color.siriusText)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 34)
+                        .background(Color.siriusSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .frame(maxWidth: 333)
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, NavBarMetrics.clearance)         // sits just above the bottom bar
             }
-            .ignoresSafeArea(.container, edges: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .appBg()
+            .toolbar(.hidden, for: .navigationBar)
             .navigationBarBackButtonHidden(true)
             .navigationDestination(isPresented: $logInScreen) {
                 LogInPage()
             }
             .navigationDestination(isPresented: $editAccountScreen) {
+                // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
+                // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
                 AplEditProfilePage()
+                    .environmentObject(applicantController)
             }
         }
+    }
+    
+    // White header: avatar, name, username and the edit button
+    private var header: some View {
+        HStack(spacing: 14) {
+            avatar
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value(applicant.fullName))
+                    .scaledFont(size: 18)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text("@\(applicant.username)")
+                    .scaledFont(size: 12)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .foregroundStyle(Color.siriusText)
+            .frame(maxWidth: .infinity)
+            
+            Button {
+                applicantController.clearError()
+                editAccountScreen = true
+            } label: {
+                Image(systemName: "pencil.line")
+                    .scaledFont(size: 17)
+                    .foregroundStyle(Color.white)
+                    .frame(width: 44, height: 44)
+                    .background(Color.siriusPanel)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .shadow(color: Color.black.opacity(0.25), radius: 4, x: 2, y: 3)
+            }
+            .accessibilityLabel("Edit profile")
+        }
+        .padding(.horizontal, 28)
+        .padding(.top, 16)
+        .padding(.bottom, 22)
+        .frame(maxWidth: .infinity)
+        .background(Color.siriusSurface.ignoresSafeArea(edges: .top))
     }
     
     private var avatar: some View {
@@ -121,7 +131,7 @@ struct AplAccountPage: View {
         .shadow(color: Color.black.opacity(0.25), radius: 4, x: 4, y: 4)
     }
     
-    // 370 x 512 white card: Date of Birth, Location, Contact, Program, Experience, Languages
+    // White card: personal details, then the applicant's projects at the bottom
     private var infoCard: some View {
         VStack(spacing: 0) {
             row("Date of Birth", value(applicant.birthDate))
@@ -136,7 +146,7 @@ struct AplAccountPage: View {
             line
             row("Work Experience", experienceText)
             line
-            row("Resume", applicant.resumeFileName.isEmpty ? "\u{2014}" : applicant.resumeFileName)
+            row("Work Setup", value(applicant.workSetUp))
             line
             HStack(alignment: .top) {
                 label("Core Languages")
@@ -148,15 +158,22 @@ struct AplAccountPage: View {
                     if applicant.coreLang.isEmpty { Text("\u{2014}").scaledFont(size: 12, weight: .medium) }
                 }
             }
-            .padding(.top, 14)
+            .padding(.vertical, 14)
+            line
             
-            Spacer(minLength: 0)
+            // Projects: title, description, pictures
+            VStack(alignment: .leading, spacing: 10) {
+                label("Projects")
+                ProjectsSection(projects: applicant.projects)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 14)
         }
         .foregroundStyle(Color.siriusText)
         .padding(.horizontal, 20)
-        .padding(.top, 28)
+        .padding(.top, 14)
         .padding(.bottom, 20)
-        .frame(maxWidth: 370, minHeight: 512, alignment: .top)
+        .frame(maxWidth: 370, alignment: .top)
         .background(Color.siriusSurface)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 4)
@@ -171,14 +188,16 @@ struct AplAccountPage: View {
     }
     
     private func row(_ title: String, _ text: String) -> some View {
-        HStack{
+        HStack(spacing: 12) {
             label(title)
-            Spacer()
+            Spacer(minLength: 8)
             Text(text)
                 .scaledFont(size: 12, weight: .medium)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
                 .multilineTextAlignment(.trailing)
         }
-        .frame(height: 46)
+        .frame(minHeight: 46)
     }
 }
 

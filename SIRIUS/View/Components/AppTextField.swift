@@ -21,7 +21,7 @@ struct AppTextField: View {
     var multilineHeight: CGFloat = 100
     var prefix: String? = nil                       // e.g. "₱" shown before the typed text
     var keyboardType: UIKeyboardType = .default     // .numberPad for numbers, .emailAddress for emails
-    var widthField: CGFloat = 300
+    var widthField: CGFloat? = 300                  // nil = as wide as the space it is given
     @State private var isRevealed = false
     
     // Figma "Final": Light 14 placeholder in the secondary text color
@@ -56,7 +56,8 @@ struct AppTextField: View {
                             .allowsHitTesting(false)        // let taps reach the TextEditor underneath
                     }
                 }
-                .frame(width: widthField, height: multilineHeight)
+                .frame(height: multilineHeight)
+                .fieldWidth(widthField)
                 .background(Color.siriusFieldFill)
                 .cornerRadius(14)
                 .overlay(
@@ -88,7 +89,7 @@ struct AppTextField: View {
                     .accessibilityLabel(isRevealed ? "Hide password" : "Show password")
                 }
                 .padding(10)
-                .frame(width: widthField)
+                .fieldWidth(widthField)
                 .frame(minHeight: 35)
                 .background(Color.siriusFieldFill)
                 .cornerRadius(14)
@@ -109,7 +110,7 @@ struct AppTextField: View {
                         .keyboardType(keyboardType)
                 }
                     .padding(10)
-                    .frame(width: widthField)
+                    .fieldWidth(widthField)
                     .frame(minHeight: 35)
                     .background(Color.siriusFieldFill)
                     .cornerRadius(14)
@@ -119,6 +120,18 @@ struct AppTextField: View {
                     )
             }
             
+        }
+    }
+}
+
+private extension View {
+    // A fixed width, or the full width available when `width` is nil
+    @ViewBuilder
+    func fieldWidth(_ width: CGFloat?) -> some View {
+        if let width {
+            self.frame(width: width)
+        } else {
+            self.frame(maxWidth: .infinity)
         }
     }
 }

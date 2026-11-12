@@ -20,7 +20,6 @@ struct ApplicationStatusPage: View {
                 .padding(.top, 85)
                 .padding(.leading, 32)
             
-            // Segmented control: All | Applied | Interview | Accepted | Rejected
             HStack(spacing: 0) {
                 ForEach(ApplicationStatus.tabs) { status in
                     Button(action: {            // Controller updates state, triggering a view redraw
@@ -31,22 +30,25 @@ struct ApplicationStatusPage: View {
                         Text(status.rawValue)
                             .accessibilityAddTraits(controller.selectedStatus == status ? .isSelected : [])
                             .scaledFont(size: 12, weight: .medium)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 38)
                             .background(controller.selectedStatus == status ? Color.siriusNavy : Color.clear)
-                            .foregroundStyle(controller.selectedStatus == status ? Color.white : Color.black)
+                            .foregroundStyle(controller.selectedStatus == status ? Color.white : Color.siriusText)
                             .clipShape(Capsule())
                     }
                 }
             }
             .padding(3)
-            .fluidFrame(width: 343, height: 44)
+            .frame(maxWidth: 343)
+            .frame(height: 44)
             .background(Color.siriusSurface)
             .clipShape(Capsule())
             .padding(.top, 12)
             .padding(.leading, 30)
             
-            // Dynamic Content Area
-            if controller.filteredApplications.isEmpty {            // Empty State UI
+            if controller.filteredApplications.isEmpty {
                 Spacer()
                 VStack {
                     Image(systemName: "folder.badge.questionmark")
@@ -55,7 +57,7 @@ struct ApplicationStatusPage: View {
                     Text("No applications found")
                         .foregroundColor(.white.opacity(0.8))
                         .padding(.top, 8)
-                    Text("You are applied automatically to jobs that match you at 60% or more.")
+                    Text("You are applied automatically to jobs that match you in the green (\(MatchRules.greenMinimum)% or more).")
                         .scaledFont(size: 11)
                         .foregroundColor(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
@@ -77,7 +79,7 @@ struct ApplicationStatusPage: View {
                     }
                     .padding(.top, 14)
                     .padding(.leading, 34)
-                    .padding(.bottom, 120)          // room for the bottom bar
+                    .padding(.bottom, NavBarMetrics.clearance + 28)          // room for the bottom bar
                 }
                 .scrollIndicators(.hidden)
                 .refreshable { await JobBoard.shared.reload(silent: true) }
@@ -88,7 +90,10 @@ struct ApplicationStatusPage: View {
         .appBg()
         .boardLoadState()
         .navigationDestination(item: $selectedApplicationID) { id in
+            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
+            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
             ApplicationDetailsPage(applicationID: id)
+                .environmentObject(controller)
         }
     }
 }

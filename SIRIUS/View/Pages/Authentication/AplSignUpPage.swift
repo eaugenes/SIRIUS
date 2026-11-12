@@ -104,13 +104,16 @@ struct AplSignUpPage: View {
                         unselectedFill: .siriusFieldFill
                     )
                     
+                    ProjectsEditor(projects: $applicantController.applicant.projects)
+                        .padding(.top, 4)
+                    
                     FormErrorText(message: applicantController.signUpError)
                         .padding(.top, 10)
                     
                     SiriusButton(title: "Continue") {
                         applicantController.applicant.yrExp = Double(yearsOfExperience)
                         applicantController.applicant.workSetUp = workSetup.rawValue
-                        if applicantController.validateProfile(coreLanguageText: coreLang, city: cityController.selectedCity) {
+                        if applicantController.validateProfile(coreLanguageText: coreLang, city: cityController.selectedCity, isSignUp: true) {
                             nextScreen = true
                         }
                     }
@@ -118,13 +121,13 @@ struct AplSignUpPage: View {
                 }
                 .frame(maxWidth: .infinity)
             }
-            .ignoresSafeArea(.container, edges: .top)
-            .scrollDismissesKeyboard(.interactively)
-            .appBg()
-            .navigationBarBackButtonHidden(true)
-            .navigationDestination(isPresented: $nextScreen) {
-                AplFinishSignUpPage(applicantController: applicantController)
-            }
+        }
+        .ignoresSafeArea(.container, edges: .top)
+        .scrollDismissesKeyboard(.interactively)
+        .appBg()
+        .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $nextScreen) {
+            AplFinishSignUpPage(applicantController: applicantController)
         }
     }
 }

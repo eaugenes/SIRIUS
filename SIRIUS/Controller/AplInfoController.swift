@@ -69,10 +69,41 @@ class AplInfoController: ObservableObject{
         
         if applicant.yrExp < 0 { signUpError = "Years of experience can't be negative."; return false }
         
+        guard validateProjects() else { return false }
+        
         applicant.coreLang = languages
         applicant.program = ProgramCatalog.complete(applicant.program)
         applicant.location = city?.name ?? applicant.location
         signUpError = nil
+        return true
+    }
+    
+    // Projects are optional, but every project that is kept needs a title and a description.
+    // Projects with nothing in them are dropped; a half-filled project blocks the user until it is
+    // completed or removed.
+    private func validateProjects() -> Bool {
+        applicant.projects.removeAll { $0.isBlank }
+        
+        for (index, project) in applicant.projects.enumerated() {
+            let number = index + 1
+            if project.trimmedTitle.isEmpty {
+                signUpError = "Project \(number) needs a title. Add one or remove the project."
+                return false
+            }
+            if project.trimmedDetails.isEmpty {
+                signUpError = "Project \(number) needs a description. Add one or remove the project."
+                return false
+            }
+            if project.title.count > Project.titleLimit || project.details.count > Project.descriptionLimit {
+                signUpError = "Project \(number) is too long. Title: \(Project.titleLimit) characters, description: \(Project.descriptionLimit)."
+                return false
+            }
+        }
+        
+        for index in applicant.projects.indices {
+            applicant.projects[index].title = applicant.projects[index].trimmedTitle
+            applicant.projects[index].details = applicant.projects[index].trimmedDetails
+        }
         return true
     }
     
@@ -111,6 +142,7 @@ class AplInfoController: ObservableObject{
                 applicant.id = saved.id
                 applicant.email = saved.email
                 applicant.username = saved.username
+                applicant.projects = saved.projects         // now holds the uploaded picture paths
             }
             applicant.password = ""
             isRegistered = true
@@ -122,43 +154,24 @@ class AplInfoController: ObservableObject{
     
     // MARK: - Profile editing
     
+    // Saves the edited copy of the profile. On any problem the previous profile stays in place and
+    // `signUpError` says what went wrong.
     @MainActor
-    func saveProfile(coreLanguageText: String) async -> Bool {
-        guard validateProfile(coreLanguageText: coreLanguageText, city: nil) else { return false }
-        guard await auth.updateApplicant(applicant) else {
+    func saveProfile(_ draft: Applicant, coreLanguageText: String, city: City?) async -> Bool {
+        let original = applicant
+        applicant = draft
+        guard validateProfile(coreLanguageText: coreLanguageText, city: city) else {
+            applicant = original
+            return false
+        }
+        guard let saved = await auth.updateApplicant(applicant) else {
+            applicant = original
             signUpError = AccountError.saveFailed.errorDescription
             return false
         }
+        applicant = saved
         await board.reload(silent: true)
         return true
-    }
-    
-    // MARK: - Resume
-    
-    static let maxResumeBytes = 5 * 1024 * 1024
-    
-    @discardableResult
-    func setResume(from url: URL) -> Bool {
-        let didAccess = url.startAccessingSecurityScopedResource()
-        defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-        
-        guard let data = try? Data(contentsOf: url) else {
-            signUpError = "That file couldn't be opened. Please choose another one."
-            return false
-        }
-        guard data.count <= AplInfoController.maxResumeBytes else {
-            signUpError = "Resume must be 5 MB or smaller."
-            return false
-        }
-        applicant.resumeData = data
-        applicant.resumeFileName = url.lastPathComponent
-        signUpError = nil
-        return true
-    }
-    
-    func removeResume() {
-        applicant.resumeData = nil
-        applicant.resumeFileName = ""
     }
     
     func signOut() {

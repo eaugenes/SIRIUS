@@ -8,6 +8,18 @@
 import Foundation
 import Combine
 
+struct AppliedJob: Identifiable {
+    let id: String              // the job id
+    let position: String
+    let company: String
+    let percentage: Int
+}
+
+struct AutoApplyOutcome {
+    var applied: [AppliedJob] = []
+    var failed = false          // the request could not reach the server
+}
+
 final class JobBoard: ObservableObject {
     
     static let shared = JobBoard()
@@ -189,7 +201,7 @@ final class JobBoard: ObservableObject {
 
     static let applyBatchSize = 10
 
-    // Active jobs the applicant qualifies for (>= 60%) but has no application for yet.
+    // Active jobs the applicant qualifies for (green match, 80% or more) but has no application for yet.
     // Withdrawn / removed applications count as "has one", so they are never re-applied.
     // Best match first; same match: preferred location first, then newest.
     func pendingQualifiedJobs(for applicant: Applicant) -> [(job: Job, breakdown: MatchBreakdown)] {
@@ -205,21 +217,36 @@ final class JobBoard: ObservableObject {
             }
     }
 
-    // Applies to the next `limit` best qualified jobs. Returns how many were sent.
+    // Applies to the next `limit` best qualified jobs (green matches only) and reports what was sent.
+    // The database then notifies the applicant and each employer (see the notifications trigger).
     @MainActor
-    @discardableResult
-    func applyToQualifiedJobs(applicant: Applicant, limit: Int = JobBoard.applyBatchSize) async -> Int {
+    func autoApply(applicant: Applicant, limit: Int = JobBoard.applyBatchSize) async -> AutoApplyOutcome {
         await reload(silent: true)          // fresh jobs + applications first (also needed right after sign up)
         let picks = Array(pendingQualifiedJobs(for: applicant).prefix(limit))
-        guard !picks.isEmpty else { return 0 }
+        guard !picks.isEmpty else { return AutoApplyOutcome() }
         do {
             try await SupabaseStore.applyToJobs(picks.map { (jobID: $0.job.jobID, score: $0.breakdown.total) })
         } catch {
             syncError = "Couldn't send your applications. Check your connection and try again."
-            return 0
+            return AutoApplyOutcome(failed: true)
         }
         await reload(silent: true)
-        return picks.count
+        let applied = picks.map {
+            AppliedJob(
+                id: $0.job.jobID,
+                position: $0.job.jobPos,
+                company: $0.job.companyName.isEmpty ? "Company" : $0.job.companyName,
+                percentage: $0.breakdown.total
+            )
+        }
+        return AutoApplyOutcome(applied: applied)
+    }
+    
+    // Same as `autoApply`, for callers that only need how many were sent (sign up).
+    @MainActor
+    @discardableResult
+    func applyToQualifiedJobs(applicant: Applicant, limit: Int = JobBoard.applyBatchSize) async -> Int {
+        await autoApply(applicant: applicant, limit: limit).applied.count
     }
     
     // MARK: - Employer actions

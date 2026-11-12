@@ -8,9 +8,7 @@
 import Foundation
 import Combine
 
-// Employer applicant lists. Applicants come from the shared JobBoard (automatic applications
-// from matched applicants), grouped by stable jobID. Passing `applicants:` keeps everything
-// in memory (previews / tests).
+// Remember: Emp && Apl share the same JobBoard
 final class EmpAplStatusController: ObservableObject {
     
     @Published var applicants: [EmpApplicant]
@@ -68,6 +66,7 @@ final class EmpAplStatusController: ObservableObject {
                 result.append(
                     EmpApplicant(
                         id: record.id,
+                        applicantID: record.applicantID,
                         name: record.applicantName,
                         degree: record.degree,
                         yearsExperience: record.yearsExperience,
@@ -80,9 +79,12 @@ final class EmpAplStatusController: ObservableObject {
                         jobMinYears: job.requiredYrExp,
                         jobRequiredLanguages: job.requiredLang,
                         jobProgram: job.requiredProgram,
+                        jobWorkSetup: job.workSetup.rawValue,
                         dateApplied: record.dateApplied,
                         location: record.location,
-                        resumeFileName: record.resumeFileName
+                        contactNumber: record.contactNumber,
+                        email: record.email,
+                        workSetup: record.workSetup
                     )
                 )
             }
@@ -233,6 +235,39 @@ final class EmpAplStatusController: ObservableObject {
         }
         selectedApplicantID = nil
     }
+    
+    // MARK: - Interviews (Interviews page)
+    
+    // Every interview of this company's applicants, with where it stands now
+    var interviewItems: [EmpInterviewItem] {
+        let now = Date()
+        return interviews.compactMap { interview -> EmpInterviewItem? in
+            guard let applicant = applicants.first(where: { $0.id == interview.applicantID }) else { return nil }
+            let state: EmpInterviewState
+            switch applicant.status {
+            case .hired: state = .hired
+            case .interview: state = interview.date >= now ? .upcoming : .awaitingDecision
+            case .toReview: return nil
+            }
+            return EmpInterviewItem(applicant: applicant, interview: interview, state: state)
+        }
+    }
+    
+    // Items for one tab: upcoming soonest first; the others newest first
+    func interviewItems(for filter: EmpInterviewFilter) -> [EmpInterviewItem] {
+        let list = interviewItems.filter { $0.state == filter.state }
+        switch filter {
+        case .upcoming: return list.sorted { $0.interview.date < $1.interview.date }
+        case .awaiting, .hired: return list.sorted { $0.interview.date > $1.interview.date }
+        }
+    }
+    
+    func interviewItem(forApplicant id: UUID) -> EmpInterviewItem? {
+        interviewItems.first { $0.applicant.id == id }
+    }
+    
+    var upcomingInterviewCount: Int { interviewItems.filter { $0.state == .upcoming }.count }
+    var awaitingDecisionCount: Int { interviewItems.filter { $0.state == .awaitingDecision }.count }
     
     // MARK: - Interview scheduling
     

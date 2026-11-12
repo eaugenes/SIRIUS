@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import UIKit           // UIKeyboardType / UIImage
+import UIKit           // UIKeyboardType & UIImage
 
 struct EmpAccountPage: View {
     
@@ -34,12 +34,15 @@ struct EmpAccountPage: View {
                 infoController.signOut()
                 logInScreen = true
             }
-            .padding(.bottom, 95)           // sits just above the bottom bar
+            .padding(.bottom, NavBarMetrics.clearance)           // sits just above the bottom bar
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .appBg()
         .navigationDestination(isPresented: $editScreen) {
-            EmpCompanyInfoPage(infoController: infoController, mode: .edit)
+            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
+            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
+            EmpEditProfilePage()
+                .environmentObject(infoController)
         }
         .navigationDestination(isPresented: $logInScreen) {
             LogInPage()

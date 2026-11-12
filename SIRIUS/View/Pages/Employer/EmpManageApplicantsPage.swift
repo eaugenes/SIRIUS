@@ -7,16 +7,12 @@
 
 import SwiftUI
 
-// Employer "Manage Applicants" (Figma: Manage Applicants based on Job Position Opening — All / To Review / Interview / Hired)
-// - As a tab (job == nil): every applicant.
-// - Pushed from Manage Jobs (job != nil): only applicants for that job position, with a back button.
 struct EmpManageApplicantsPage: View {
     
     var job: Job? = nil
     
     @EnvironmentObject private var aplController: EmpAplStatusController
     @Environment(\.dismiss) private var dismiss
-    
     @State private var applicantToReject: EmpApplicant?
     @State private var openedApplicantID: UUID?
     
@@ -61,47 +57,25 @@ struct EmpManageApplicantsPage: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.bottom, job == nil ? 100 : 30)     // room for the bottom bar
+                        .padding(.bottom, job == nil ? NavBarMetrics.clearance + 8 : 30)     // room for the bottom bar
                     }
                     .scrollIndicators(.hidden)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .animation(.easeInOut(duration: 0.2), value: aplController.selectedFilter)
-            
-            // Schedule Interview modal
-            if let target = aplController.interviewTarget {
-                Color.black.opacity(0.45)
-                    .ignoresSafeArea()
-                    .onTapGesture { aplController.cancelScheduling() }
-                    .transition(.opacity)
-                
-                ScheduleInterviewDialog(
-                    applicantName: target.name,
-                    title: aplController.isRescheduling ? "Reschedule Interview" : "Schedule Interview",
-                    sendTitle: aplController.isRescheduling ? "Save" : "Send",
-                    initial: aplController.isRescheduling ? aplController.interview(for: target) : nil,
-                    onSend: { date, location, message in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            aplController.scheduleInterview(date: date, location: location, message: message)
-                        }
-                    },
-                    onCancel: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            aplController.cancelScheduling()
-                        }
-                    }
-                )
-                .transition(.scale(scale: 0.9).combined(with: .opacity))
-            }
         }
-        .animation(.easeInOut(duration: 0.2), value: aplController.interviewTarget?.id)
         .appBg()
+        .scheduleInterviewOverlay(aplController)         // Schedule / Reschedule Interview dialog
         .navigationBarBackButtonHidden(true)
+        .hidesSiriusNavBar(job != nil)                   // pushed from Manage Jobs: no bottom bar over the list
         .onDisappear { aplController.clearSelection() }
         .boardLoadState()
         .navigationDestination(item: $openedApplicantID) { id in
-            EmpApplicantDetailsPage(applicantID: id)
+            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
+            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
+            EmpAplDetailsPage(applicantID: id)
+                .environmentObject(aplController)
         }
         .sheet(item: $applicantToReject) { applicant in
             RejectApplicantDialog(
@@ -223,7 +197,7 @@ struct EmpManageApplicantsPage: View {
                 EmptyStateView(
                     icon: "person.2",
                     title: "No applicants here yet",
-                    message: "Applicants who match 60% or more are added automatically."
+                    message: "Applicants who match in the green (\(MatchRules.greenMinimum)% or more) are added automatically."
                 )
             }
         }

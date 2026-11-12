@@ -20,8 +20,8 @@ struct ApplicantRow: Codable, Sendable {
     var yrsExp: Double
     var coreLang: [String]
     var workSetup: String
-    var resumePath: String
     var birthDate: String
+    var email: String?              // lets the employer contact the applicant (copied from the account email)
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -33,8 +33,8 @@ struct ApplicantRow: Codable, Sendable {
         case yrsExp = "yrs_exp"
         case coreLang = "core_lang"
         case workSetup = "work_setup"
-        case resumePath = "resume_path"
         case birthDate = "birth_date"
+        case email
     }
     
     init(_ a: Applicant) {
@@ -48,19 +48,21 @@ struct ApplicantRow: Codable, Sendable {
         yrsExp = a.yrExp
         coreLang = a.coreLang
         workSetup = a.workSetUp
-        resumePath = a.resumeFileName
         birthDate = a.birthDate
+        email = a.email
     }
     
-    func applicant(email: String) -> Applicant {
+    // `email` is the signed-in account's email; when it is empty (an employer is reading the row)
+    // the email stored on the row is used instead.
+    func applicant(email accountEmail: String) -> Applicant {
+        let address = accountEmail.isEmpty ? (email ?? "") : accountEmail
         var a = Applicant(
             id: id, firstName: firstName, middleName: middleName, lastName: lastName,
             contactNumber: contactNumber, location: location, program: program,
-            yrExp: yrsExp, coreLang: coreLang, workSetUp: workSetup, email: email, password: ""
+            yrExp: yrsExp, coreLang: coreLang, workSetUp: workSetup, email: address, password: ""
         )
         a.birthDate = birthDate
-        a.resumeFileName = resumePath
-        a.username = email.split(separator: "@").first.map(String.init) ?? ""
+        a.username = address.split(separator: "@").first.map(String.init) ?? ""
         return a
     }
 }
@@ -299,6 +301,53 @@ private struct WithdrawParam: Encodable, Sendable {
     var p_id: UUID
 }
 
+// A portfolio entry of an applicant (table applicant_projects)
+struct ProjectRow: Codable, Sendable {
+    var id: UUID
+    var applicantID: UUID
+    var title: String
+    var details: String
+    var imagePaths: [String]
+    var position: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case applicantID = "applicant_id"
+        case title
+        case details = "description"
+        case imagePaths = "image_paths"
+        case position
+    }
+    
+    func project() -> Project {
+        Project(id: id, title: title, details: details, imagePaths: imagePaths)
+    }
+}
+
+// An in-app notification (table notifications). Rows are created by database triggers.
+struct NotificationRow: Codable, Sendable {
+    var id: UUID
+    var kind: String
+    var title: String
+    var body: String
+    var isRead: Bool
+    var createdAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id, kind, title, body
+        case isRead = "is_read"
+        case createdAt = "created_at"
+    }
+    
+    func notification() -> AppNotification {
+        AppNotification(id: id, kind: kind, title: title, body: body, isRead: isRead, createdAt: createdAt)
+    }
+}
+
+private struct ReadUpdate: Encodable, Sendable {
+    var is_read: Bool = true
+}
+
 // MARK: - Store
 
 enum SupabaseStore {
@@ -386,6 +435,119 @@ enum SupabaseStore {
             return UIImage(data: data)
         }
     
+    // MARK: Projects (table applicant_projects + Storage bucket "project-images")
+    
+    private static let projectBucket = "project-images"
+    
+    // Shrinks a project picture (max 1024 px) and saves it as JPEG
+    private static func projectImageData(_ image: UIImage) -> Data? {
+        let longest = max(image.size.width, image.size.height)
+        guard longest > 0 else { return nil }
+        let scale = min(1, 1024 / longest)
+        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+        return resized.jpegData(compressionQuality: 0.75)
+    }
+    
+    // The applicant's projects in the order they were added (empty when none or when loading fails)
+    static func fetchProjects(applicantID: UUID) async -> [Project] {
+        do {
+            let rows: [ProjectRow] = try await db.from("applicant_projects")
+                .select()
+                .eq("applicant_id", value: applicantID)
+                .order("position", ascending: true)
+                .execute()
+                .value
+            return rows.map { $0.project() }
+        } catch {
+            return []
+        }
+    }
+    
+    // Uploads the new pictures, saves every project and removes the ones the applicant deleted.
+    // Returns the projects with their picture paths filled in.
+    @discardableResult
+    static func saveProjects(_ projects: [Project], applicantID: UUID) async throws -> [Project] {
+        let owner = applicantID.uuidString.lowercased()          // lowercase: the storage policy compares it to auth.uid()
+        let existing: [ProjectRow] = try await db.from("applicant_projects")
+            .select()
+            .eq("applicant_id", value: applicantID)
+            .execute()
+            .value
+        
+        var saved: [Project] = []
+        var rows: [ProjectRow] = []
+        for (index, project) in projects.enumerated() {
+            var paths = project.imagePaths
+            for image in project.newImages {
+                guard let data = projectImageData(image) else { continue }
+                let path = "\(owner)/\(project.id.uuidString.lowercased())/\(UUID().uuidString.lowercased()).jpg"
+                try await db.storage
+                    .from(projectBucket)
+                    .upload(path, data: data, options: FileOptions(contentType: "image/jpeg", upsert: true))
+                paths.append(path)
+            }
+            var stored = project
+            stored.title = project.trimmedTitle
+            stored.details = project.trimmedDetails
+            stored.imagePaths = paths
+            stored.newImages = []
+            saved.append(stored)
+            rows.append(ProjectRow(
+                id: project.id, applicantID: applicantID,
+                title: stored.title, details: stored.details,
+                imagePaths: paths, position: index
+            ))
+        }
+        
+        if !rows.isEmpty {
+            try await db.from("applicant_projects").upsert(rows).execute()
+        }
+        
+        // Projects the applicant removed
+        let keptIDs = Set(projects.map { $0.id })
+        for row in existing where !keptIDs.contains(row.id) {
+            try await db.from("applicant_projects").delete().eq("id", value: row.id).execute()
+        }
+        
+        // Pictures that are no longer used (removed pictures or removed projects); best effort
+        let oldPaths = Set(existing.flatMap { $0.imagePaths })
+        let newPaths = Set(saved.flatMap { $0.imagePaths })
+        let orphaned = Array(oldPaths.subtracting(newPaths))
+        if !orphaned.isEmpty {
+            _ = try? await db.storage.from(projectBucket).remove(paths: orphaned)
+        }
+        return saved
+    }
+    
+    // nil when the picture can't be loaded
+    static func downloadProjectImage(path: String) async -> UIImage? {
+        guard let data = try? await db.storage.from(projectBucket).download(path: path) else { return nil }
+        return UIImage(data: data)
+    }
+    
+    // MARK: Notifications (table notifications; Row Level Security returns only the signed-in user's rows)
+    
+    static func fetchNotifications() async throws -> [AppNotification] {
+        let rows: [NotificationRow] = try await db.from("notifications")
+            .select()
+            .order("created_at", ascending: false)
+            .limit(50)
+            .execute()
+            .value
+        return rows.map { $0.notification() }
+    }
+    
+    static func markNotificationsRead(ids: [UUID]) async throws {
+        for id in ids {
+            try await db.from("notifications").update(ReadUpdate()).eq("id", value: id).execute()
+        }
+    }
+    
     // MARK: Board (jobs, applications, interviews)
     
     // Row Level Security decides what each user gets: an applicant sees active jobs and their own applications; an employer sees their own jobs and the applications on them.
@@ -424,7 +586,9 @@ enum SupabaseStore {
                 breakdown: breakdown,
                 status: status(from: row.status),
                 location: applicant.location,
-                resumeFileName: applicant.resumeFileName,
+                contactNumber: applicant.contactNumber,
+                email: applicant.email,
+                workSetup: applicant.workSetUp,
                 rejectionReason: row.rejectionReason,
                 isWithdrawn: row.isWithdrawn,
                 isRemoved: row.isRemoved,

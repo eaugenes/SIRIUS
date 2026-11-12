@@ -11,9 +11,8 @@ import UIKit
 
 final class EmpInfoController: ObservableObject {
     
-    // Saved to the account file whenever a registered employer edits their profile
-    @Published var employer: Employer { didSet { persistProfile() } }
-    @Published var company: Company { didSet { persistProfile() } }
+    @Published var employer: Employer
+    @Published var company: Company
     @Published var recentActivity: [EmpActivity]
     @Published var isRegistered: Bool = false
     @Published var signUpError: String?
@@ -42,11 +41,35 @@ final class EmpInfoController: ObservableObject {
         isRegistered = true
     }
     
-    private func persistProfile() {
-        guard isRegistered else { return }
-        let employer = self.employer
-        let company = self.company
-        Task { await auth.updateEmployer(employer, company: company) }
+    // MARK: - Profile editing
+    
+    // Saves the edited copies of the personal and company information (and the photo). On any problem the
+    // previous profile stays in place and `signUpError` says what went wrong.
+    @MainActor
+    func saveProfile(employer draftEmployer: Employer, company draftCompany: Company) async -> Bool {
+        let previousEmployer = employer
+        let previousCompany = company
+        employer = draftEmployer
+        company = draftCompany
+        
+        func restore() {
+            employer = previousEmployer
+            company = previousCompany
+        }
+        
+        if isBlank(employer.firstName) { signUpError = "Please enter your first name."; restore(); return false }
+        if isBlank(employer.lastName) { signUpError = "Please enter your last name."; restore(); return false }
+        if isBlank(employer.contactNumber) { signUpError = "Please enter your contact number."; restore(); return false }
+        guard validateCompanyInfo() else { restore(); return false }
+        
+        guard await auth.updateEmployer(employer, company: company) else {
+            signUpError = AccountError.saveFailed.errorDescription
+            restore()
+            return false
+        }
+        signUpError = nil
+        await JobBoard.shared.reload(silent: true)          // jobs show the company name
+        return true
     }
   
     var displayCompanyName: String {

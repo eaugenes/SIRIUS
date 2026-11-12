@@ -7,13 +7,13 @@
 
 import SwiftUI
 
-// Employer "Manage Jobs" tab with Active / Inactive lists
-// (Figma: Manage Jobs (Employer) — Active and Inactive variants)
 struct EmpManageJobsPage: View {
     
     @EnvironmentObject private var jobController: EmpJobController
+    @EnvironmentObject private var aplController: EmpAplStatusController
+    @EnvironmentObject private var infoController: EmpInfoController
     
-    @State private var selectedJobID: String?       // pushes that job's details
+    @State private var selectedJobID: String?       // pushes job's details
     @State private var jobPostingScreen = false
     @State private var jobToDelete: Job?
     
@@ -91,7 +91,12 @@ struct EmpManageJobsPage: View {
         .appBg()
         .boardLoadState()
         .navigationDestination(item: $selectedJobID) { jobID in
+            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
+            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
             EmpJobDetailsPage(jobID: jobID)
+                .environmentObject(jobController)
+                .environmentObject(aplController)
+                .environmentObject(infoController)
         }
         .sheet(isPresented: $jobPostingScreen) {
             EmpJobPostingPage()

@@ -37,7 +37,7 @@ struct ApplicationDetailsPage: View {
                     summaryCard(application)
                     
                     if let interview = application.interview, application.status == .interview {
-                        interviewCard(interview)
+                        InterviewDetailsPanel(role: application.role, company: application.company, interview: interview)
                     }
                     if application.status == .rejected {
                         rejectionCard(application)
@@ -72,6 +72,7 @@ struct ApplicationDetailsPage: View {
         .scrollIndicators(.hidden)
         .appBg()
         .navigationBarBackButtonHidden(true)
+        .hidesSiriusNavBar()
         .onAppear { markSeen() }
         .onChange(of: application?.interview?.date) { _, _ in markSeen() }
         .alert("Withdraw this application?", isPresented: $confirmWithdraw) {
@@ -129,24 +130,6 @@ struct ApplicationDetailsPage: View {
                 detail("Work setup", job.workSetup.rawValue)
             }
         }
-    }
-    
-    private func interviewCard(_ interview: Interview) -> some View {
-        panel {
-            Label("Your interview", systemImage: "calendar")
-                .scaledFont(size: 16, weight: .semibold)
-                .foregroundStyle(Color.siriusInk)
-            detail("Date", interview.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
-            detail("Time", interview.date.formatted(date: .omitted, time: .shortened))
-            detail("Place", interview.location)
-            if !interview.message.isEmpty {
-                Text(interview.message)
-                    .scaledFont(size: 12)
-                    .foregroundStyle(Color.siriusMuted)
-                    .padding(.top, 2)
-            }
-        }
-        .accessibilityElement(children: .combine)
     }
     
     private func rejectionCard(_ application: JobApplication) -> some View {

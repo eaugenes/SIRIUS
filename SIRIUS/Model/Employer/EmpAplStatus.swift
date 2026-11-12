@@ -64,6 +64,7 @@ enum EmpApplicantFilter: String, CaseIterable, Identifiable {
 
 struct EmpApplicant: Identifiable, Equatable {
     var id = UUID()                 // same id as the stored application record
+    var applicantID = UUID()        // the applicant's account id (used to load their projects)
     var name: String
     var degree: String
     var yearsExperience: Double
@@ -76,9 +77,12 @@ struct EmpApplicant: Identifiable, Equatable {
     var jobMinYears: Double = 0
     var jobRequiredLanguages: [String] = []
     var jobProgram: String = ""
+    var jobWorkSetup: String = ""
     var dateApplied: Date = Date()
     var location: String = ""
-    var resumeFileName: String = ""
+    var contactNumber: String = ""
+    var email: String = ""
+    var workSetup: String = ""
     
     // Whole numbers read "2 years", partial ones "1.5 years"
     var experienceText: String {

@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-// "Schedule Interview" card shown over Manage Applicants (Figma: Frame 85)
 struct ScheduleInterviewDialog: View {
     
     let applicantName: String

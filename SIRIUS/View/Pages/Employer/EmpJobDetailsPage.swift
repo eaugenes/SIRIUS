@@ -43,6 +43,7 @@ struct EmpJobDetailsPage: View {
         .navigationDestination(isPresented: $showApplicants) {
             if let job {
                 EmpManageApplicantsPage(job: job)
+                    .environmentObject(aplController)
             }
         }
         .sheet(isPresented: $showEdit) {

@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-// Employer Home (Figma: Home Screen (Employer))
 struct EmpHomePage: View {
     
     @Binding var selectedTab: EmpNavigationTab
@@ -16,6 +15,7 @@ struct EmpHomePage: View {
     @EnvironmentObject private var aplController: EmpAplStatusController
     
     @State private var jobPostingScreen = false
+    @State private var interviewsScreen = false
     
     private let columns = [
         GridItem(.flexible(), spacing: 26),
@@ -25,10 +25,14 @@ struct EmpHomePage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                greeting
-                    .padding(.top, 20)
-                    .padding(.leading, 13)
-                    .padding(.bottom, 30)
+                HStack(alignment: .top) {
+                    greeting
+                    Spacer(minLength: 8)
+                    NotificationBell()
+                }
+                .padding(.top, 20)
+                .padding(.leading, 13)
+                .padding(.bottom, 30)
                 
                 EmpAverageMatchCard(percentage: aplController.averageMatch)
                     .padding(.bottom, 13)
@@ -39,7 +43,10 @@ struct EmpHomePage: View {
                     EmpStatCard(value: aplController.interviewCount, title: "Interview")
                     EmpStatCard(value: aplController.hiredCount, title: "Hired")
                 }
-                .padding(.bottom, 29)
+                .padding(.bottom, 13)
+                
+                interviewsCard
+                    .padding(.bottom, 29)
                 
                 quickActions
                     .padding(.horizontal, -6)
@@ -58,13 +65,59 @@ struct EmpHomePage: View {
                 .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 32)
-            .padding(.bottom, 100)          // room for the bottom bar
+            .padding(.bottom, NavBarMetrics.clearance + 8)          // room for the bottom bar
         }
         .scrollIndicators(.hidden)
         .appBg()
         .sheet(isPresented: $jobPostingScreen) {
             EmpJobPostingPage()
         }
+        .navigationDestination(isPresented: $interviewsScreen) {
+            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
+            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
+            EmpInterviewsPage()
+                .environmentObject(aplController)
+        }
+    }
+    
+    // Opens the Interviews page: upcoming interviews and the ones waiting for a decision
+    private var interviewsCard: some View {
+        Button {
+            interviewsScreen = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "calendar")
+                    .scaledFont(size: 18)
+                    .foregroundStyle(Color.white)
+                    .frame(width: 40, height: 40)
+                    .background(Circle().fill(Color.siriusNavy))
+                
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Interviews")
+                        .scaledFont(size: 14, weight: .semibold)
+                        .foregroundStyle(Color.siriusText)
+                    Text("\(aplController.upcomingInterviewCount) upcoming \u{00B7} \(aplController.awaitingDecisionCount) awaiting decision")
+                        .scaledFont(size: 11)
+                        .foregroundStyle(Color.siriusTextSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                
+                Spacer(minLength: 0)
+                
+                Image(systemName: "chevron.forward")
+                    .scaledFont(size: 16)
+                    .foregroundStyle(Color.siriusText)
+            }
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity)
+            .frame(height: 61)
+            .background(Color.siriusSurface)
+            .cornerRadius(10)
+            .shadow(color: Color.black.opacity(0.25), radius: 2, x: 4, y: 4)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens the interview schedule and status tracker")
     }
     
     // "Greetings, ABC Company!"
@@ -81,10 +134,10 @@ struct EmpHomePage: View {
         .foregroundStyle(Color.white)
     }
     
-    // "Quick Actions  [Job Posting +]  [Review Applicants 👥]"
+    // "Quick Action  [Job Posting +]  [Review Applicants 👥]"
     private var quickActions: some View {
         HStack(spacing: 15) {
-            Text("Quick Actions")
+            Text("Quick Action")
                 .scaledFont(size: 15, weight: .medium)
                 .foregroundStyle(Color.siriusText)
             
