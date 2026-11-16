@@ -13,7 +13,7 @@ extension View {
             .frame(maxWidth: width, alignment: alignment)
             .frame(minHeight: height, alignment: alignment)
     }
-    
+
     func fluidFrame(width: CGFloat, minHeight: CGFloat, alignment: Alignment = .center) -> some View {
         self.frame(maxWidth: width, minHeight: minHeight, alignment: alignment)
     }
@@ -22,7 +22,7 @@ extension View {
 struct AdaptiveRoot<Content: View>: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @ViewBuilder var content: () -> Content
-    
+
     var body: some View {
         if sizeClass == .regular {
             ZStack {

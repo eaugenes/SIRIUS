@@ -6,19 +6,22 @@
 //
 
 import SwiftUI
-import UIKit           // UIKeyboardType & UIImage
+import UIKit
 
 struct EmpAccountPage: View {
-    
+
     @EnvironmentObject private var infoController: EmpInfoController
-    
-    @State private var editScreen = false
-    @State private var logInScreen = false
-    
+
+    private enum Route: Hashable {
+        case editProfile
+        case logIn
+    }
+    @State private var route: Route?
+
     var body: some View {
         VStack(spacing: 0) {
             header
-            
+
             ScrollView {
                 VStack(spacing: 25) {
                     aboutCard
@@ -29,28 +32,27 @@ struct EmpAccountPage: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.hidden)
-            
+
             SiriusButton(title: "Sign Out", isFilled: false, width: 333, height: 34, fontSize: 12) {
                 infoController.signOut()
-                logInScreen = true
+                route = .logIn
             }
-            .padding(.bottom, NavBarMetrics.clearance)           // sits just above the bottom bar
+            .padding(.bottom, NavBarMetrics.clearance)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .appBg()
-        .navigationDestination(isPresented: $editScreen) {
-            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
-            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
-            EmpEditProfilePage()
-                .environmentObject(infoController)
-        }
-        .navigationDestination(isPresented: $logInScreen) {
-            LogInPage()
-                .navigationBarBackButtonHidden(true)
+        .navigationDestination(item: $route) { destination in
+            switch destination {
+            case .editProfile:
+                EmpEditProfilePage(onClose: { route = nil })
+                    .environmentObject(infoController)
+            case .logIn:
+                LogInPage()
+                    .navigationBarBackButtonHidden(true)
+            }
         }
     }
-    
-    // Dark-blue band with the company initial, name, email and edit button
+
     private var header: some View {
         HStack(spacing: 16) {
             Group {
@@ -68,24 +70,24 @@ struct EmpAccountPage: View {
             .background(Color.siriusSurface)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .shadow(color: Color.black.opacity(0.25), radius: 1, x: 0, y: 4)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(infoController.displayCompanyName)
                     .scaledFont(size: 18)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                
+
                 Text(infoController.displayValue(infoController.displayEmail))
                     .scaledFont(size: 12)
                     .lineLimit(1)
             }
             .foregroundStyle(Color.white)
-            
+
             Spacer()
-            
+
             Button {
                 infoController.clearError()
-                editScreen = true
+                route = .editProfile
             } label: {
                 Image(systemName: "pencil.line")
                     .scaledFont(size: 20)
@@ -107,13 +109,13 @@ struct EmpAccountPage: View {
                 .ignoresSafeArea(edges: .top)
         )
     }
-    
+
     private var aboutCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("About Company")
                 .scaledFont(size: 16, weight: .medium)
                 .foregroundStyle(Color.siriusText)
-            
+
             Text(infoController.displayValue(infoController.company.cmpDesc))
                 .scaledFont(size: 13, weight: .light)
                 .foregroundStyle(Color.siriusText)
@@ -130,14 +132,14 @@ struct EmpAccountPage: View {
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 4)
     }
-    
+
     private var companyInfoCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Company Information")
                 .scaledFont(size: 14, weight: .medium)
                 .foregroundStyle(Color.siriusText)
                 .padding(.bottom, 10)
-            
+
             infoRow(label: "Founded", value: infoController.company.founded)
             Divider().overlay(Color.siriusBorder)
             infoRow(label: "Location", value: infoController.company.loc)
@@ -151,14 +153,14 @@ struct EmpAccountPage: View {
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 4)
     }
-    
+
     private func infoRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
                 .scaledFont(size: 12)
-            
+
             Spacer()
-            
+
             Text(infoController.displayValue(value))
                 .scaledFont(size: 12, weight: .medium)
                 .lineLimit(1)

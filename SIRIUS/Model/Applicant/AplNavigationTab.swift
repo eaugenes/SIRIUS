@@ -12,11 +12,11 @@ enum AplNavigationTab: String, CaseIterable, Identifiable{
     case jobs = "Jobs"
     case applications = "Applications"
     case profile = "Account"
-    
+
     var id: String {
         self.rawValue
     }
-    
+
     var iconTypes: String {
         switch self {
             case .home: return "house"

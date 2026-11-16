@@ -8,21 +8,21 @@
 import SwiftUI
 
 struct AplFinishSignUpPage: View {
-    
+
     @ObservedObject var applicantController: AplInfoController
-    
+
     @Environment(\.dismiss) private var dismiss
     @State private var confirmPassword = ""
     @State private var otpCode = ""
     @State private var codeSent = false
     @State private var homeScreen = false
     @State private var isWorking = false
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 AuthBrandHeader()
-                
+
                 AuthPanel(heading: "Create your account", subheading: "Enter your email and choose a password") {
                     VStack(spacing: 10) {
                         AppTextField(
@@ -54,7 +54,6 @@ struct AplFinishSignUpPage: View {
                         )
                         .disabled(codeSent)
 
-                        // NEW: OTP field, directly below Confirm Password
                         if codeSent {
                             AppTextField(
                                 title: "Verification Code",

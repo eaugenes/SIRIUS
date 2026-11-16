@@ -5,7 +5,6 @@
 //  Created by Mac-LAB on 10/2/26.
 //
 
-
 import Foundation
 
 struct EmpActivity: Identifiable {

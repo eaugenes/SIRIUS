@@ -8,10 +8,10 @@
 import SwiftUI
 
 struct EmpStatCard: View {
-    
+
     let value: Int
     let title: String
-    
+
     var body: some View {
         HStack(spacing: 10) {
             Text("\(value)")
@@ -19,7 +19,7 @@ struct EmpStatCard: View {
                 .foregroundStyle(Color.siriusText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-            
+
             Text(title)
                 .scaledFont(size: 14, weight: .medium)
                 .foregroundStyle(Color.siriusText)
@@ -35,15 +35,14 @@ struct EmpStatCard: View {
     }
 }
 
-// Navy → green → navy "90% Average Match" banner
 struct EmpAverageMatchCard: View {
     let percentage: Int
-    
+
     var body: some View {
         HStack(spacing: 9) {
             Text("\(percentage)%")
                 .scaledFont(size: 30, weight: .medium)
-            
+
             Text("Average Match")
                 .scaledFont(size: 18)
         }

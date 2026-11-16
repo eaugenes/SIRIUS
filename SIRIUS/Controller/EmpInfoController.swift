@@ -10,15 +10,15 @@ import Combine
 import UIKit
 
 final class EmpInfoController: ObservableObject {
-    
+
     @Published var employer: Employer
     @Published var company: Company
     @Published var recentActivity: [EmpActivity]
     @Published var isRegistered: Bool = false
     @Published var signUpError: String?
-    
+
     private let auth: AuthController
-    
+
     init(
         employer: Employer = Employer(),
         company: Company = Company(),
@@ -30,8 +30,7 @@ final class EmpInfoController: ObservableObject {
         self.recentActivity = recentActivity
         self.auth = auth
     }
-    
-    // Builds the controller for an employer who logged in
+
     convenience init(account: UserAccount, auth: AuthController = .shared) {
         self.init(
             employer: account.employer ?? Employer(),
@@ -40,70 +39,64 @@ final class EmpInfoController: ObservableObject {
         )
         isRegistered = true
     }
-    
+
     // MARK: - Profile editing
-    
-    // Saves the edited copies of the personal and company information (and the photo). On any problem the
-    // previous profile stays in place and `signUpError` says what went wrong.
+
     @MainActor
     func saveProfile(employer draftEmployer: Employer, company draftCompany: Company) async -> Bool {
         let previousEmployer = employer
         let previousCompany = company
         employer = draftEmployer
         company = draftCompany
-        
+
         func restore() {
             employer = previousEmployer
             company = previousCompany
         }
-        
+
         if isBlank(employer.firstName) { signUpError = "Please enter your first name."; restore(); return false }
         if isBlank(employer.lastName) { signUpError = "Please enter your last name."; restore(); return false }
         if isBlank(employer.contactNumber) { signUpError = "Please enter your contact number."; restore(); return false }
+        if !ContactNumber.isValid(employer.contactNumber) { signUpError = ContactNumber.errorMessage; restore(); return false }
         guard validateCompanyInfo() else { restore(); return false }
-        
+
         guard await auth.updateEmployer(employer, company: company) else {
             signUpError = AccountError.saveFailed.errorDescription
             restore()
             return false
         }
         signUpError = nil
-        await JobBoard.shared.reload(silent: true)          // jobs show the company name
+        await JobBoard.shared.reload(silent: true)
         return true
     }
-  
+
     var displayCompanyName: String {
         let name = company.cmpName.trimmingCharacters(in: .whitespacesAndNewlines)
         return name.isEmpty ? "Your Company" : name
     }
-    
+
     var companyInitial: String {
         String(displayCompanyName.prefix(1)).uppercased()
     }
-    
+
     var displayEmail: String {
         let companyEmail = company.email.trimmingCharacters(in: .whitespacesAndNewlines)
         if !companyEmail.isEmpty { return companyEmail }
         return employer.email.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-    
+
     func displayValue(_ value: String) -> String {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "—" : trimmed
     }
-    
+
     func updateProfile(_ image: UIImage) {
         employer.profilePicture = image
     }
-    
-    
+
     // MARK: - Sign up
-    
+
     func validatePersonalInfo() -> Bool {
-        if employer.profilePicture == nil {
-            signUpError = "Please choose a profile picture."
-            return false
-        }
         if isBlank(employer.firstName) {
             signUpError = "Please enter your first name."
             return false
@@ -120,11 +113,15 @@ final class EmpInfoController: ObservableObject {
             signUpError = "Please enter your contact number."
             return false
         }
-        
+        if !ContactNumber.isValid(employer.contactNumber) {
+            signUpError = ContactNumber.errorMessage
+            return false
+        }
+
         signUpError = nil
         return true
     }
-    
+
     func validateCompanyInfo(requireAll: Bool = false) -> Bool {
         if isBlank(company.cmpName) {
             signUpError = "Please enter your company name."
@@ -156,11 +153,11 @@ final class EmpInfoController: ObservableObject {
         signUpError = nil
         return true
     }
-    
+
     private func isBlank(_ text: String) -> Bool {
         text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
-    
+
     @MainActor
     func sendVerificationCode(confirmPassword: String) async -> Bool {
         switch await auth.sendSignUpCode(email: employer.email, password: employer.password, confirm: confirmPassword) {
@@ -186,7 +183,7 @@ final class EmpInfoController: ObservableObject {
     }
 
     @MainActor
-    func completeSignUp(confirmPassword: String, code: String) async -> Bool {      // CHANGED: added `code`
+    func completeSignUp(confirmPassword: String, code: String) async -> Bool {
         switch await auth.registerEmployer(employer, company: company, password: employer.password, confirm: confirmPassword, code: code) {
         case .failure(let error):
             signUpError = error.errorDescription
@@ -200,35 +197,34 @@ final class EmpInfoController: ObservableObject {
             return true
         }
     }
-    
+
     func clearError() {
         signUpError = nil
     }
-    
+
     func signOut() {
         isRegistered = false
         auth.signOut()
     }
-    
+
     private func isValidEmail(_ email: String) -> Bool {
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let at = trimmed.firstIndex(of: "@") else { return false }
         let domain = trimmed[trimmed.index(after: at)...]
         return at != trimmed.startIndex && domain.contains(".") && !trimmed.contains(" ")
     }
-    
+
     // MARK: - Recent activity
-    
-    // Adds a row to the top of "Recent Activity" (e.g. after posting a job)
+
     func logActivity(icon: String, title: String, jobPosition: String) {
         recentActivity.insert(
             EmpActivity(icon: icon, title: title, jobPosition: jobPosition, timeAgo: "Just now"),
             at: 0
         )
     }
-    
+
     // MARK: - Sample data
-    
+
     static let sampleActivity: [EmpActivity] = [
         EmpActivity(icon: "person.2", title: "2 New Applicants", jobPosition: "Junior Software Developer", timeAgo: "2 hours ago"),
         EmpActivity(icon: "briefcase", title: "3 Hire Left", jobPosition: "UI/UX Designer", timeAgo: "5 hours ago"),
@@ -237,8 +233,7 @@ final class EmpInfoController: ObservableObject {
         EmpActivity(icon: "briefcase", title: "1 Hire Left", jobPosition: "UI/UX Designer", timeAgo: "2 days ago"),
         EmpActivity(icon: "briefcase", title: "3 Hire Left", jobPosition: "UI/UX Designer", timeAgo: "3 days ago")
     ]
-    
-    // Pre-filled controller for previews
+
     static func sample() -> EmpInfoController {
         EmpInfoController(
             employer: Employer(firstName: "Sam", lastName: "Reyes", email: "sam@gmail.com"),

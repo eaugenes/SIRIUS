@@ -8,10 +8,10 @@
 import SwiftUI
 
 struct AplJobDiscoveryPage: View {
-    
+
     @EnvironmentObject private var jobsController: AplJobsController
     @State private var selectedJobID: String?
-    
+
     var body: some View {
         NavigationStack{
             VStack(alignment: .leading, spacing: 0){
@@ -19,12 +19,12 @@ struct AplJobDiscoveryPage: View {
                     .scaledFont(size: 32, weight: .medium)
                     .foregroundStyle(Color.white)
                     .padding(.top, 75)
-                
+
                 HStack(spacing: 10){
                     Image(systemName: "magnifyingglass")
                         .scaledFont(size: 15)
                         .foregroundStyle(Color.white)
-                    
+
                     TextField(
                         "",
                         text: $jobsController.searchText,
@@ -34,7 +34,7 @@ struct AplJobDiscoveryPage: View {
                     .foregroundStyle(Color.white)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    
+
                     if !jobsController.searchText.isEmpty {
                         Button {
                             jobsController.searchText = ""
@@ -50,7 +50,7 @@ struct AplJobDiscoveryPage: View {
                 .background(Color.white.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 15))
                 .padding(.top, 17)
-                
+
                 if jobsController.listings.isEmpty {
                     emptyState
                 } else {
@@ -73,7 +73,7 @@ struct AplJobDiscoveryPage: View {
                             }
                         }
                         .padding(.top, 36)
-                        .padding(.bottom, 120)          // room for the bottom bar
+                        .padding(.bottom, 120)
                     }
                     .scrollIndicators(.hidden)
                     .padding(.leading, 4)
@@ -92,7 +92,7 @@ struct AplJobDiscoveryPage: View {
             }
         }
     }
-    
+
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "briefcase")

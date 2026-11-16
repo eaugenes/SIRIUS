@@ -10,15 +10,15 @@ import Combine
 
 final class NavBarVisibility: ObservableObject {
     @Published private(set) var hideCount = 0
-    
+
     var isHidden: Bool { hideCount > 0 }
-    
+
     func push() { hideCount += 1 }
     func pop() { hideCount = max(0, hideCount - 1) }
 }
 
 private struct NavBarVisibilityKey: EnvironmentKey {
-    static let defaultValue: NavBarVisibility? = nil          // nil in previews: hiding does nothing
+    static let defaultValue: NavBarVisibility? = nil
 }
 
 extension EnvironmentValues {
@@ -30,10 +30,10 @@ extension EnvironmentValues {
 
 private struct HidesNavBarModifier: ViewModifier {
     let hides: Bool
-    
+
     @Environment(\.navBarVisibility) private var visibility
     @State private var isCounted = false
-    
+
     func body(content: Content) -> some View {
         content
             .onAppear {
@@ -50,13 +50,11 @@ private struct HidesNavBarModifier: ViewModifier {
 }
 
 extension View {
-    // Hides the bottom navigation bar while this page is on screen
     func hidesSiriusNavBar(_ hides: Bool = true) -> some View {
         modifier(HidesNavBarModifier(hides: hides))
     }
 }
 
 enum NavBarMetrics {
-    // Space a tab page leaves at its bottom so the floating bar (50 high + 10 padding + 10 gap) does not cover it
     static let clearance: CGFloat = 92
 }

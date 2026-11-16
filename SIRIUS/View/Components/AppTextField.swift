@@ -9,28 +9,27 @@ import SwiftUI
 import UIKit
 
 struct AppTextField: View {
-    
+
     let title: String
     let placeholder: String
     @Binding var text: String
     var isSecure: Bool = false
     var isMultiline: Bool = false
-    
+
     var titleColor: Color = .siriusInk
-    var borderColor: Color = .siriusFieldBorder
+    var borderColor: Color = .siriusBorder
     var multilineHeight: CGFloat = 100
-    var prefix: String? = nil                       // e.g. "₱" shown before the typed text
-    var keyboardType: UIKeyboardType = .default     // .numberPad for numbers, .emailAddress for emails
-    var widthField: CGFloat? = 300                  // nil = as wide as the space it is given
+    var prefix: String? = nil
+    var keyboardType: UIKeyboardType = .default
+    var widthField: CGFloat? = 300
     @State private var isRevealed = false
-    
-    // Figma "Final": Light 14 placeholder in the secondary text color
+
     private var promptText: Text {
         Text(placeholder)
             .font(.scaled(14, .light))
             .foregroundColor(Color.siriusTextSecondary)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
@@ -38,7 +37,7 @@ struct AppTextField: View {
                 .fontWeight(.medium)
                 .foregroundStyle(titleColor)
                 .padding(.leading, 11)
-            
+
             if isMultiline {
                 ZStack(alignment: .topLeading){
                     TextEditor(text: $text)
@@ -53,18 +52,18 @@ struct AppTextField: View {
                             .foregroundStyle(Color.siriusTextSecondary)
                             .padding(.horizontal, 11)
                             .padding(.vertical, 14)
-                            .allowsHitTesting(false)        // let taps reach the TextEditor underneath
+                            .allowsHitTesting(false)
                     }
                 }
                 .frame(height: multilineHeight)
                 .fieldWidth(widthField)
-                .background(Color.siriusFieldFill)
-                .cornerRadius(14)
+                .background(Color.siriusSurface)
+                .cornerRadius(10)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
+                    RoundedRectangle(cornerRadius: 10)
                         .strokeBorder(borderColor, lineWidth: 1)
                 )
-            } else if isSecure {           // For Password
+            } else if isSecure {
                 HStack(spacing: 8) {
                     Group {
                         if isRevealed {
@@ -77,7 +76,7 @@ struct AppTextField: View {
                     }
                     .accessibilityLabel(title)
                     .scaledFont(size: 14, weight: .light)
-                    
+
                     Button {
                         isRevealed.toggle()
                     } label: {
@@ -91,13 +90,13 @@ struct AppTextField: View {
                 .padding(10)
                 .fieldWidth(widthField)
                 .frame(minHeight: 35)
-                .background(Color.siriusFieldFill)
-                .cornerRadius(14)
+                .background(Color.siriusSurface)
+                .cornerRadius(10)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
+                    RoundedRectangle(cornerRadius: 10)
                         .strokeBorder(borderColor, lineWidth: 1)
                 )
-            } else {                // For Any Type of TextField
+            } else {
                 HStack(spacing: 4) {
                     if let prefix {
                         Text(prefix)
@@ -112,20 +111,19 @@ struct AppTextField: View {
                     .padding(10)
                     .fieldWidth(widthField)
                     .frame(minHeight: 35)
-                    .background(Color.siriusFieldFill)
-                    .cornerRadius(14)
+                    .background(Color.siriusSurface)
+                    .cornerRadius(10)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14)
+                        RoundedRectangle(cornerRadius: 10)
                             .strokeBorder(borderColor, lineWidth: 1)
                     )
             }
-            
+
         }
     }
 }
 
 private extension View {
-    // A fixed width, or the full width available when `width` is nil
     @ViewBuilder
     func fieldWidth(_ width: CGFloat?) -> some View {
         if let width {

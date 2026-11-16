@@ -9,12 +9,12 @@ import Foundation
 
 struct AppNotification: Identifiable, Equatable {
     let id: UUID
-    let kind: String            // "auto_applied", "new_applicant", "interview"
+    let kind: String
     let title: String
     let body: String
     var isRead: Bool
     let createdAt: Date
-    
+
     var icon: String {
         switch kind {
         case "auto_applied": return "paperplane.fill"
@@ -23,8 +23,7 @@ struct AppNotification: Identifiable, Equatable {
         default: return "bell.fill"
         }
     }
-    
-    // "5 min ago", "Yesterday" ...
+
     var timeAgo: String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .short

@@ -8,19 +8,19 @@
 import SwiftUI
 
 private struct ScheduleInterviewOverlay: ViewModifier {
-    
+
     @ObservedObject var controller: EmpAplStatusController
-    
+
     func body(content: Content) -> some View {
         ZStack {
             content
-            
+
             if let target = controller.interviewTarget {
                 Color.black.opacity(0.45)
                     .ignoresSafeArea()
                     .onTapGesture { controller.cancelScheduling() }
                     .transition(.opacity)
-                
+
                 ScheduleInterviewDialog(
                     applicantName: target.name,
                     title: controller.isRescheduling ? "Reschedule Interview" : "Schedule Interview",

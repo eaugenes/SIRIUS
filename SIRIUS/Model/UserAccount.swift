@@ -7,7 +7,6 @@
 
 import Foundation
 
-// The signed-in user. `id` is the Supabase Auth user id; passwords are never kept in the app.
 struct UserAccount: Identifiable, Hashable {
     var id: UUID
     var role: UserRole
@@ -15,7 +14,7 @@ struct UserAccount: Identifiable, Hashable {
     var applicant: Applicant? = nil
     var employer: Employer? = nil
     var company: Company? = nil
-    
+
     static func == (lhs: UserAccount, rhs: UserAccount) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
@@ -34,7 +33,7 @@ enum AccountError: LocalizedError, Equatable {
     case network
     case saveFailed
     case server(String)
-    
+
     var errorDescription: String? {
         switch self {
         case .missingEmail: return "Please enter your email address."

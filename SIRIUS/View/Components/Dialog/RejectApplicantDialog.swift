@@ -11,7 +11,7 @@ struct RejectApplicantDialog: View {
     let applicantName: String
     var onReject: (_ reason: String) -> Void
     var onCancel: () -> Void
-    
+
     static let reasons = [
         "Does not meet the job requirements",
         "Another candidate was a better match",
@@ -19,16 +19,16 @@ struct RejectApplicantDialog: View {
         "Incomplete profile or projects",
         "Other"
     ]
-    
+
     @State private var selectedReason = RejectApplicantDialog.reasons[0]
     @State private var note = ""
-    
+
     private var finalReason: String {
         let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty { return selectedReason }
         return selectedReason == "Other" ? trimmed : "\(selectedReason): \(trimmed)"
     }
-    
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -39,7 +39,7 @@ struct RejectApplicantDialog: View {
                     Text("The applicant will see the reason you choose.")
                         .scaledFont(size: 13)
                         .foregroundStyle(Color.siriusMuted)
-                    
+
                     VStack(spacing: 8) {
                         ForEach(Self.reasons, id: \.self) { reason in
                             Button {
@@ -63,22 +63,22 @@ struct RejectApplicantDialog: View {
                             .accessibilityAddTraits(selectedReason == reason ? .isSelected : [])
                         }
                     }
-                    
+
                     AppTextField(
                         title: "Note (optional)",
                         placeholder: "Add a short note for the applicant",
                         text: $note,
                         isMultiline: true,
                         multilineHeight: 80,
-                        widthField: nil             // same width as the reason rows above
+                        widthField: nil
                     )
-                    
+
                     HStack(spacing: 12) {
                         Button("Cancel", action: onCancel)
                             .frame(maxWidth: .infinity, minHeight: 48)
                             .background(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.siriusAction, lineWidth: 1.5))
                             .foregroundStyle(Color.siriusAction)
-                        
+
                         Button {
                             onReject(finalReason)
                         } label: {

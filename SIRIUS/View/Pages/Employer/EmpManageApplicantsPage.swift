@@ -8,24 +8,24 @@
 import SwiftUI
 
 struct EmpManageApplicantsPage: View {
-    
+
     var job: Job? = nil
-    
+
     @EnvironmentObject private var aplController: EmpAplStatusController
     @Environment(\.dismiss) private var dismiss
     @State private var applicantToReject: EmpApplicant?
     @State private var openedApplicantID: UUID?
-    
+
     private var applicants: [EmpApplicant] {
         aplController.filteredApplicants(forPosition: job?.jobPos)
     }
-    
+
     var body: some View {
         ZStack {
             VStack(alignment: .leading, spacing: 0) {
                 header
                     .padding(.bottom, 12)
-                
+
                 EmployerSegmentedTabs(
                     items: EmpApplicantFilter.allCases,
                     title: { $0.rawValue },
@@ -33,11 +33,11 @@ struct EmpManageApplicantsPage: View {
                 )
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 8)
-                
+
                 filterBar
                     .padding(.horizontal, 20)
                     .padding(.bottom, 10)
-                
+
                 if applicants.isEmpty {
                     emptyState
                 } else {
@@ -57,7 +57,7 @@ struct EmpManageApplicantsPage: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.bottom, job == nil ? NavBarMetrics.clearance + 8 : 30)     // room for the bottom bar
+                        .padding(.bottom, job == nil ? NavBarMetrics.clearance + 8 : 30)
                     }
                     .scrollIndicators(.hidden)
                 }
@@ -66,14 +66,12 @@ struct EmpManageApplicantsPage: View {
             .animation(.easeInOut(duration: 0.2), value: aplController.selectedFilter)
         }
         .appBg()
-        .scheduleInterviewOverlay(aplController)         // Schedule / Reschedule Interview dialog
+        .scheduleInterviewOverlay(aplController)
         .navigationBarBackButtonHidden(true)
-        .hidesSiriusNavBar(job != nil)                   // pushed from Manage Jobs: no bottom bar over the list
+        .hidesSiriusNavBar(job != nil)
         .onDisappear { aplController.clearSelection() }
         .boardLoadState()
         .navigationDestination(item: $openedApplicantID) { id in
-            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
-            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
             EmpAplDetailsPage(applicantID: id)
                 .environmentObject(aplController)
         }
@@ -96,8 +94,7 @@ struct EmpManageApplicantsPage: View {
             Text(aplController.actionError ?? "")
         }
     }
-    
-    // Search + sort + minimum-match filter
+
     private var filterBar: some View {
         HStack(spacing: 8) {
             HStack(spacing: 6) {
@@ -121,8 +118,9 @@ struct EmpManageApplicantsPage: View {
             }
             .padding(.horizontal, 12)
             .frame(height: 38)
-            .background(Capsule().fill(Color.siriusSurface))
-            
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.siriusSurface))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.siriusBorder, lineWidth: 1))
+
             Menu {
                 Picker("Sort by", selection: $aplController.sortOption) {
                     ForEach(EmpApplicantSort.allCases) { Text($0.rawValue).tag($0) }
@@ -144,7 +142,7 @@ struct EmpManageApplicantsPage: View {
             .accessibilityValue("\(aplController.sortOption.rawValue), \(aplController.matchFilter.rawValue)")
         }
     }
-    
+
     @ViewBuilder
     private var header: some View {
         if let job {
@@ -159,14 +157,14 @@ struct EmpManageApplicantsPage: View {
                             .frame(width: 30, height: 44, alignment: .leading)
                     }
                     .accessibilityLabel("Back")
-                    
+
                     Text("Manage Applicants")
                         .scaledFont(size: 30, weight: .medium)
                         .foregroundStyle(Color.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
-                
+
                 Text(job.jobPos)
                     .scaledFont(size: 14, weight: .light)
                     .foregroundStyle(Color.white)
@@ -182,7 +180,7 @@ struct EmpManageApplicantsPage: View {
                 .padding(.top, 20)
         }
     }
-    
+
     private var emptyState: some View {
         Group {
             if aplController.hasActiveFilters {

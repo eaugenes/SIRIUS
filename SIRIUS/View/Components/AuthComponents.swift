@@ -20,15 +20,15 @@ struct AuthBrandHeader: View {
                 .frame(width: 158, height: 148)
                 .clipped()
                 .padding(.top, 104)
-            
+
             Text("SIRIUS")
                 .scaledFont(size: 64, weight: .medium)
                 .tracking(12.8)
-                .padding(.leading, 12.8)            // balances the trailing tracking space
+                .padding(.leading, 12.8)
                 .foregroundStyle(Color.siriusText)
                 .frame(height: 76)
                 .padding(.top, 15)
-            
+
             Text("In a sky full of opportunities, let the right one find you.")
                 .scaledFont(size: 12)
                 .foregroundStyle(Color.siriusTagline)
@@ -43,7 +43,7 @@ struct AuthPanel<Content: View>: View {
     let subheading: String
     var fillsScreenBottom: Bool = false
     @ViewBuilder var content: () -> Content
-    
+
     private var inner: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
@@ -55,11 +55,11 @@ struct AuthPanel<Content: View>: View {
                     .foregroundStyle(Color.siriusMuted)
             }
             .lineLimit(1)
-            
+
             content()
         }
     }
-    
+
     var body: some View {
         if fillsScreenBottom {
             inner
@@ -85,21 +85,20 @@ struct AuthPanel<Content: View>: View {
     }
 }
 
-
 struct AuthField: View {
     let title: String
     let placeholder: String
     @Binding var text: String
     var isSecure: Bool = false
     var keyboardType: UIKeyboardType = .default
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .scaledFont(size: 13, weight: .medium)
                 .foregroundStyle(Color.siriusInk)
                 .padding(.leading, 11)
-            
+
             Group {
                 if isSecure {
                     SecureField("", text: $text, prompt: prompt)
@@ -114,12 +113,12 @@ struct AuthField: View {
             .padding(.horizontal, 10)
             .frame(width: 325)
                     .frame(minHeight: 35)
-            .background(Color.siriusFieldFill)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.siriusFieldBorder, lineWidth: 1))
+            .background(Color.siriusSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.siriusBorder, lineWidth: 1))
         }
     }
-    
+
     private var prompt: Text {
         Text(placeholder)
             .font(.scaled(14, .light))
@@ -127,14 +126,13 @@ struct AuthField: View {
     }
 }
 
-// 52 high, radius 16, #03527a panel button ("Continue", "Complete Profile")
 struct AuthButton: View {
-    
+
     let title: String
     var fontSize: CGFloat = 17
     var isEnabled: Bool = true
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Text(title)
@@ -150,14 +148,13 @@ struct AuthButton: View {
     }
 }
 
-// "Don't have an account yet?  Sign Up" footer link
 struct AuthFooterLink: View {
     let prompt: String
     let link: String
     var promptColor: Color = .white
     var linkColor: Color = .siriusLink
     let action: () -> Void
-    
+
     var body: some View {
         HStack(spacing: 5) {
             Text(prompt)
@@ -173,11 +170,10 @@ struct AuthFooterLink: View {
     }
 }
 
-// Back chevron circle (white, 42pt) used on the sign up steps
 struct CircleBackButton: View {
-    
+
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Image(systemName: "chevron.backward")
@@ -192,20 +188,20 @@ struct CircleBackButton: View {
 }
 
 struct SignUpPanel<Content: View>: View {
-    
+
     let title: String
     var fillsScreen: Bool = false
     var bottomGap: CGFloat = 0
     let onBack: () -> Void
     @ViewBuilder var content: () -> Content
-    
+
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
                 Text(title)
                     .scaledFont(size: 20, weight: .semibold)
                     .foregroundStyle(Color.siriusText)
-                
+
                 HStack {
                     CircleBackButton(action: onBack)
                     Spacer()
@@ -214,7 +210,7 @@ struct SignUpPanel<Content: View>: View {
             }
             .frame(height: 42)
             .padding(.top, 10)
-            
+
             content()
         }
         .padding(.bottom, fillsScreen ? 40 : 20)

@@ -8,7 +8,7 @@
 import Foundation
 
 struct ProgramsList {
-    
+
     static let programs = [
         City(id: 1, name:"BS Computer Science"),
         City(id: 2, name:"BS Cybersecurity"),

@@ -7,21 +7,19 @@
 
 import SwiftUI
 
-// One application: status, interview slot (date / place / message), the employer's
-// rejection reason, why the applicant scored what they did, and Withdraw.
 struct ApplicationDetailsPage: View {
-    
+
     let applicationID: UUID
-    
+
     @EnvironmentObject private var controller: AplApplicationsController
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var confirmWithdraw = false
-    
+
     private var application: JobApplication? {
         controller.allApplications.first { $0.id == applicationID }
     }
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -32,10 +30,10 @@ struct ApplicationDetailsPage: View {
                         .foregroundStyle(Color.white)
                 }
                 .padding(.top, 12)
-                
+
                 if let application {
                     summaryCard(application)
-                    
+
                     if let interview = application.interview, application.status == .interview {
                         InterviewDetailsPanel(role: application.role, company: application.company, interview: interview)
                     }
@@ -85,11 +83,11 @@ struct ApplicationDetailsPage: View {
             Text("The employer will no longer see your application. You won't be applied to this job again automatically.")
         }
     }
-    
+
     private func markSeen() {
         if let application { controller.markInterviewSeen(application) }
     }
-    
+
     private func panel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) { content() }
             .padding(16)
@@ -97,7 +95,7 @@ struct ApplicationDetailsPage: View {
             .background(Color.siriusSurface)
             .clipShape(RoundedRectangle(cornerRadius: 20))
     }
-    
+
     private func summaryCard(_ application: JobApplication) -> some View {
         panel {
             HStack(alignment: .top) {
@@ -131,7 +129,7 @@ struct ApplicationDetailsPage: View {
             }
         }
     }
-    
+
     private func rejectionCard(_ application: JobApplication) -> some View {
         panel {
             Label("Not selected", systemImage: "xmark.circle")
@@ -143,7 +141,7 @@ struct ApplicationDetailsPage: View {
         }
         .accessibilityElement(children: .combine)
     }
-    
+
     private func detail(_ title: String, _ value: String) -> some View {
         HStack(alignment: .top) {
             Text(title).scaledFont(size: 12).foregroundStyle(Color.siriusMuted)
@@ -154,7 +152,7 @@ struct ApplicationDetailsPage: View {
                 .multilineTextAlignment(.trailing)
         }
     }
-    
+
     private func statusColor(_ status: ApplicationStatus) -> Color {
         switch status {
         case .accepted: return Color.siriusMatchBar

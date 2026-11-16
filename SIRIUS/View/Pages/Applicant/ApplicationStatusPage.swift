@@ -8,10 +8,10 @@
 import SwiftUI
 
 struct ApplicationStatusPage: View {
-    
+
     @EnvironmentObject private var controller: AplApplicationsController
     @State private var selectedApplicationID: UUID?
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("My Applications")
@@ -19,10 +19,10 @@ struct ApplicationStatusPage: View {
                 .foregroundColor(.white)
                 .padding(.top, 85)
                 .padding(.leading, 32)
-            
+
             HStack(spacing: 0) {
                 ForEach(ApplicationStatus.tabs) { status in
-                    Button(action: {            // Controller updates state, triggering a view redraw
+                    Button(action: {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             controller.selectedStatus = status
                         }
@@ -36,7 +36,7 @@ struct ApplicationStatusPage: View {
                             .frame(height: 38)
                             .background(controller.selectedStatus == status ? Color.siriusNavy : Color.clear)
                             .foregroundStyle(controller.selectedStatus == status ? Color.white : Color.siriusText)
-                            .clipShape(Capsule())
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
             }
@@ -44,10 +44,11 @@ struct ApplicationStatusPage: View {
             .frame(maxWidth: 343)
             .frame(height: 44)
             .background(Color.siriusSurface)
-            .clipShape(Capsule())
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.siriusBorder, lineWidth: 1))
             .padding(.top, 12)
             .padding(.leading, 30)
-            
+
             if controller.filteredApplications.isEmpty {
                 Spacer()
                 VStack {
@@ -65,7 +66,7 @@ struct ApplicationStatusPage: View {
                 }
                 .frame(maxWidth: .infinity)
                 Spacer()
-            } else {            // Filtered List View
+            } else {
                 ScrollView {
                     VStack(spacing: 17) {
                         ForEach(controller.filteredApplications) { app in
@@ -79,7 +80,7 @@ struct ApplicationStatusPage: View {
                     }
                     .padding(.top, 14)
                     .padding(.leading, 34)
-                    .padding(.bottom, NavBarMetrics.clearance + 28)          // room for the bottom bar
+                    .padding(.bottom, NavBarMetrics.clearance + 28)
                 }
                 .scrollIndicators(.hidden)
                 .refreshable { await JobBoard.shared.reload(silent: true) }
@@ -90,8 +91,6 @@ struct ApplicationStatusPage: View {
         .appBg()
         .boardLoadState()
         .navigationDestination(item: $selectedApplicationID) { id in
-            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
-            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
             ApplicationDetailsPage(applicationID: id)
                 .environmentObject(controller)
         }

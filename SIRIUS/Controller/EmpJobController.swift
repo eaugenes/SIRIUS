@@ -8,22 +8,19 @@
 import Foundation
 import Combine
 
-// Employer job list. Jobs live in the shared JobBoard (saved to disk), so applicants
-// see them and are applied automatically. Passing `jobs:` keeps everything in memory
-// (previews / tests).
 final class EmpJobController: ObservableObject {
-    
+
     @Published var jobs: [Job]
     @Published var selectedTab: JobListTab = .active
     @Published var postError: String?
-    @Published var statusError: String?        // e.g. a filled job cannot be reopened
-    
+    @Published var statusError: String?
+
     private let board: JobBoard?
     private let auth: AuthController
     private let companyID: String?
     private let companyName: String
     private var cancellables = Set<AnyCancellable>()
-    
+
     init(
         jobs: [Job]? = nil,
         companyID: String? = nil,
@@ -34,7 +31,7 @@ final class EmpJobController: ObservableObject {
         self.companyID = companyID
         self.companyName = companyName
         self.auth = auth
-        
+
         if let jobs {
             self.jobs = jobs
             self.board = nil
@@ -50,8 +47,7 @@ final class EmpJobController: ObservableObject {
                 .store(in: &cancellables)
         }
     }
-    
-    // Jobs of this employer's company, with the live applicant count
+
     private static func companyJobs(_ jobs: [Job], _ applications: [ApplicationRecord], companyID: String?) -> [Job] {
         jobs
             .filter { companyID == nil || $0.companyID == companyID }
@@ -61,21 +57,18 @@ final class EmpJobController: ObservableObject {
                 return copy
             }
     }
-    
-    // Jobs for the selected Active / Inactive tab
+
     var filteredJobs: [Job] {
         switch selectedTab {
         case .active: return jobs.filter { $0.isActive }
         case .inactive: return jobs.filter { !$0.isActive }
         }
     }
-    
+
     var activeJobCount: Int { jobs.filter { $0.isActive }.count }
-    
+
     // MARK: - Job Posting form
-    
-    // Validates the raw form input from the Job Posting screen, then posts (or updates) the job.
-    // Returns true when the job was saved (the view can then close the form).
+
     func submitJob(
         companyID: String,
         position: String,
@@ -91,7 +84,7 @@ final class EmpJobController: ObservableObject {
     ) -> Bool {
         let trimmedPosition = position.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedMaxHire = maxHireText.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         if trimmedPosition.isEmpty {
             postError = "Please enter the job position."
             return false
@@ -119,7 +112,7 @@ final class EmpJobController: ObservableObject {
             postError = "Maximum hire can't be lower than the \(hiredCount(for: existing)) applicant(s) already hired."
             return false
         }
-        
+
         if let existing {
             var updated = existing
             updated.jobPos = trimmedPosition
@@ -149,10 +142,9 @@ final class EmpJobController: ObservableObject {
         postError = nil
         return true
     }
-    
+
     // MARK: - CRUD
-    
-    // Creates a Job (stable jobID) and adds it to the list (newest first).
+
     func postJob(
         companyID: String,
         position: String,
@@ -166,7 +158,7 @@ final class EmpJobController: ObservableObject {
         salary: Int = 0
     ) {
         let job = Job(
-            jobID: UUID().uuidString.lowercased(),     // lowercase, same as the database returns
+            jobID: UUID().uuidString.lowercased(),
             companyID: companyID,
             jobPos: position.trimmingCharacters(in: .whitespacesAndNewlines),
             jobDesc: description,
@@ -182,7 +174,7 @@ final class EmpJobController: ObservableObject {
             companyName: companyName,
             salary: salary
         )
-        
+
         if let board {
             board.addJob(job)
         } else {
@@ -190,7 +182,7 @@ final class EmpJobController: ObservableObject {
         }
         selectedTab = .active
     }
-    
+
     func updateJob(_ job: Job) {
         if let board {
             board.updateJob(job)
@@ -198,8 +190,7 @@ final class EmpJobController: ObservableObject {
             jobs[index] = job
         }
     }
-    
-    // Moves a job between Active and Inactive.
+
     func toggleStatus(of job: Job) {
         statusError = nil
         if let board {
@@ -211,7 +202,7 @@ final class EmpJobController: ObservableObject {
             jobs[index].isActive.toggle()
         }
     }
-    
+
     func deleteJob(_ job: Job) {
         if let board {
             board.deleteJob(jobID: job.jobID)
@@ -219,17 +210,17 @@ final class EmpJobController: ObservableObject {
             jobs.removeAll { $0.jobID == job.jobID }
         }
     }
-    
+
     func hiredCount(for job: Job) -> Int {
         board?.count(forJob: job.jobID, status: .hired) ?? 0
     }
-    
+
     // MARK: - Sample data (previews only)
-    
+
     private static let may18: Date = {
         DateComponents(calendar: Calendar.current, year: 2026, month: 5, day: 18).date ?? Date()
     }()
-    
+
     static let sampleJobs: [Job] = {
         var list: [Job] = []
         for index in 0..<15 {
@@ -247,7 +238,7 @@ final class EmpJobController: ObservableObject {
                     maxHire: 3,
                     applicantCount: 42,
                     datePosted: may18,
-                    isActive: index < 10          // first 10 Active, last 5 Inactive
+                    isActive: index < 10
                 )
             )
         }

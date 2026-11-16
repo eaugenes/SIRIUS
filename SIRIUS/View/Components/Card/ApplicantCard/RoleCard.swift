@@ -7,15 +7,14 @@
 
 import SwiftUI
 
-// Role option on Choose Role (Figma "Final": 88pt high, radius 18, radio at the bottom right)
 struct RoleCard: View {
-    
+
     let title: String
     let description: String
     let icon: String
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 14) {
@@ -25,13 +24,13 @@ struct RoleCard: View {
                     .frame(width: 52, height: 52)
                     .background(isSelected ? Color.white : Color.siriusRoleTile)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
-                
+
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .scaledFont(size: 16, weight: .bold)
                         .foregroundStyle(isSelected ? Color.white : Color.siriusInk)
                         .lineLimit(1)
-                    
+
                     Text(description)
                         .scaledFont(size: 12)
                         .lineSpacing(0)
@@ -39,7 +38,7 @@ struct RoleCard: View {
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                
+
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
@@ -57,8 +56,7 @@ struct RoleCard: View {
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
-    
-    // Radio: white circle with a checkmark when selected, ring when not
+
     private var selectionIndicator: some View {
         ZStack {
             if isSelected {

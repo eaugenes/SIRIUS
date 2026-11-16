@@ -8,11 +8,11 @@
 import SwiftUI
 
 struct BorderModifier: Shape{
-    var edges: [Edge]    // List only the edges you want to appear
-    
+    var edges: [Edge]
+
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        
+
         for edge in edges {
             switch edge {
             case .top:

@@ -11,10 +11,9 @@ struct NavigationButton<Destination: View>: View {
     let title: String
     let destination: Destination
     let isBackgroundFill: Bool
-    
+
     var body: some View {
         NavigationLink(destination: destination) {
-            // if isBackgroundFill
             Text(title)
                 .font(.headline)
                 .foregroundColor(.white)

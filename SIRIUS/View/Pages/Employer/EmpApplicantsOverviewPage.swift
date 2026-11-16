@@ -8,22 +8,21 @@
 import SwiftUI
 
 struct EmpApplicantsOverviewPage: View {
-    
+
     @EnvironmentObject private var jobController: EmpJobController
     @EnvironmentObject private var aplController: EmpAplStatusController
-    
+
     @State private var selectedJob: Job?
     @State private var interviewsScreen = false
-    
-    // Only active jobs appear here
+
     private var activeJobs: [Job] {
         jobController.jobs.filter { $0.isActive }
     }
-    
+
     private var totalApplicants: Int {
         aplController.totalApplicants(inJobs: Set(activeJobs.map { $0.jobID }))
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -32,10 +31,9 @@ struct EmpApplicantsOverviewPage: View {
                     .foregroundStyle(Color.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                
+
                 Spacer()
-                
-                // Interviews: schedule and status tracker
+
                 Button {
                     interviewsScreen = true
                 } label: {
@@ -50,11 +48,11 @@ struct EmpApplicantsOverviewPage: View {
             .padding(.horizontal, 32)
             .padding(.top, 20)
             .padding(.bottom, 16)
-            
+
             summary
                 .padding(.horizontal, 32)
                 .padding(.bottom, 20)
-            
+
             if activeJobs.isEmpty {
                 emptyState
             } else {
@@ -70,7 +68,7 @@ struct EmpApplicantsOverviewPage: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.bottom, NavBarMetrics.clearance + 8)          // room for the bottom bar
+                    .padding(.bottom, NavBarMetrics.clearance + 8)
                 }
                 .scrollIndicators(.hidden)
             }
@@ -79,8 +77,6 @@ struct EmpApplicantsOverviewPage: View {
         .appBg()
         .boardLoadState()
         .navigationDestination(item: $selectedJob) { job in
-            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
-            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
             EmpManageApplicantsPage(job: job)
                 .environmentObject(aplController)
         }
@@ -89,15 +85,14 @@ struct EmpApplicantsOverviewPage: View {
                 .environmentObject(aplController)
         }
     }
-    
-    // [ active jobs | total applicants ]
+
     private var summary: some View {
         HStack(spacing: 0) {
             summaryCell(value: activeJobs.count, title: "Active Jobs")
-            
+
             Divider()
                 .frame(height: 40)
-            
+
             summaryCell(value: totalApplicants, title: "Total Applicants")
         }
         .frame(maxWidth: .infinity)
@@ -106,7 +101,7 @@ struct EmpApplicantsOverviewPage: View {
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
     }
-    
+
     private func summaryCell(value: Int, title: String) -> some View {
         VStack(spacing: 2) {
             Text("\(value)")
@@ -118,7 +113,7 @@ struct EmpApplicantsOverviewPage: View {
         }
         .frame(maxWidth: .infinity)
     }
-    
+
     private func jobRow(_ job: Job) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
@@ -126,16 +121,16 @@ struct EmpApplicantsOverviewPage: View {
                     .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(Color.siriusText)
                     .lineLimit(1)
-                
+
                 Text("Review - \(aplController.count(forJobID: job.jobID, status: .toReview)) | Interview - \(aplController.count(forJobID: job.jobID, status: .interview)) | Hired - \(aplController.count(forJobID: job.jobID, status: .hired))")
                     .scaledFont(size: 10)
                     .foregroundStyle(Color.siriusTextSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            
+
             Spacer()
-            
+
             Image(systemName: "chevron.forward")
                 .scaledFont(size: 20)
                 .foregroundStyle(Color.siriusText)
@@ -147,7 +142,7 @@ struct EmpApplicantsOverviewPage: View {
         .shadow(color: Color.black.opacity(0.25), radius: 2, x: 4, y: 4)
         .contentShape(Rectangle())
     }
-    
+
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "person.2")

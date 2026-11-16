@@ -8,19 +8,19 @@
 import SwiftUI
 
 struct AplSignUpPage: View {
-    
+
     @StateObject private var applicantController = AplInfoController(
         applicant: AplInfoController.blankApplicant()
     )
     @StateObject private var cityController = CitySelectionController()
-    
+
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var coreLang = ""
     @State private var yearsOfExperience = 0
     @State private var workSetup: WorkSetup = .onSite
     @State private var nextScreen = false
-    
+
     var body: some View {
         ScrollView {
             SignUpPanel(title: "Personal Information") {
@@ -32,62 +32,62 @@ struct AplSignUpPage: View {
                     defaultAvatar: applicantController.applicant.firstName.defaultAvatar
                 )
                 .padding(.top, 18)
-                
+
                 VStack(spacing: 10) {
-                    
+
                     AppTextField(
                         title: "First Name",
                         placeholder: "Enter your first name",
                         text: $applicantController.applicant.firstName,
                         isSecure: false
                     )
-                    
+
                     AppTextField(
                         title: "Middle Name",
                         placeholder: "Enter your middle name",
                         text: $applicantController.applicant.middleName,
                         isSecure: false
                     )
-                    
+
                     AppTextField(
                         title: "Last Name",
                         placeholder: "Enter your last name",
                         text: $applicantController.applicant.lastName,
                         isSecure: false
                     )
-                    
+
                     DateOfBirthField(
                         title: "Date of Birth",
                         text: $applicantController.applicant.birthDate
                     )
-                    
+
                     AppTextField(
                         title: "Contact Number",
-                        placeholder: "Enter your contact number",
-                        text: $applicantController.applicant.contactNumber,
+                        placeholder: "11 digits, e.g., 09171234567",
+                        text: ContactNumber.binding($applicantController.applicant.contactNumber),
                         isSecure: false,
-                        keyboardType: .phonePad
+                        keyboardType: .numberPad
                     )
-                    
+
                     CitiesDropdown(
                         title: "Location",
                         cities: cityController.cities,
                         selectedCity: $cityController.selectedCity
                     )
-                    
+
                     ProgramDropdown(
                         title: "Program",
                         programs: ProgramsList.programs,
                         selectedProgram: $applicantController.applicant.program
                     )
-                    
+
                     AppStepper(
                         title: "Years of Experience",
                         value: $yearsOfExperience,
                         range: 0...50,
                         buttonFill: .siriusFieldFill
                     )
-                    
+
                     AppTextField(
                         title: "Core Languages",
                         placeholder: "e.g., Python, C++",
@@ -96,20 +96,20 @@ struct AplSignUpPage: View {
                     )
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    
+
                     WorkSetupPicker(
                         title: "Work Setup",
                         selection: $workSetup,
                         selectedFill: .siriusRoleTile,
                         unselectedFill: .siriusFieldFill
                     )
-                    
+
                     ProjectsEditor(projects: $applicantController.applicant.projects)
                         .padding(.top, 4)
-                    
+
                     FormErrorText(message: applicantController.signUpError)
                         .padding(.top, 10)
-                    
+
                     SiriusButton(title: "Continue") {
                         applicantController.applicant.yrExp = Double(yearsOfExperience)
                         applicantController.applicant.workSetUp = workSetup.rawValue

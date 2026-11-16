@@ -10,7 +10,7 @@ import SwiftUI
 struct NotificationBell: View {
     @ObservedObject private var inbox = InboxController.shared
     @State private var showInbox = false
-    
+
     var body: some View {
         Button {
             showInbox = true
@@ -38,12 +38,11 @@ struct NotificationBell: View {
     }
 }
 
-// Banner shown at the top of the app when a new notification arrives
 struct InboxToastView: View {
-    
+
     @ObservedObject private var inbox = InboxController.shared
     var onOpen: () -> Void = {}
-    
+
     var body: some View {
         Group {
             if let toast = inbox.toast {
@@ -53,7 +52,7 @@ struct InboxToastView: View {
                         .foregroundStyle(Color.white)
                         .frame(width: 34, height: 34)
                         .background(Circle().fill(Color.white.opacity(0.18)))
-                    
+
                     VStack(alignment: .leading, spacing: 1) {
                         Text(toast.title)
                             .scaledFont(size: 13, weight: .bold)
@@ -64,9 +63,9 @@ struct InboxToastView: View {
                             .multilineTextAlignment(.leading)
                     }
                     .foregroundStyle(Color.white)
-                    
+
                     Spacer(minLength: 0)
-                    
+
                     Button {
                         inbox.dismissToast()
                     } label: {
@@ -97,21 +96,20 @@ struct InboxToastView: View {
     }
 }
 
-// The inbox: newest first, unread ones marked with a dot
 struct NotificationsPage: View {
-    
+
     @ObservedObject private var inbox = InboxController.shared
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Notifications")
                     .scaledFont(size: 26, weight: .medium)
                     .foregroundStyle(Color.white)
-                
+
                 Spacer()
-                
+
                 Button {
                     dismiss()
                 } label: {
@@ -126,7 +124,7 @@ struct NotificationsPage: View {
             .padding(.horizontal, 24)
             .padding(.top, 24)
             .padding(.bottom, 16)
-            
+
             if inbox.items.isEmpty {
                 EmptyStateView(
                     icon: "bell.slash",
@@ -156,8 +154,7 @@ struct NotificationsPage: View {
             Task { await inbox.markAllRead() }
         }
     }
-    
-    // Fixed-size row: the text is shortened instead of growing the card
+
     private func row(_ item: AppNotification) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: item.icon)
@@ -165,7 +162,7 @@ struct NotificationsPage: View {
                 .foregroundStyle(Color.white)
                 .frame(width: 40, height: 40)
                 .background(Circle().fill(Color.siriusNavy))
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(item.title)
@@ -184,7 +181,7 @@ struct NotificationsPage: View {
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
             }
-            
+
             if !item.isRead {
                 Circle()
                     .fill(Color.red)

@@ -9,11 +9,11 @@ import SwiftUI
 
 struct EmpJobCard: View {
     let job: Job
-    
+
     private var postedText: String {
         job.datePosted.formatted(.dateTime.month(.abbreviated).day().year())
     }
-    
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
@@ -21,20 +21,20 @@ struct EmpJobCard: View {
                     .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(Color.siriusText)
                     .lineLimit(1)
-                
+
                 VStack(alignment: .leading, spacing: 1) {
                     Text(job.isFilled ? "Filled \u{00B7} \(job.applicantCount) Applicants" : "\(job.applicantCount) Applicants")
                         .scaledFont(size: 10)
                         .foregroundStyle(Color.siriusText)
-                    
+
                     Text("Posted on \(postedText)")
                         .scaledFont(size: 8)
                         .foregroundStyle(Color.siriusTextSecondary)
                 }
             }
-            
+
             Spacer()
-            
+
             Image(systemName: "chevron.forward")
                 .scaledFont(size: 20, weight: .regular)
                 .foregroundStyle(Color.siriusText)

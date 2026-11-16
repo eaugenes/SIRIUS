@@ -8,30 +8,34 @@
 import SwiftUI
 
 struct AplAccountPage: View {
-    
+
     @EnvironmentObject private var applicantController: AplInfoController
-    
-    @State private var logInScreen = false
-    @State private var editAccountScreen = false
-    
+
+    private enum Route: Hashable {
+        case editProfile
+        case logIn
+    }
+    @State private var route: Route?
+
     private var applicant: Applicant { applicantController.applicant }
-    
+
     private var experienceText: String {
         let years = applicant.yrExp
         if years == 1 { return "1 year" }
         return years == years.rounded() ? "\(Int(years)) years" : String(format: "%.1f years", years)
     }
-    
+
     private func value(_ text: String) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "—" : trimmed
     }
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 header
-                ScrollView {     // NOTE: The header stays on top and Sign Out stays above the bottom bar
+
+                ScrollView {
                     infoCard
                         .padding(.horizontal, 16)
                         .padding(.top, 20)
@@ -39,10 +43,10 @@ struct AplAccountPage: View {
                         .frame(maxWidth: .infinity)
                 }
                 .scrollIndicators(.hidden)
-                
+
                 Button {
                     applicantController.signOut()
-                    logInScreen = true
+                    route = .logIn
                 } label: {
                     Text("Sign Out")
                         .scaledFont(size: 12)
@@ -55,29 +59,28 @@ struct AplAccountPage: View {
                 .frame(maxWidth: 333)
                 .padding(.horizontal, 16)
                 .padding(.top, 4)
-                .padding(.bottom, NavBarMetrics.clearance)         // sits just above the bottom bar
+                .padding(.bottom, NavBarMetrics.clearance)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .appBg()
             .toolbar(.hidden, for: .navigationBar)
             .navigationBarBackButtonHidden(true)
-            .navigationDestination(isPresented: $logInScreen) {
-                LogInPage()
-            }
-            .navigationDestination(isPresented: $editAccountScreen) {
-                // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
-                // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
-                AplEditProfilePage()
-                    .environmentObject(applicantController)
+            .navigationDestination(item: $route) { destination in
+                switch destination {
+                case .editProfile:
+                    AplEditProfilePage(onClose: { route = nil })
+                        .environmentObject(applicantController)
+                case .logIn:
+                    LogInPage()
+                }
             }
         }
     }
-    
-    // White header: avatar, name, username and the edit button
+
     private var header: some View {
         HStack(spacing: 14) {
             avatar
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(value(applicant.fullName))
                     .scaledFont(size: 18)
@@ -90,10 +93,10 @@ struct AplAccountPage: View {
             }
             .foregroundStyle(Color.siriusText)
             .frame(maxWidth: .infinity)
-            
+
             Button {
                 applicantController.clearError()
-                editAccountScreen = true
+                route = .editProfile
             } label: {
                 Image(systemName: "pencil.line")
                     .scaledFont(size: 17)
@@ -111,7 +114,7 @@ struct AplAccountPage: View {
         .frame(maxWidth: .infinity)
         .background(Color.siriusSurface.ignoresSafeArea(edges: .top))
     }
-    
+
     private var avatar: some View {
         Group {
             if let picture = applicant.profilePicture {
@@ -130,8 +133,7 @@ struct AplAccountPage: View {
         .clipShape(Circle())
         .shadow(color: Color.black.opacity(0.25), radius: 4, x: 4, y: 4)
     }
-    
-    // White card: personal details, then the applicant's projects at the bottom
+
     private var infoCard: some View {
         VStack(spacing: 0) {
             row("Date of Birth", value(applicant.birthDate))
@@ -160,8 +162,7 @@ struct AplAccountPage: View {
             }
             .padding(.vertical, 14)
             line
-            
-            // Projects: title, description, pictures
+
             VStack(alignment: .leading, spacing: 10) {
                 label("Projects")
                 ProjectsSection(projects: applicant.projects)
@@ -178,15 +179,15 @@ struct AplAccountPage: View {
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 4)
     }
-    
+
     private var line: some View {
         Rectangle().fill(Color.black.opacity(0.35)).frame(height: 0.5)
     }
-    
+
     private func label(_ text: String) -> some View {
         Text(text).scaledFont(size: 12, weight: .heavy)
     }
-    
+
     private func row(_ title: String, _ text: String) -> some View {
         HStack(spacing: 12) {
             label(title)

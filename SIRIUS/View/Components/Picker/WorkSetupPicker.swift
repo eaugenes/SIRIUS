@@ -7,18 +7,17 @@
 
 import SwiftUI
 
-// "On-site | Remote | Hybrid" selector (Figma: Textfield - Work Setup)
 struct WorkSetupPicker: View {
 
     let title: String
     @Binding var selection: WorkSetup
-    var borderColor: Color = .siriusFieldBorder
+    var borderColor: Color = .siriusBorder
 
     var selectedFill = Color(red: 240/255, green:240/255, blue:240/255)
     var unselectedFill: Color = .white
     private let secondaryText = Color(red: 74/255, green:74/255, blue:74/255)
     private let options: [WorkSetup] = [.onSite, .remote, .hybrid]
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
@@ -34,22 +33,21 @@ struct WorkSetupPicker: View {
             }
             .frame(width: 300)
                     .frame(minHeight: 35)
-            .background(Color.siriusFieldFill)
-            .cornerRadius(14)
+            .background(Color.siriusSurface)
+            .cornerRadius(10)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(borderColor, lineWidth: 1)
             )
         }
     }
-                
-    // One option button (On-site / Remote / Hybrid)
+
     private func segment(for setup: WorkSetup) -> some View {
         let isSelected: Bool = (selection.rawValue == setup.rawValue)
         let textColor: Color = isSelected ? Color.black : secondaryText
         let fillColor: Color = isSelected ? selectedFill : Color.white
         let weight: Font.Weight = isSelected ? .regular : .light
-        
+
         return Button {
             withAnimation(.easeInOut(duration: 0.15)) {
                 selection = setup

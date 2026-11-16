@@ -7,39 +7,36 @@
 
 import SwiftUI
 
-// Applicant row. When selected, the card slides left and reveals
-// the envelope (schedule interview) and red X (remove) buttons.
 struct EmpAplCard: View {
-    
+
     let applicant: EmpApplicant
     let isSelected: Bool
     var onSelect: () -> Void
     var onSchedule: () -> Void
     var onRemove: () -> Void
-    var onOpen: () -> Void = {}             // tap on the card: show applicant details
-    var onHire: () -> Void = {}             // shown for applicants in the Interview stage
-    var onReschedule: () -> Void = {}       // shown for applicants in the Interview stage
-    var animationDelay: Double = 0          // staggers the fill animation between cards
-    
+    var onOpen: () -> Void = {}
+    var onHire: () -> Void = {}
+    var onReschedule: () -> Void = {}
+    var animationDelay: Double = 0
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var fillProgress: Double = 0     // 0...1, animated up to the applicant's fill level
-    
+    @State private var fillProgress: Double = 0
+
     private let cardWidth: CGFloat = 354
     private let cardHeight: CGFloat = 74
     private let actionSize: CGFloat = 52
     private let actionSpacing: CGFloat = 4
-    
+
     private var actionCount: CGFloat { applicant.status == .interview ? 3 : 2 }
-    
+
     private var slideDistance: CGFloat {
         actionSize * actionCount + actionSpacing * actionCount
     }
-    
+
     private var experienceText: String { applicant.experienceText }
-    
+
     var body: some View {
         ZStack(alignment: .leading) {
-            // Action buttons stay pinned to the right edge, hidden until selected
             HStack(spacing: actionSpacing) {
                 if applicant.status == .interview {
                     Button(action: onHire) {
@@ -52,7 +49,7 @@ struct EmpAplCard: View {
                             .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
                     }
                     .accessibilityLabel("Hire applicant")
-                    
+
                     Button(action: onReschedule) {
                         Image(systemName: "calendar.badge.clock")
                             .scaledFont(size: 22)
@@ -73,11 +70,11 @@ struct EmpAplCard: View {
                             .cornerRadius(10)
                             .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
                     }
-                    .disabled(applicant.status != .toReview)        // only "To Review" applicants get invited
+                    .disabled(applicant.status != .toReview)
                     .opacity(applicant.status == .toReview ? 1 : 0.4)
                     .accessibilityLabel("Schedule interview")
                 }
-                
+
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
                         .scaledFont(size: 22, weight: .regular)
@@ -92,7 +89,7 @@ struct EmpAplCard: View {
             .frame(width: cardWidth, alignment: .trailing)
             .opacity(isSelected ? 1 : 0)
             .allowsHitTesting(isSelected)
-            
+
             card
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("\(applicant.name), \(applicant.degree), \(applicant.experienceText), \(applicant.matchPercentage) percent match, \(applicant.status.rawValue)")
@@ -105,8 +102,8 @@ struct EmpAplCard: View {
                         .onEnded { value in
                             let horizontal = value.translation.width
                             guard abs(horizontal) > abs(value.translation.height) else { return }
-                            if horizontal < -30 && !isSelected { onSelect() }     // swipe left: reveal
-                            if horizontal > 30 && isSelected { onSelect() }       // swipe right: hide
+                            if horizontal < -30 && !isSelected { onSelect() }
+                            if horizontal > 30 && isSelected { onSelect() }
                         }
                 )
         }
@@ -114,7 +111,7 @@ struct EmpAplCard: View {
         .accessibilityElement(children: .contain)
         .animation(.spring(duration: 0.3, bounce: 0.2), value: isSelected)
     }
-    
+
     private var card: some View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
@@ -122,18 +119,18 @@ struct EmpAplCard: View {
                     .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(Color.siriusText)
                     .lineLimit(1)
-                
+
                 Text(applicant.degree)
                     .scaledFont(size: 10)
                     .foregroundStyle(Color.siriusText)
-                
+
                 Text(experienceText)
                     .scaledFont(size: 10)
                     .foregroundStyle(Color.siriusText)
             }
-            
+
             Spacer(minLength: 4)
-            
+
             VStack(spacing: 3) {
                 ForEach(Array(applicant.coreLanguages.prefix(3)), id: \.self) { language in
                     Text(language)
@@ -145,7 +142,7 @@ struct EmpAplCard: View {
                         .shadow(color: Color.black.opacity(0.25), radius: 1.5, x: 0, y: 3)
                 }
             }
-            
+
             matchIndicator
                 .padding(.leading, 3)
         }
@@ -156,20 +153,18 @@ struct EmpAplCard: View {
         .cornerRadius(15)
         .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 4)
     }
-    
-    // Fill level is a visual category (100% = full, 80-99% = two thirds, 60-79% = one third),
-    // not the exact percentage. Green from 80%, orange from 60%. Replays every time the card appears.
+
     private var fillTarget: Double { MatchTier.fillFraction(for: applicant.matchPercentage) }
-    
+
     private var fillColor: Color {
         applicant.matchPercentage >= 80
             ? Color.siriusMatchBar
             : Color.siriusBarAmber
     }
-    
+
     private var matchIndicator: some View {
         let height: CGFloat = 58
-        
+
         return ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 6).fill(Color.siriusBarTrack)
             RoundedRectangle(cornerRadius: 6).fill(fillColor).frame(height: height * fillProgress)
@@ -181,7 +176,7 @@ struct EmpAplCard: View {
         .onAppear { playFill() }
         .onChange(of: fillTarget) { _, _ in playFill() }
     }
-    
+
     private func playFill() {
         guard !reduceMotion else {
             fillProgress = fillTarget

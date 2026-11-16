@@ -8,18 +8,15 @@
 import Foundation
 import Combine
 
-// The applicant's applications. They are created when the applicant applies
-// (the first batch at sign up, then "Apply to 10 more" on the Jobs tab).
 class AplApplicationsController: ObservableObject {
     @Published var selectedStatus: ApplicationStatus = .all
     @Published private(set) var allApplications: [JobApplication] = []
-    // Interviews the applicant has already opened (recordID -> what they saw), kept on this phone
     @Published private(set) var seenInterviews: [String: String] = [:]
-    
+
     private let applicantID: UUID?
     private let board: JobBoard
     private var cancellables = Set<AnyCancellable>()
-    
+
     init(applicantID: UUID? = nil, board: JobBoard = .shared) {
         self.applicantID = applicantID
         self.board = board
@@ -36,8 +33,7 @@ class AplApplicationsController: ObservableObject {
                 )
             }
             .store(in: &cancellables)
-        
-        // Keep the 1-hour reminders in step with the interviews (after the data has really loaded)
+
         $allApplications
             .combineLatest(board.$didLoad)
             .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
@@ -46,31 +42,30 @@ class AplApplicationsController: ObservableObject {
             }
             .store(in: &cancellables)
     }
-    
+
     // MARK: - "New interview" badge
-    
+
     private static func seenKey(_ id: UUID?) -> String { "seenInterviews.\(id?.uuidString ?? "none")" }
-    
-    // Changes when the employer sends or reschedules (date, place or message)
+
     private static func signature(_ interview: Interview) -> String {
         "\(Int(interview.date.timeIntervalSince1970))|\(interview.location)|\(interview.message)"
     }
-    
+
     func hasNewInterview(_ application: JobApplication) -> Bool {
         guard application.status == .interview, let interview = application.interview else { return false }
         return seenInterviews[application.id.uuidString] != Self.signature(interview)
     }
-    
+
     var newInterviewCount: Int { allApplications.filter(hasNewInterview).count }
-    
+
     func markInterviewSeen(_ application: JobApplication) {
         guard application.status == .interview, let interview = application.interview else { return }
         seenInterviews[application.id.uuidString] = Self.signature(interview)
         UserDefaults.standard.set(seenInterviews, forKey: Self.seenKey(applicantID))
     }
-    
+
     // MARK: - Applications
-    
+
     static func status(for record: ApplicationRecord) -> ApplicationStatus {
         if record.isWithdrawn { return .withdrawn }
         if record.isRemoved { return .rejected }
@@ -80,12 +75,12 @@ class AplApplicationsController: ObservableObject {
         case .hired: return .accepted
         }
     }
-    
+
     private static func makeApplications(jobs: [Job], records: [ApplicationRecord], applicantID: UUID?, interviews: [Interview]) -> [JobApplication] {
         guard let applicantID else { return [] }
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM dd, yyyy"
-        
+
         return records
             .filter { $0.applicantID == applicantID }
             .sorted { $0.dateApplied > $1.dateApplied }
@@ -107,7 +102,7 @@ class AplApplicationsController: ObservableObject {
                 )
             }
     }
-    
+
     var filteredApplications: [JobApplication] {
         if selectedStatus == .all {
             return allApplications
@@ -115,14 +110,12 @@ class AplApplicationsController: ObservableObject {
             return allApplications.filter { $0.status == selectedStatus }
         }
     }
-    
-    // The applicant withdraws an application (not possible once hired)
+
     @discardableResult
     func withdraw(_ application: JobApplication) -> Bool {
         board.withdraw(recordID: application.id)
     }
-    
-    // Counts for the Application Status card on Home
+
     func count(of status: ApplicationStatus) -> Int {
         allApplications.filter { $0.status == status }.count
     }

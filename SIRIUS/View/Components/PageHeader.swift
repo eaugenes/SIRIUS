@@ -7,14 +7,13 @@
 
 import SwiftUI
 
-// "<   Title" header used by pushed screens (sign up steps, Job Posting, job applicants)
 struct PageHeader: View {
-    
+
     let title: String
     var titleSize: CGFloat = 20
     var titleColor: Color = .black
-    var onBack: (() -> Void)? = nil         // nil hides the back chevron
-    
+    var onBack: (() -> Void)? = nil
+
     var body: some View {
         ZStack {
             Text(title)
@@ -23,7 +22,7 @@ struct PageHeader: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .padding(.horizontal, 56)
-            
+
             if let onBack {
                 HStack {
                     Button(action: onBack) {
@@ -33,7 +32,7 @@ struct PageHeader: View {
                             .frame(width: 44, height: 44, alignment: .leading)
                     }
                     .accessibilityLabel("Back")
-                    
+
                     Spacer()
                 }
                 .padding(.leading, 39)
@@ -44,16 +43,15 @@ struct PageHeader: View {
     }
 }
 
-// Full-width rounded button: navy fill (Continue, Post) or white fill (Send, Sign Out)
 struct SiriusButton: View {
-    
+
     let title: String
     var isFilled: Bool = true
     var width: CGFloat = 280
     var height: CGFloat = 38
     var fontSize: CGFloat = 17
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Text(title)
@@ -68,11 +66,10 @@ struct SiriusButton: View {
     }
 }
 
-// Small red message under a form (validation errors)
 struct FormErrorText: View {
-    
+
     let message: String?
-    
+
     var body: some View {
         if let message {
             Text(message)

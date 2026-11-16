@@ -7,20 +7,19 @@
 
 import SwiftUI
 
-// White capsule with a dark-blue selected pill (Active/Inactive, All/To Review/Interview/Hired)
 struct EmployerSegmentedTabs<Item: Hashable>: View {
     let items: [Item]
     let title: (Item) -> String
     @Binding var selection: Item
     var width: CGFloat = 370
-    
+
     @Namespace private var pill
-    
+
     var body: some View {
         HStack(spacing: 0) {
             ForEach(items, id: \.self) { item in
                 let isSelected = selection == item
-                
+
                 Button {
                     withAnimation(.spring(duration: 0.3, bounce: 0.2)) {
                         selection = item
@@ -35,7 +34,7 @@ struct EmployerSegmentedTabs<Item: Hashable>: View {
                         .frame(height: 36)
                         .background {
                             if isSelected {
-                                Capsule()
+                                RoundedRectangle(cornerRadius: 8)
                                     .fill(Color.siriusNavy)
                                     .matchedGeometryEffect(id: "selectedPill", in: pill)
                             }
@@ -45,8 +44,8 @@ struct EmployerSegmentedTabs<Item: Hashable>: View {
             }
         }
         .padding(2)
-        .background(Capsule().fill(Color.siriusSurface))
-        .overlay(Capsule().strokeBorder(Color.siriusNavy.opacity(0.4), lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.siriusSurface))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.siriusBorder, lineWidth: 1))
         .frame(width: width)
     }
 }

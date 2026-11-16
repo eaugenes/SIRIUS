@@ -21,8 +21,8 @@ struct ApplicantRow: Codable, Sendable {
     var coreLang: [String]
     var workSetup: String
     var birthDate: String
-    var email: String?              // lets the employer contact the applicant (copied from the account email)
-    
+    var email: String?
+
     enum CodingKeys: String, CodingKey {
         case id
         case firstName = "first_name"
@@ -36,7 +36,7 @@ struct ApplicantRow: Codable, Sendable {
         case birthDate = "birth_date"
         case email
     }
-    
+
     init(_ a: Applicant) {
         id = a.id
         firstName = a.firstName
@@ -51,9 +51,7 @@ struct ApplicantRow: Codable, Sendable {
         birthDate = a.birthDate
         email = a.email
     }
-    
-    // `email` is the signed-in account's email; when it is empty (an employer is reading the row)
-    // the email stored on the row is used instead.
+
     func applicant(email accountEmail: String) -> Applicant {
         let address = accountEmail.isEmpty ? (email ?? "") : accountEmail
         var a = Applicant(
@@ -74,7 +72,7 @@ struct EmployerRow: Codable, Sendable {
     var lastName: String
     var birthDate: String
     var contactNumber: String
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case firstName = "first_name"
@@ -83,7 +81,7 @@ struct EmployerRow: Codable, Sendable {
         case birthDate = "birth_date"
         case contactNumber = "contact_number"
     }
-    
+
     init(_ e: Employer) {
         id = e.id
         firstName = e.firstName
@@ -92,7 +90,7 @@ struct EmployerRow: Codable, Sendable {
         birthDate = e.birthDate
         contactNumber = e.contactNumber
     }
-    
+
     func employer(email: String) -> Employer {
         var e = Employer()
         e.id = id
@@ -115,7 +113,7 @@ struct CompanyRow: Codable, Sendable {
     var location: String
     var website: String
     var email: String
-    
+
     init(_ c: Company, ownerID: UUID) {
         id = ownerID
         name = c.cmpName
@@ -125,7 +123,7 @@ struct CompanyRow: Codable, Sendable {
         website = c.website
         email = c.email
     }
-    
+
     func company() -> Company {
         var c = Company()
         c.id = id.uuidString.lowercased()
@@ -159,7 +157,7 @@ struct JobRow: Codable, Sendable {
     var isFilled: Bool
     var datePosted: Date
     fileprivate var companies: CompanyNameRow?
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case companyID = "company_id"
@@ -177,7 +175,7 @@ struct JobRow: Codable, Sendable {
         case datePosted = "date_posted"
         case companies
     }
-    
+
     func job() -> Job {
         Job(
             jobID: id.uuidString.lowercased(),
@@ -200,7 +198,6 @@ struct JobRow: Codable, Sendable {
     }
 }
 
-// What the app sends when it creates or edits a job
 private struct JobWrite: Encodable, Sendable {
     var id: UUID
     var company_id: UUID
@@ -216,7 +213,7 @@ private struct JobWrite: Encodable, Sendable {
     var is_active: Bool
     var is_filled: Bool
     var date_posted: Date
-    
+
     init?(_ job: Job) {
         guard let id = UUID(uuidString: job.jobID), let company = UUID(uuidString: job.companyID) else { return nil }
         self.id = id
@@ -255,7 +252,7 @@ struct ApplicationRow: Codable, Sendable {
     var interviewMessage: String
     var createdAt: Date
     var applicants: ApplicantRow?
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case jobID = "job_id"
@@ -301,7 +298,6 @@ private struct WithdrawParam: Encodable, Sendable {
     var p_id: UUID
 }
 
-// A portfolio entry of an applicant (table applicant_projects)
 struct ProjectRow: Codable, Sendable {
     var id: UUID
     var applicantID: UUID
@@ -309,7 +305,7 @@ struct ProjectRow: Codable, Sendable {
     var details: String
     var imagePaths: [String]
     var position: Int
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case applicantID = "applicant_id"
@@ -318,13 +314,12 @@ struct ProjectRow: Codable, Sendable {
         case imagePaths = "image_paths"
         case position
     }
-    
+
     func project() -> Project {
         Project(id: id, title: title, details: details, imagePaths: imagePaths)
     }
 }
 
-// An in-app notification (table notifications). Rows are created by database triggers.
 struct NotificationRow: Codable, Sendable {
     var id: UUID
     var kind: String
@@ -332,13 +327,13 @@ struct NotificationRow: Codable, Sendable {
     var body: String
     var isRead: Bool
     var createdAt: Date
-    
+
     enum CodingKeys: String, CodingKey {
         case id, kind, title, body
         case isRead = "is_read"
         case createdAt = "created_at"
     }
-    
+
     func notification() -> AppNotification {
         AppNotification(id: id, kind: kind, title: title, body: body, isRead: isRead, createdAt: createdAt)
     }
@@ -351,9 +346,9 @@ private struct ReadUpdate: Encodable, Sendable {
 // MARK: - Store
 
 enum SupabaseStore {
-    
+
     private static var db: SupabaseClient { SupabaseService.client }
-    
+
     static func statusText(_ status: EmpAplStatus) -> String {
         switch status {
         case .toReview: return "review"
@@ -361,7 +356,7 @@ enum SupabaseStore {
         case .hired: return "hired"
         }
     }
-    
+
     private static func status(from text: String) -> EmpAplStatus {
         switch text {
         case "interview": return .interview
@@ -369,13 +364,13 @@ enum SupabaseStore {
         default: return .toReview
         }
     }
-    
+
     // MARK: Accounts
-    
+
     static func saveApplicant(_ applicant: Applicant) async throws {
         try await db.from("applicants").upsert(ApplicantRow(applicant)).execute()
     }
-    
+
     static func fetchApplicant(id: UUID, email: String) async throws -> Applicant? {
         let rows: [ApplicantRow] = try await db.from("applicants")
             .select()
@@ -385,14 +380,14 @@ enum SupabaseStore {
             .value
         return rows.first?.applicant(email: email)
     }
-    
+
     static func saveEmployer(_ employer: Employer, company: Company, userID: UUID) async throws {
         var owner = employer
         owner.id = userID
         try await db.from("companies").upsert(CompanyRow(company, ownerID: userID)).execute()
         try await db.from("employers").upsert(EmployerRow(owner)).execute()
     }
-    
+
     static func fetchEmployer(id: UUID, email: String) async throws -> (Employer, Company)? {
         let employers: [EmployerRow] = try await db.from("employers")
             .select().eq("id", value: id).limit(1).execute().value
@@ -401,14 +396,11 @@ enum SupabaseStore {
         guard let employerRow = employers.first, let companyRow = companies.first else { return nil }
         return (employerRow.employer(email: email), companyRow.company())
     }
-    
-    // Profile pictures (Storage bucket "avatars", one file per user: <user id>/profile.jpg)
-        
+
         private static func avatarPath(for userID: UUID) -> String {
-            "\(userID.uuidString.lowercased())/profile.jpg"       // lowercase: the storage policy compares it to auth.uid()
+            "\(userID.uuidString.lowercased())/profile.jpg"
         }
-        
-        // Shrinks the photo (max 512 px) and saves it as JPEG
+
         private static func avatarData(_ image: UIImage) -> Data? {
             let longest = max(image.size.width, image.size.height)
             guard longest > 0 else { return nil }
@@ -421,25 +413,23 @@ enum SupabaseStore {
             }
             return resized.jpegData(compressionQuality: 0.8)
         }
-        
+
         static func uploadAvatar(_ image: UIImage, userID: UUID) async throws {
             guard let data = avatarData(image) else { return }
             try await db.storage
                 .from("avatars")
                 .upload(avatarPath(for: userID), data: data, options: FileOptions(contentType: "image/jpeg", upsert: true))
         }
-        
-        // nil when the user has no picture yet
+
         static func downloadAvatar(userID: UUID) async -> UIImage? {
             guard let data = try? await db.storage.from("avatars").download(path: avatarPath(for: userID)) else { return nil }
             return UIImage(data: data)
         }
-    
+
     // MARK: Projects (table applicant_projects + Storage bucket "project-images")
-    
+
     private static let projectBucket = "project-images"
-    
-    // Shrinks a project picture (max 1024 px) and saves it as JPEG
+
     private static func projectImageData(_ image: UIImage) -> Data? {
         let longest = max(image.size.width, image.size.height)
         guard longest > 0 else { return nil }
@@ -452,8 +442,7 @@ enum SupabaseStore {
         }
         return resized.jpegData(compressionQuality: 0.75)
     }
-    
-    // The applicant's projects in the order they were added (empty when none or when loading fails)
+
     static func fetchProjects(applicantID: UUID) async -> [Project] {
         do {
             let rows: [ProjectRow] = try await db.from("applicant_projects")
@@ -467,18 +456,16 @@ enum SupabaseStore {
             return []
         }
     }
-    
-    // Uploads the new pictures, saves every project and removes the ones the applicant deleted.
-    // Returns the projects with their picture paths filled in.
+
     @discardableResult
     static func saveProjects(_ projects: [Project], applicantID: UUID) async throws -> [Project] {
-        let owner = applicantID.uuidString.lowercased()          // lowercase: the storage policy compares it to auth.uid()
+        let owner = applicantID.uuidString.lowercased()
         let existing: [ProjectRow] = try await db.from("applicant_projects")
             .select()
             .eq("applicant_id", value: applicantID)
             .execute()
             .value
-        
+
         var saved: [Project] = []
         var rows: [ProjectRow] = []
         for (index, project) in projects.enumerated() {
@@ -503,35 +490,32 @@ enum SupabaseStore {
                 imagePaths: paths, position: index
             ))
         }
-        
+
         if !rows.isEmpty {
             try await db.from("applicant_projects").upsert(rows).execute()
         }
-        
-        // Projects the applicant removed
+
         let keptIDs = Set(projects.map { $0.id })
         for row in existing where !keptIDs.contains(row.id) {
             try await db.from("applicant_projects").delete().eq("id", value: row.id).execute()
         }
-        
-        // Pictures that are no longer used (removed pictures or removed projects); best effort
+
         let oldPaths = Set(existing.flatMap { $0.imagePaths })
         let newPaths = Set(saved.flatMap { $0.imagePaths })
-        let orphaned = Array(oldPaths.subtracting(newPaths))
+        let orphaned = Array(oldPaths.subtracting(newPaths)).filter { !$0.hasPrefix("http") }
         if !orphaned.isEmpty {
             _ = try? await db.storage.from(projectBucket).remove(paths: orphaned)
         }
         return saved
     }
-    
-    // nil when the picture can't be loaded
+
     static func downloadProjectImage(path: String) async -> UIImage? {
         guard let data = try? await db.storage.from(projectBucket).download(path: path) else { return nil }
         return UIImage(data: data)
     }
-    
+
     // MARK: Notifications (table notifications; Row Level Security returns only the signed-in user's rows)
-    
+
     static func fetchNotifications() async throws -> [AppNotification] {
         let rows: [NotificationRow] = try await db.from("notifications")
             .select()
@@ -541,16 +525,15 @@ enum SupabaseStore {
             .value
         return rows.map { $0.notification() }
     }
-    
+
     static func markNotificationsRead(ids: [UUID]) async throws {
         for id in ids {
             try await db.from("notifications").update(ReadUpdate()).eq("id", value: id).execute()
         }
     }
-    
+
     // MARK: Board (jobs, applications, interviews)
-    
-    // Row Level Security decides what each user gets: an applicant sees active jobs and their own applications; an employer sees their own jobs and the applications on them.
+
     static func fetchBoard() async throws -> (jobs: [Job], applications: [ApplicationRecord], interviews: [Interview]) {
         let jobRows: [JobRow] = try await db.from("jobs")
             .select("*, companies(name)")
@@ -558,23 +541,23 @@ enum SupabaseStore {
             .execute()
             .value
         let jobs = jobRows.map { $0.job() }
-        
+
         let applicationRows: [ApplicationRow] = try await db.from("applications")
             .select("*, applicants(*)")
             .order("created_at", ascending: true)
             .execute()
             .value
-        
+
         var records: [ApplicationRecord] = []
         var interviews: [Interview] = []
-        
+
         for row in applicationRows {
             let jobID = row.jobID.uuidString.lowercased()
             guard let job = jobs.first(where: { $0.jobID == jobID }),
                   let applicantRow = row.applicants else { continue }
             let applicant = applicantRow.applicant(email: "")
             let breakdown = Matching.evaluate(applicant.matchProfile, against: job.matchRequirements)
-            
+
             let record = ApplicationRecord(
                 id: row.id,
                 jobID: jobID,
@@ -595,7 +578,7 @@ enum SupabaseStore {
                 dateApplied: row.createdAt
             )
             records.append(record)
-            
+
             if let date = row.interviewAt, !row.isRemoved, !row.isWithdrawn {
                 interviews.append(Interview(
                     applicantID: row.id,
@@ -607,19 +590,19 @@ enum SupabaseStore {
         }
         return (jobs, records, interviews)
     }
-    
+
     // MARK: Jobs
-    
+
     static func insertJob(_ job: Job) async throws {
         guard let row = JobWrite(job) else { return }
         try await db.from("jobs").insert(row).execute()
     }
-    
+
     static func updateJob(_ job: Job) async throws {
         guard let row = JobWrite(job) else { return }
         try await db.from("jobs").update(row).eq("id", value: row.id).execute()
     }
-    
+
     static func setJobStatus(jobID: String, isActive: Bool, isFilled: Bool) async throws {
         guard let id = UUID(uuidString: jobID) else { return }
         try await db.from("jobs")
@@ -627,15 +610,14 @@ enum SupabaseStore {
             .eq("id", value: id)
             .execute()
     }
-    
+
     static func deleteJob(jobID: String) async throws {
         guard let id = UUID(uuidString: jobID) else { return }
         try await db.from("jobs").delete().eq("id", value: id).execute()
     }
-    
+
     // MARK: Applications
-    
-    // Applies the signed-in applicant to the chosen jobs (the server allows at most 10 per call)
+
     static func applyToJobs(_ picks: [(jobID: String, score: Int)]) async throws {
         let pairs = picks.compactMap { pick -> (UUID, Int)? in
             guard let id = UUID(uuidString: pick.jobID) else { return nil }
@@ -644,7 +626,7 @@ enum SupabaseStore {
         guard !pairs.isEmpty else { return }
         try await db.rpc("apply_to_jobs", params: ApplyParams(p_jobs: pairs.map { $0.0 }, p_scores: pairs.map { $0.1 })).execute()
     }
-    
+
     static func setInterview(recordID: UUID, date: Date, location: String, message: String) async throws {
         let update = InterviewUpdate(
             status: statusText(.interview),
@@ -654,21 +636,21 @@ enum SupabaseStore {
         )
         try await db.from("applications").update(update).eq("id", value: recordID).execute()
     }
-    
+
     static func setStatus(recordID: UUID, status: EmpAplStatus) async throws {
         try await db.from("applications")
             .update(StatusUpdate(status: statusText(status)))
             .eq("id", value: recordID)
             .execute()
     }
-    
+
     static func removeApplication(recordID: UUID, reason: String) async throws {
         try await db.from("applications")
             .update(RemoveUpdate(rejection_reason: reason))
             .eq("id", value: recordID)
             .execute()
     }
-    
+
     static func withdrawApplication(recordID: UUID) async throws {
         try await db.rpc("withdraw_application", params: WithdrawParam(p_id: recordID)).execute()
     }

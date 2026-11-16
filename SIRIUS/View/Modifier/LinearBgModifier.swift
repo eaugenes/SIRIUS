@@ -8,11 +8,10 @@
 import SwiftUI
 
 struct LinearBgModifier: ViewModifier {
-    
-    // Figma "Final": #003d5c -> #d8f2ff -> #003d5c (stops 3.365% / 57.692% / 100%)
+
     let topBotBlue = Color.siriusNavy
     let centerWhite = Color.siriusSky
-    
+
     func body(content: Content) -> some View {
         ZStack{
             LinearGradient(
@@ -25,7 +24,7 @@ struct LinearBgModifier: ViewModifier {
                 endPoint: .bottom
             )
             .ignoresSafeArea(edges: .all)
-            
+
             content
         }
     }

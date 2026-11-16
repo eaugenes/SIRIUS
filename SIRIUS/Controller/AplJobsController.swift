@@ -13,23 +13,22 @@ struct AplJobListing: Identifiable {
     let breakdown: MatchBreakdown
     let hasApplied: Bool
     var profile: MatchProfile = MatchProfile(program: "", yearsExperience: 0, languages: [])
-    
+
     var id: String { job.jobID }
     var percentage: Int { breakdown.total }
 }
 
 final class AplJobsController: ObservableObject {
-    
+
     @Published var searchText = ""
-    
+
     private let info: AplInfoController
     private let board: JobBoard
     private var cancellables = Set<AnyCancellable>()
-    
+
     init(info: AplInfoController, board: JobBoard = .shared) {
         self.info = info
         self.board = board
-        // Refresh when jobs, applications or the applicant's profile change
         board.objectWillChange
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
@@ -37,8 +36,7 @@ final class AplJobsController: ObservableObject {
             .sink { [weak self] _ in self?.objectWillChange.send() }
             .store(in: &cancellables)
     }
-    
-    // Every active job, best match first
+
     var allListings: [AplJobListing] {
         let applicant = info.applicant
         return board.activeJobs()
@@ -54,7 +52,7 @@ final class AplJobsController: ObservableObject {
                 $0.percentage != $1.percentage ? $0.percentage > $1.percentage : $0.job.datePosted > $1.job.datePosted
             }
     }
-    
+
     var listings: [AplJobListing] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !query.isEmpty else { return allListings }
@@ -64,28 +62,24 @@ final class AplJobsController: ObservableObject {
             || $0.job.requiredLoc.lowercased().contains(query)
         }
     }
-    
-    // Jobs in the green band (80% or more): the only ones that are applied automatically
+
     var matchedListings: [AplJobListing] {
         allListings.filter { $0.breakdown.isEligible }
     }
-    
+
     var averageMatch: Int {
         let matched = matchedListings
         guard !matched.isEmpty else { return 0 }
         let total = matched.reduce(0) { $0 + $1.percentage }
         return Int((Double(total) / Double(matched.count)).rounded())
     }
-    
+
     var topListing: AplJobListing? { allListings.first { $0.breakdown.isEligible } }
-    
-    // Green-match jobs (80%+) the applicant has not applied to yet
+
     var pendingCount: Int { board.pendingQualifiedJobs(for: info.applicant).count }
 
-    // How many the next tap of the button will send
     var nextBatchCount: Int { min(pendingCount, JobBoard.applyBatchSize) }
 
-    // Applies to up to 10 green-match jobs, then refreshes the inbox so the new notification shows up
     @MainActor
     @discardableResult
     func applyToMore() async -> AutoApplyOutcome {

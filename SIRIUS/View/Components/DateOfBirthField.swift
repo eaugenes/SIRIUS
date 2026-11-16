@@ -10,7 +10,7 @@ import SwiftUI
 struct DateOfBirthField: View {
     let title: String
     @Binding var text: String
-    var borderColor: Color = .siriusFieldBorder
+    var borderColor: Color = .siriusBorder
 
     @State private var showPicker = false
     @State private var pickedDate = Calendar.current.date(byAdding: .year, value: -18, to: Date()) ?? Date()
@@ -46,10 +46,10 @@ struct DateOfBirthField: View {
                 .padding(10)
                 .frame(width: 300)
                 .frame(minHeight: 35)
-                .background(Color.siriusFieldFill)
-                .cornerRadius(14)
+                .background(Color.siriusSurface)
+                .cornerRadius(10)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
+                    RoundedRectangle(cornerRadius: 10)
                         .strokeBorder(borderColor, lineWidth: 1)
                 )
             }

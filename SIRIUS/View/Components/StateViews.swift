@@ -25,8 +25,8 @@ struct EmptyStateView: View {
     var message: String = ""
     var actionTitle: String? = nil
     var action: (() -> Void)? = nil
-    var onDark: Bool = true                 // true on the blue background, false inside a white card
-    
+    var onDark: Bool = true
+
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
@@ -59,7 +59,7 @@ struct EmptyStateView: View {
 
 struct LoadingStateView: View {
     var message = "Loading\u{2026}"
-    
+
     var body: some View {
         VStack(spacing: 10) {
             ProgressView()
@@ -77,7 +77,7 @@ struct LoadingStateView: View {
 struct ErrorStateView: View {
     let message: String
     var retry: () -> Void
-    
+
     var body: some View {
         EmptyStateView(
             icon: "exclamationmark.triangle",
@@ -94,7 +94,7 @@ struct ErrorStateView: View {
 
 private struct BoardStateModifier: ViewModifier {
     @ObservedObject var board: JobBoard
-    
+
     func body(content: Content) -> some View {
         ZStack {
             content
@@ -115,7 +115,6 @@ private struct BoardStateModifier: ViewModifier {
 }
 
 extension View {
-    // Shows a spinner while the board loads and a retry card when loading failed
     func boardLoadState(_ board: JobBoard = .shared) -> some View {
         modifier(BoardStateModifier(board: board))
     }
@@ -125,10 +124,10 @@ extension View {
 
 final class NetworkMonitor: ObservableObject {
     @Published private(set) var isOffline = false
-    
+
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "sirius.network")
-    
+
     init() {
         monitor.pathUpdateHandler = { [weak self] path in
             let offline = path.status != .satisfied
@@ -136,15 +135,14 @@ final class NetworkMonitor: ObservableObject {
         }
         monitor.start(queue: queue)
     }
-    
+
     deinit { monitor.cancel() }
 }
 
-// Top banner: offline notice and failed-save message with Retry / Dismiss
 struct StatusBanner: View {
     @ObservedObject var network: NetworkMonitor
     @ObservedObject var board: JobBoard = .shared
-    
+
     var body: some View {
         VStack(spacing: 6) {
             if network.isOffline {
@@ -159,7 +157,7 @@ struct StatusBanner: View {
         .animation(.easeInOut(duration: 0.2), value: network.isOffline)
         .animation(.easeInOut(duration: 0.2), value: board.syncError)
     }
-    
+
     private func banner(icon: String, text: String, dismiss: (() -> Void)? = nil) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)

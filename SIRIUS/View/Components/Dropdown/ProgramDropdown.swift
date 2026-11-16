@@ -7,14 +7,12 @@
 
 import SwiftUI
 
-// "Program" dropdown (Figma: Dropdown Menu - EA).
-// Uses the programs in ProgramsList and a native Menu, so it never overlaps other fields.
 struct ProgramDropdown: View {
     let title: String
-    let programs: [City]                // ProgramsList.programs (stored as City: id + name)
+    let programs: [City]
     @Binding var selectedProgram: String
     var borderColor: Color = .siriusBorder
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
@@ -22,7 +20,7 @@ struct ProgramDropdown: View {
                 .fontWeight(.medium)
                 .foregroundStyle(Color.siriusInk)
                 .padding(.leading, 11)
-            
+
             Menu {
                 ForEach(programs) { program in
                     Button {
@@ -41,9 +39,9 @@ struct ProgramDropdown: View {
                         .scaledFont(size: 14, weight: .light)
                         .foregroundStyle(Color.siriusTextSecondary)
                         .lineLimit(1)
-                    
+
                     Spacer()
-                    
+
                     Image(systemName: "chevron.down")
                         .scaledFont(size: 16, weight: .semibold)
                         .foregroundStyle(Color.gray)

@@ -7,18 +7,16 @@
 
 import SwiftUI
 
-// Program dropdown that allows several programs to be ticked (used on Job Posting).
-// Tap a program to add / remove it; the menu lists a checkmark next to every chosen one.
 struct ProgramMultiDropdown: View {
     let title: String
     let programs: [City]
     @Binding var selectedPrograms: [String]
     var borderColor: Color = .siriusBorder
-    
+
     private var summary: String {
         selectedPrograms.isEmpty ? "Select program(s)" : selectedPrograms.joined(separator: ", ")
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
@@ -26,7 +24,7 @@ struct ProgramMultiDropdown: View {
                 .fontWeight(.medium)
                 .foregroundStyle(Color.siriusInk)
                 .padding(.leading, 11)
-            
+
             Menu {
                 ForEach(programs) { program in
                     Button {
@@ -46,9 +44,9 @@ struct ProgramMultiDropdown: View {
                         .foregroundStyle(Color.siriusTextSecondary)
                         .lineLimit(1)
                         .truncationMode(.tail)
-                    
+
                     Spacer()
-                    
+
                     Image(systemName: "chevron.down")
                         .scaledFont(size: 16, weight: .semibold)
                         .foregroundStyle(Color.gray)
@@ -63,8 +61,7 @@ struct ProgramMultiDropdown: View {
                         .strokeBorder(borderColor, lineWidth: 1)
                 )
             }
-            
-            // Chosen programs as removable chips
+
             if !selectedPrograms.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(selectedPrograms, id: \.self) { name in
@@ -89,12 +86,11 @@ struct ProgramMultiDropdown: View {
             }
         }
     }
-    
+
     private func toggle(_ name: String) {
         if let index = selectedPrograms.firstIndex(of: name) {
             selectedPrograms.remove(at: index)
         } else {
-            // keep the list in the same order as the menu
             selectedPrograms.append(name)
             let order = programs.map(\.name)
             selectedPrograms.sort { (order.firstIndex(of: $0) ?? 0) < (order.firstIndex(of: $1) ?? 0) }

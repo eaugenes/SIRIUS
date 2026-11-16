@@ -8,27 +8,27 @@
 import SwiftUI
 
 struct ScheduleInterviewDialog: View {
-    
+
     let applicantName: String
     var title: String = "Schedule Interview"
     var sendTitle: String = "Send"
-    var initial: Interview? = nil               // pre-fills the form when rescheduling
+    var initial: Interview? = nil
     var onSend: (_ date: Date, _ location: String, _ message: String) -> Void
     var onCancel: () -> Void
-    
+
     @State private var date = Date()
     @State private var location = ""
     @State private var message = ""
     @State private var error: String?
     @State private var loadedInitial = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
                 Text(title)
                     .scaledFont(size: 16, weight: .bold)
                     .foregroundStyle(Color.white)
-                
+
                 HStack {
                     Spacer()
                     Button(action: onCancel) {
@@ -41,23 +41,23 @@ struct ScheduleInterviewDialog: View {
                 }
             }
             .padding(.top, 10)
-            
+
             Text(applicantName)
                 .scaledFont(size: 12, weight: .light)
                 .foregroundStyle(Color.white.opacity(0.85))
                 .padding(.bottom, 10)
-            
+
             Text("Date & Time")
                 .scaledFont(size: 15, weight: .medium)
                 .foregroundStyle(Color.white)
                 .padding(.bottom, 6)
-            
+
             HStack(spacing: 8) {
                 DatePicker("Date", selection: $date, in: Date()..., displayedComponents: .date)
                     .labelsHidden()
                     .datePickerStyle(.compact)
                     .background(Capsule().fill(Color.siriusSurface))
-                
+
                 DatePicker("Time", selection: $date, displayedComponents: .hourAndMinute)
                     .labelsHidden()
                     .datePickerStyle(.compact)
@@ -66,7 +66,7 @@ struct ScheduleInterviewDialog: View {
             .environment(\.colorScheme, .light)
             .tint(Color.siriusNavy)
             .padding(.bottom, 20)
-            
+
             VStack(spacing: 10) {
                 AppTextField(
                     title: "Location",
@@ -75,7 +75,7 @@ struct ScheduleInterviewDialog: View {
                     titleColor: .white,
                     borderColor: .siriusBorder
                 )
-                
+
                 AppTextField(
                     title: "Message",
                     placeholder: "Enter message",
@@ -86,14 +86,14 @@ struct ScheduleInterviewDialog: View {
                     multilineHeight: 145
                 )
             }
-            
+
             if let error {
                 Text(error)
                     .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Color.siriusMatchGreen)
                     .padding(.top, 8)
             }
-            
+
             SiriusButton(title: sendTitle, isFilled: false) {
                 if location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     error = "Please enter the interview location."

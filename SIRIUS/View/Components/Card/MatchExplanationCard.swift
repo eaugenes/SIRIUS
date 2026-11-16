@@ -7,18 +7,16 @@
 
 import SwiftUI
 
-// "Why N%": the points earned in each category with a plain-language reason,
-// plus the location note (location is shown but does not change the score).
 struct MatchExplanationCard: View {
-    
+
     let job: Job
     let profile: MatchProfile
     let breakdown: MatchBreakdown
-    var onNavy: Bool = false            // true inside the navy description panel (white text)
-    
+    var onNavy: Bool = false
+
     private var primary: Color { onNavy ? .white : .siriusInk }
     private var secondary: Color { onNavy ? Color.white.opacity(0.8) : .siriusMuted }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -32,7 +30,7 @@ struct MatchExplanationCard: View {
                     .scaledFont(size: 11, weight: .medium)
                     .foregroundStyle(breakdown.isEligible ? Color.siriusMatchBar : Color.siriusBarAmber)
             }
-            
+
             ForEach(Matching.explain(profile, against: job.matchRequirements, breakdown: breakdown)) { line in
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
@@ -51,7 +49,7 @@ struct MatchExplanationCard: View {
                 }
                 .accessibilityElement(children: .combine)
             }
-            
+
             if let locationMatches = breakdown.locationMatches {
                 HStack(spacing: 6) {
                     Image(systemName: locationMatches ? "mappin.and.ellipse" : "mappin.slash")

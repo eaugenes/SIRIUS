@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-// Anything that can drive the bottom bar: a tab's label (rawValue) and SF Symbol (iconTypes).
-// AplNavigationTab and EmpNavigationTab already have both, so conforming them costs nothing.
 protocol SiriusNavigationTab: Hashable, CaseIterable, Identifiable where AllCases: RandomAccessCollection {
     var rawValue: String { get }
     var iconTypes: String { get }
@@ -18,18 +16,16 @@ extension AplNavigationTab: SiriusNavigationTab {}
 extension EmpNavigationTab: SiriusNavigationTab {}
 
 // MARK: Reusable Nav Bar
-// Dark-blue capsule bar with a light pill behind the selected tab.
-// Works for any tab enum conforming to SiriusNavigationTab.
 struct NavigationBar<Tab: SiriusNavigationTab>: View {
     @Binding var selectedTab: Tab
     var badges: [Tab: Int] = [:]
     @Namespace private var animation
-    
+
     var body: some View {
         HStack(spacing: 0) {
             ForEach(Tab.allCases) { tab in
                 let isActive = selectedTab == tab
-                
+
                 Button {
                     withAnimation(.spring(duration: 0.3, bounce: 0.3)) {
                         selectedTab = tab
@@ -39,7 +35,7 @@ struct NavigationBar<Tab: SiriusNavigationTab>: View {
                         Image(systemName: tab.iconTypes)
                             .scaledFont(size: 15, weight: .regular)
                             .frame(height: 30)
-                        
+
                         Text(tab.rawValue)
                             .scaledFont(size: 8, weight: .regular)
                     }
@@ -66,7 +62,7 @@ struct NavigationBar<Tab: SiriusNavigationTab>: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(tab.rawValue)
                 .accessibilityAddTraits(isActive ? .isSelected : [])
-                
+
                 if tab.id != Tab.allCases.last?.id {
                     Spacer(minLength: 0)
                 }

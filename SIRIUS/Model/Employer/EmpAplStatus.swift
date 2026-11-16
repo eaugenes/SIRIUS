@@ -11,18 +11,17 @@ enum EmpAplStatus: String, CaseIterable, Identifiable, Codable {
     case toReview = "To Review"
     case interview = "Interview"
     case hired = "Hired"
-    
+
     var id: String { self.rawValue }
 }
 
-// Manage Applicants sorting and minimum-match filter
 enum EmpApplicantSort: String, CaseIterable, Identifiable {
     case highestMatch = "Highest match"
     case lowestMatch = "Lowest match"
     case nameAZ = "Name A\u{2013}Z"
     case newest = "Newest applied"
     case mostExperience = "Most experience"
-    
+
     var id: String { rawValue }
 }
 
@@ -30,9 +29,9 @@ enum EmpMatchFilter: String, CaseIterable, Identifiable {
     case any = "Any match"
     case atLeast80 = "80% and above"
     case atLeast60 = "60% and above"
-    
+
     var id: String { rawValue }
-    
+
     var minimum: Int {
         switch self {
         case .any: return 0
@@ -47,10 +46,9 @@ enum EmpApplicantFilter: String, CaseIterable, Identifiable {
     case toReview = "To Review"
     case interview = "Interview"
     case hired = "Hired"
-    
+
     var id: String { self.rawValue }
-    
-    
+
     var status: EmpAplStatus? {
         switch self {
         case .all: return nil
@@ -61,10 +59,9 @@ enum EmpApplicantFilter: String, CaseIterable, Identifiable {
     }
 }
 
-
 struct EmpApplicant: Identifiable, Equatable {
-    var id = UUID()                 // same id as the stored application record
-    var applicantID = UUID()        // the applicant's account id (used to load their projects)
+    var id = UUID()
+    var applicantID = UUID()
     var name: String
     var degree: String
     var yearsExperience: Double
@@ -72,7 +69,7 @@ struct EmpApplicant: Identifiable, Equatable {
     var matchPercentage: Int
     var status: EmpAplStatus = .toReview
     var jobPosition: String = "Junior Software Developer"
-    var jobID: String = ""          // stable id of the job this applicant applied to
+    var jobID: String = ""
     var breakdown: MatchBreakdown? = nil
     var jobMinYears: Double = 0
     var jobRequiredLanguages: [String] = []
@@ -83,8 +80,7 @@ struct EmpApplicant: Identifiable, Equatable {
     var contactNumber: String = ""
     var email: String = ""
     var workSetup: String = ""
-    
-    // Whole numbers read "2 years", partial ones "1.5 years"
+
     var experienceText: String {
         let years = yearsExperience
         let number = years == years.rounded() ? String(Int(years)) : String(format: "%.1f", years)

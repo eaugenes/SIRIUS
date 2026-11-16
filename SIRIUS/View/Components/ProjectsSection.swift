@@ -8,26 +8,34 @@
 import SwiftUI
 import UIKit
 
-enum ProjectImageStore {        // Loads a project picture from Supabase Storage once and keeps it in memory
+enum ProjectImageStore {
     private static let cache = NSCache<NSString, UIImage>()
-    
+
     static func load(_ path: String) async -> UIImage? {
         if let cached = cache.object(forKey: path as NSString) { return cached }
-        guard let image = await SupabaseStore.downloadProjectImage(path: path) else { return nil }
+        let downloaded: UIImage?
+        if path.hasPrefix("http://") || path.hasPrefix("https://") {
+            guard let url = URL(string: path),
+                  let response = try? await URLSession.shared.data(from: url) else { return nil }
+            downloaded = UIImage(data: response.0)
+        } else {
+            downloaded = await SupabaseStore.downloadProjectImage(path: path)
+        }
+        guard let image = downloaded else { return nil }
         cache.setObject(image, forKey: path as NSString)
         return image
     }
 }
 
-// One square picture: a local photo (not uploaded yet) or a stored picture (loaded by its path)
 struct ProjectThumb: View {
+
     var local: UIImage? = nil
     var path: String? = nil
     var size: CGFloat = 64
     var onTap: ((UIImage) -> Void)? = nil
-    
+
     @State private var loaded: UIImage?
-    
+
     var body: some View {
         Group {
             if let image = local ?? loaded {
@@ -63,13 +71,12 @@ private struct PicturePreview: Identifiable {
     let image: UIImage
 }
 
-// One project: title, description and its pictures (read-only)
 struct ProjectCard: View {
-    
+
     let project: Project
-    
+
     @State private var preview: PicturePreview?
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(project.title)
@@ -78,13 +85,13 @@ struct ProjectCard: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
                 .multilineTextAlignment(.leading)
-            
+
             Text(project.details)
                 .scaledFont(size: 11)
                 .foregroundStyle(Color.siriusMuted)
                 .lineLimit(5)
                 .multilineTextAlignment(.leading)
-            
+
             if project.pictureCount > 0 {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -124,12 +131,11 @@ struct ProjectCard: View {
     }
 }
 
-// The "Projects" block shown on the applicant's Account page and on the employer's Applicant Details
 struct ProjectsSection: View {
-    
+
     let projects: [Project]
     var emptyText: String = "No projects added"
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if projects.isEmpty {

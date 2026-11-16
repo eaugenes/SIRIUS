@@ -7,18 +7,17 @@
 
 import SwiftUI
 import UIKit
-import PhotosUI         // for PhotosPickerItem to show the photo the user selected from album
+import PhotosUI
 
 struct ProfileImagePicker: View {
-    
+
     @Binding var image: UIImage?
     var defaultAvatar: String = ""
     @State private var showImageOptions: Bool = false
     @State private var showPhotoAlbum: Bool = false
     @State private var showCamera: Bool = false
     @State private var selectedOption: PhotosPickerItem?
-    
-    
+
     var body: some View {
         ZStack(alignment: .bottomTrailing){
             Group{
@@ -43,7 +42,7 @@ struct ProfileImagePicker: View {
             .background(Color.siriusPanel)
             .clipShape(Circle())
             .shadow(color: Color.black.opacity(0.25), radius: 4, x: 0, y: 4)
-            
+
             Button {
                 showImageOptions = true
             } label: {
@@ -65,11 +64,11 @@ struct ProfileImagePicker: View {
             selection: $selectedOption,
             matching: .images
         )
-        
+
         .sheet(isPresented: $showCamera) {
             CameraView(image: $image)
         }
-        
+
         .onChange(of: selectedOption) { oldValue, newValue in
                     Task {
                         if let data = try? await newValue?.loadTransferable(type: Data.self),

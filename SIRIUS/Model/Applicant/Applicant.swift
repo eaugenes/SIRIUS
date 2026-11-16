@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import UIKit                // for UIImage
+import UIKit
 
 struct Applicant: Codable {
     var id = UUID()
@@ -22,25 +22,24 @@ struct Applicant: Codable {
 
     var email: String
     var password: String
-    
-    var profilePicture: UIImage? = nil     // temporarily store  selected photo and ensure that the pfp is not optional, if no picture yet, display Image(systemName: "person")
+
+    var profilePicture: UIImage? = nil
     var birthDate: String = ""
     var username: String = ""
-    var projects: [Project] = []           // optional portfolio entries (title, description, pictures)
-    
-    // The profile photo (UIImage) and the projects are stored separately (Supabase), not in this JSON
+    var projects: [Project] = []
+
     private enum CodingKeys: String, CodingKey {
         case id, firstName, middleName, lastName, contactNumber, location, program
         case yrExp, coreLang, workSetUp, email, password, birthDate, username
     }
-    
+
     var fullName: String {
         [firstName, middleName, lastName]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .joined(separator: " ")
     }
-    
+
     var matchProfile: MatchProfile {
         MatchProfile(program: program, yearsExperience: yrExp, languages: coreLang, location: location, workSetup: workSetUp)
     }

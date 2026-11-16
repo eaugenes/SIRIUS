@@ -7,32 +7,27 @@
 
 import SwiftUI
 
-// Employer "Interviews": tracks every interview of the company's applicants.
-//   Upcoming  - the interview time has not come yet
-//   Awaiting  - the interview time passed and the applicant is still waiting for a decision
-//   Hired     - the applicant was hired after the interview
-// Tap an interview for its details (date, time, place, message) and to hire, reschedule or reject.
 struct EmpInterviewsPage: View {
-    
+
     @EnvironmentObject private var aplController: EmpAplStatusController
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var filter: EmpInterviewFilter = .upcoming
     @State private var openedApplicantID: UUID?
-    
+
     private var items: [EmpInterviewItem] {
         aplController.interviewItems(for: filter)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
                 .padding(.bottom, 14)
-            
+
             summary
                 .padding(.horizontal, 32)
                 .padding(.bottom, 14)
-            
+
             EmployerSegmentedTabs(
                 items: EmpInterviewFilter.allCases,
                 title: { $0.rawValue },
@@ -40,7 +35,7 @@ struct EmpInterviewsPage: View {
             )
             .frame(maxWidth: .infinity)
             .padding(.bottom, 14)
-            
+
             if items.isEmpty {
                 emptyState
             } else {
@@ -72,7 +67,7 @@ struct EmpInterviewsPage: View {
                 .environmentObject(aplController)
         }
     }
-    
+
     private var header: some View {
         HStack(spacing: 8) {
             Button {
@@ -84,7 +79,7 @@ struct EmpInterviewsPage: View {
                     .frame(width: 30, height: 44, alignment: .leading)
             }
             .accessibilityLabel("Back")
-            
+
             Text("Interviews")
                 .scaledFont(size: 30, weight: .medium)
                 .foregroundStyle(Color.white)
@@ -94,8 +89,7 @@ struct EmpInterviewsPage: View {
         .padding(.horizontal, 24)
         .padding(.top, 12)
     }
-    
-    // [ upcoming | awaiting decision | hired ]
+
     private var summary: some View {
         HStack(spacing: 0) {
             summaryCell(value: aplController.upcomingInterviewCount, title: "Upcoming")
@@ -110,7 +104,7 @@ struct EmpInterviewsPage: View {
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 4)
     }
-    
+
     private func summaryCell(value: Int, title: String) -> some View {
         VStack(spacing: 2) {
             Text("\(value)")
@@ -124,7 +118,7 @@ struct EmpInterviewsPage: View {
         }
         .frame(maxWidth: .infinity)
     }
-    
+
     private var emptyState: some View {
         let message: String
         switch filter {
@@ -137,11 +131,10 @@ struct EmpInterviewsPage: View {
     }
 }
 
-// One interview row: applicant, job, when and where, plus its status
 struct EmpInterviewCard: View {
-    
+
     let item: EmpInterviewItem
-    
+
     private var stateColor: Color {
         switch item.state {
         case .upcoming: return Color.siriusPanel
@@ -149,7 +142,7 @@ struct EmpInterviewCard: View {
         case .hired: return Color.siriusMatchBar
         }
     }
-    
+
     var body: some View {
         HStack(spacing: 12) {
             VStack(spacing: 0) {
@@ -161,7 +154,7 @@ struct EmpInterviewCard: View {
             .foregroundStyle(Color.white)
             .frame(width: 48, height: 52)
             .background(RoundedRectangle(cornerRadius: 10).fill(Color.siriusNavy))
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.applicant.name)
                     .scaledFont(size: 13, weight: .medium)
@@ -176,9 +169,9 @@ struct EmpInterviewCard: View {
                     .foregroundStyle(Color.siriusText)
                     .lineLimit(1)
             }
-            
+
             Spacer(minLength: 4)
-            
+
             Text(item.state.label)
                 .scaledFont(size: 8, weight: .bold)
                 .foregroundStyle(Color.white)
@@ -200,21 +193,20 @@ struct EmpInterviewCard: View {
     }
 }
 
-// Details of one interview
 struct EmpInterviewDetailsPage: View {
-    
+
     let applicantID: UUID
-    
+
     @EnvironmentObject private var aplController: EmpAplStatusController
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var showReject = false
     @State private var openedApplicantID: UUID?
-    
+
     private var item: EmpInterviewItem? {
         aplController.interviewItem(forApplicant: applicantID)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let item {
@@ -230,7 +222,7 @@ struct EmpInterviewDetailsPage: View {
             }
         }
         .appBg()
-        .scheduleInterviewOverlay(aplController)         // Reschedule Interview dialog
+        .scheduleInterviewOverlay(aplController)
         .navigationBarBackButtonHidden(true)
         .hidesSiriusNavBar()
         .navigationDestination(item: $openedApplicantID) { id in
@@ -259,7 +251,7 @@ struct EmpInterviewDetailsPage: View {
             Text(aplController.actionError ?? "")
         }
     }
-    
+
     private func content(for item: EmpInterviewItem) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 14) {
@@ -273,7 +265,7 @@ struct EmpInterviewDetailsPage: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 16)
-            
+
             ScrollView {
                 VStack(spacing: 14) {
                     applicantCard(item)
@@ -287,7 +279,7 @@ struct EmpInterviewDetailsPage: View {
             .scrollIndicators(.hidden)
         }
     }
-    
+
     private func applicantCard(_ item: EmpInterviewItem) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top) {
@@ -305,9 +297,9 @@ struct EmpInterviewDetailsPage: View {
             Text(item.applicant.experienceText)
                 .scaledFont(size: 14)
                 .foregroundStyle(Color.siriusMuted)
-            
+
             Divider().padding(.vertical, 8)
-            
+
             line("Applied to", item.applicant.jobPosition)
             line("Status", item.state.label)
         }
@@ -316,17 +308,17 @@ struct EmpInterviewDetailsPage: View {
         .background(Color.siriusSurface)
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
-    
+
     private func scheduleCard(_ interview: Interview) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Interview", systemImage: "calendar")
                 .scaledFont(size: 16, weight: .semibold)
                 .foregroundStyle(Color.siriusAction)
-            
+
             line("Date", interview.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
             line("Time", interview.date.formatted(date: .omitted, time: .shortened))
             line("Place", interview.location)
-            
+
             if !interview.message.isEmpty {
                 Divider()
                 Text("Message to the applicant")
@@ -343,7 +335,7 @@ struct EmpInterviewDetailsPage: View {
         .background(Color.siriusSurface)
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
-    
+
     private func line(_ title: String, _ value: String) -> some View {
         HStack(alignment: .top) {
             Text(title)
@@ -356,7 +348,7 @@ struct EmpInterviewDetailsPage: View {
                 .multilineTextAlignment(.trailing)
         }
     }
-    
+
     @ViewBuilder
     private func actions(_ item: EmpInterviewItem) -> some View {
         VStack(spacing: 10) {

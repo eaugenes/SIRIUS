@@ -8,9 +8,8 @@
 import Foundation
 import Combine
 
-// Remember: Emp && Apl share the same JobBoard
 final class EmpAplStatusController: ObservableObject {
-    
+
     @Published var applicants: [EmpApplicant]
     @Published var interviews: [Interview] = []
     @Published var selectedFilter: EmpApplicantFilter = .all
@@ -19,15 +18,14 @@ final class EmpAplStatusController: ObservableObject {
     @Published var searchText = ""
     @Published var sortOption: EmpApplicantSort = .highestMatch
     @Published var matchFilter: EmpMatchFilter = .any
-    @Published var isRescheduling = false       // the open interview dialog edits an existing interview
-    
-    // Navigation-related state: non-nil while the Schedule Interview modal is open
+    @Published var isRescheduling = false
+
     @Published var interviewTarget: EmpApplicant?
-    
+
     private let board: JobBoard?
     private let companyID: String?
     private var cancellables = Set<AnyCancellable>()
-    
+
     init(applicants: [EmpApplicant]? = nil, companyID: String? = nil, board: JobBoard = .shared) {
         self.companyID = companyID
         if let applicants {
@@ -42,7 +40,6 @@ final class EmpAplStatusController: ObservableObject {
                 .sink { [weak self] jobs, records in
                     guard let self else { return }
                     self.applicants = EmpAplStatusController.makeApplicants(jobs: jobs, records: records, companyID: self.companyID)
-                    // Drop selection / modal target if that applicant no longer exists
                     if let id = self.selectedApplicantID, !self.applicants.contains(where: { $0.id == id }) {
                         self.selectedApplicantID = nil
                     }
@@ -56,8 +53,7 @@ final class EmpAplStatusController: ObservableObject {
                 .store(in: &cancellables)
         }
     }
-    
-    // Applications of this company's jobs (removed ones are hidden), tied to their job by jobID
+
     private static func makeApplicants(jobs: [Job], records: [ApplicationRecord], companyID: String?) -> [EmpApplicant] {
         let companyJobs = jobs.filter { companyID == nil || $0.companyID == companyID }
         var result: [EmpApplicant] = []
@@ -89,14 +85,11 @@ final class EmpAplStatusController: ObservableObject {
                 )
             }
         }
-        // Default order: highest match first, ties by name (screens re-sort through `arranged`)
         return result.sorted {
             $0.matchPercentage != $1.matchPercentage ? $0.matchPercentage > $1.matchPercentage : $0.name < $1.name
         }
     }
-    
-    // Applies the search text, minimum match and chosen sort order.
-    // Ties are always ordered by name so the list never reshuffles.
+
     private func arranged(_ list: [EmpApplicant]) -> [EmpApplicant] {
         var result = list
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -110,11 +103,10 @@ final class EmpAplStatusController: ObservableObject {
         if matchFilter.minimum > 0 {
             result = result.filter { $0.matchPercentage >= matchFilter.minimum }
         }
-        
+
         func byName(_ a: EmpApplicant, _ b: EmpApplicant) -> Bool { a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending }
-        // Same match: applicants in the preferred location come first
         func locationRank(_ a: EmpApplicant) -> Int { (a.breakdown?.locationMatches ?? false) ? 0 : 1 }
-        
+
         switch sortOption {
         case .highestMatch:
             return result.sorted {
@@ -136,28 +128,26 @@ final class EmpAplStatusController: ObservableObject {
             }
         }
     }
-    
+
     var hasActiveFilters: Bool {
         !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || matchFilter != .any || sortOption != .highestMatch
     }
-    
+
     func resetFilters() {
         searchText = ""
         matchFilter = .any
         sortOption = .highestMatch
     }
-    
+
     // MARK: - Filtering / counts
-    
-    // All applicants for the selected All / To Review / Interview / Hired tab
+
     var filteredApplicants: [EmpApplicant] {
         filteredApplicants(forPosition: nil)
     }
-    
-    // Same as above, limited to one job opening when a position is given
+
     func filteredApplicants(forPosition position: String?) -> [EmpApplicant] {
         var list = applicants
-        
+
         if let position {
             list = list.filter { $0.jobPosition == position }
         }
@@ -166,8 +156,7 @@ final class EmpAplStatusController: ObservableObject {
         }
         return arranged(list)
     }
-    
-    // Limited to one job by its stable id (two jobs may share a title)
+
     func filteredApplicants(forJobID jobID: String) -> [EmpApplicant] {
         var list = applicants.filter { $0.jobID == jobID }
         if let status = selectedFilter.status {
@@ -175,42 +164,42 @@ final class EmpAplStatusController: ObservableObject {
         }
         return arranged(list)
     }
-    
+
     func count(forJobID jobID: String, status: EmpAplStatus? = nil) -> Int {
         applicants.filter { $0.jobID == jobID && (status == nil || $0.status == status) }.count
     }
-    
+
     func totalApplicants(inJobs jobIDs: Set<String>) -> Int {
         applicants.filter { jobIDs.contains($0.jobID) }.count
     }
-    
+
     var totalCount: Int { applicants.count }
     var toReviewCount: Int { applicants.filter { $0.status == .toReview }.count }
     var interviewCount: Int { applicants.filter { $0.status == .interview }.count }
     var hiredCount: Int { applicants.filter { $0.status == .hired }.count }
-    
+
     var averageMatch: Int {
         guard !applicants.isEmpty else { return 0 }
         let total = applicants.reduce(0) { $0 + $1.matchPercentage }
         return Int((Double(total) / Double(applicants.count)).rounded())
     }
-    
+
     // MARK: - Selection
-    
+
     func isSelected(_ applicant: EmpApplicant) -> Bool {
         selectedApplicantID == applicant.id
     }
-    
+
     func toggleSelection(_ applicant: EmpApplicant) {
         selectedApplicantID = isSelected(applicant) ? nil : applicant.id
     }
-    
+
     func clearSelection() {
         selectedApplicantID = nil
     }
-    
+
     // MARK: - Remove
-    
+
     func removeApplicant(_ applicant: EmpApplicant, reason: String = "") {
         if let board {
             board.remove(recordID: applicant.id, reason: reason)
@@ -222,10 +211,9 @@ final class EmpAplStatusController: ObservableObject {
             selectedApplicantID = nil
         }
     }
-    
+
     // MARK: - Hire
-    
-    // Interview -> Hired, limited by the job's maximum hire.
+
     func hire(_ applicant: EmpApplicant) {
         if let board {
             actionError = board.hire(recordID: applicant.id).message
@@ -235,10 +223,9 @@ final class EmpAplStatusController: ObservableObject {
         }
         selectedApplicantID = nil
     }
-    
+
     // MARK: - Interviews (Interviews page)
-    
-    // Every interview of this company's applicants, with where it stands now
+
     var interviewItems: [EmpInterviewItem] {
         let now = Date()
         return interviews.compactMap { interview -> EmpInterviewItem? in
@@ -252,8 +239,7 @@ final class EmpAplStatusController: ObservableObject {
             return EmpInterviewItem(applicant: applicant, interview: interview, state: state)
         }
     }
-    
-    // Items for one tab: upcoming soonest first; the others newest first
+
     func interviewItems(for filter: EmpInterviewFilter) -> [EmpInterviewItem] {
         let list = interviewItems.filter { $0.state == filter.state }
         switch filter {
@@ -261,43 +247,40 @@ final class EmpAplStatusController: ObservableObject {
         case .awaiting, .hired: return list.sorted { $0.interview.date > $1.interview.date }
         }
     }
-    
+
     func interviewItem(forApplicant id: UUID) -> EmpInterviewItem? {
         interviewItems.first { $0.applicant.id == id }
     }
-    
+
     var upcomingInterviewCount: Int { interviewItems.filter { $0.state == .upcoming }.count }
     var awaitingDecisionCount: Int { interviewItems.filter { $0.state == .awaitingDecision }.count }
-    
+
     // MARK: - Interview scheduling
-    
+
     func beginScheduling(_ applicant: EmpApplicant) {
         isRescheduling = false
         interviewTarget = applicant
     }
-    
-    // Opens the same dialog pre-filled with the applicant's current interview
+
     func beginRescheduling(_ applicant: EmpApplicant) {
         isRescheduling = true
         interviewTarget = applicant
     }
-    
+
     func cancelScheduling() {
         interviewTarget = nil
         isRescheduling = false
     }
-    
-    // The interview currently saved for an applicant
+
     func interview(for applicant: EmpApplicant) -> Interview? {
         interviews.last { $0.applicantID == applicant.id }
     }
-    
-    // Saves the interview, moves the applicant to Interview, closes the modal.
+
     func scheduleInterview(date: Date, location: String, message: String) {
         guard let target = interviewTarget else { return }
         let cleanLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         if let board {
             if isRescheduling {
                 board.rescheduleInterview(recordID: target.id, date: date, location: cleanLocation, message: cleanMessage)
@@ -316,16 +299,16 @@ final class EmpAplStatusController: ObservableObject {
                 applicants[index].status = .interview
             }
         }
-        
+
         interviewTarget = nil
         isRescheduling = false
         selectedApplicantID = nil
     }
-    
+
     // MARK: - Sample data (previews only)
-    
+
     private static let languages = ["Python", "JavaScript", "C++"]
-    
+
     static let sampleApplicants: [EmpApplicant] = [
         EmpApplicant(name: "Franck Almareno", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: languages, matchPercentage: 95, status: .toReview),
         EmpApplicant(name: "Debbie Gutierrez", degree: "BS Computer Science", yearsExperience: 2, coreLanguages: languages, matchPercentage: 93, status: .toReview),

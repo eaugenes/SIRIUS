@@ -8,25 +8,24 @@
 import SwiftUI
 
 struct EmpAplDetailsPage: View {
-    
+
     let applicantID: UUID
-    
+
     @EnvironmentObject private var aplController: EmpAplStatusController
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var showReject = false
     @State private var projects: [Project] = []
-    
+
     private var applicant: EmpApplicant? {
         aplController.applicants.first { $0.id == applicantID }
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let applicant {
                 content(for: applicant)
             } else {
-                // The applicant was removed
                 VStack(spacing: 12) {
                     Text("This applicant is no longer available.")
                         .scaledFont(size: 14, weight: .medium)
@@ -37,7 +36,7 @@ struct EmpAplDetailsPage: View {
             }
         }
         .appBg()
-        .scheduleInterviewOverlay(aplController)         // the Schedule Interview dialog opens right here
+        .scheduleInterviewOverlay(aplController)
         .navigationBarBackButtonHidden(true)
         .hidesSiriusNavBar()
         .sheet(isPresented: $showReject) {
@@ -59,7 +58,7 @@ struct EmpAplDetailsPage: View {
             projects = await SupabaseStore.fetchProjects(applicantID: id)
         }
     }
-    
+
     private func content(for applicant: EmpApplicant) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: 14) {
@@ -73,7 +72,7 @@ struct EmpAplDetailsPage: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 16)
-            
+
             ScrollView {
                 VStack(spacing: 14) {
                     mainCard(applicant)
@@ -89,10 +88,9 @@ struct EmpAplDetailsPage: View {
             .scrollIndicators(.hidden)
         }
     }
-    
+
     // MARK: - Profile + compatibility
-    
-    // White card: profile, compatibility banner and rows, language chips, overall match
+
     private func mainCard(_ applicant: EmpApplicant) -> some View {
         let result = applicant.breakdown
         let matched = result?.matchedLanguages ?? []
@@ -100,7 +98,7 @@ struct EmpAplDetailsPage: View {
         let yearsText = years <= 0 ? "No minimum" : "\(years == years.rounded() ? String(Int(years)) : String(years)) years or more"
         let programs = Matching.parsePrograms(applicant.jobProgram).joined(separator: ", ")
         let langs = applicant.jobRequiredLanguages.joined(separator: ", ")
-        
+
         return VStack(alignment: .leading, spacing: 0) {
             Text(applicant.name)
                 .scaledFont(size: 24, weight: .semibold)
@@ -118,12 +116,11 @@ struct EmpAplDetailsPage: View {
                 .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(Color.siriusAction)
                 .padding(.top, 10)
-            
+
             Divider().padding(.vertical, 14)
-            
-            // Blue-to-green gradient: the greener it is, the more compatible the applicant is
+
             CompatibilityBanner(percentage: result?.total ?? applicant.matchPercentage)
-            
+
             if let result {
                 VStack(alignment: .leading, spacing: 12) {
                     scoreRow("Program", result.program, Int(MatchRules.programPoints), programs.isEmpty ? "Required: Any program" : "Required: \(programs)")
@@ -132,8 +129,7 @@ struct EmpAplDetailsPage: View {
                     scoreRow("Work setup", result.workSetup, Int(MatchRules.workSetupPoints), applicant.jobWorkSetup.isEmpty ? "Required: Any" : "Required: \(applicant.jobWorkSetup) (applicant prefers \(applicant.workSetup.isEmpty ? "none" : applicant.workSetup))")
                 }
                 .padding(.top, 14)
-                
-                // Language chips wrap onto more lines instead of running off the card
+
                 FlowLayout(spacing: 6) {
                     ForEach(applicant.coreLanguages, id: \.self) { item in
                         let isMatched = matched.contains { Matching.normalized($0) == Matching.normalized(item) }
@@ -146,9 +142,9 @@ struct EmpAplDetailsPage: View {
                     }
                 }
                 .padding(.top, 14)
-                
+
                 Divider().padding(.vertical, 14)
-                
+
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Overall match")
@@ -163,7 +159,7 @@ struct EmpAplDetailsPage: View {
                         .scaledFont(size: 24, weight: .semibold)
                         .foregroundStyle(color(for: result.tier))
                 }
-                
+
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.siriusBarTrack)
@@ -185,27 +181,26 @@ struct EmpAplDetailsPage: View {
         .background(Color.siriusSurface)
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
-    
+
     // MARK: - Applicant details
-    
-    // Program, experience, work setup, location (shown, not scored), contact details and the interview
+
     private func detailsCard(_ applicant: EmpApplicant) -> some View {
         let interview = aplController.interview(for: applicant)
         return VStack(alignment: .leading, spacing: 12) {
             Text("Applicant Details")
                 .scaledFont(size: 16, weight: .semibold)
                 .foregroundStyle(Color.siriusAction)
-            
+
             detailRow("graduationcap", "Program", applicant.degree)
             detailRow("briefcase", "Work experience", applicant.experienceText.replacingOccurrences(of: " work experience", with: ""))
             detailRow("desktopcomputer", "Work setup", applicant.workSetup)
             detailRow("mappin.and.ellipse", "Location", applicant.location, note: locationNote(applicant))
-            
+
             Divider()
-            
+
             detailRow("phone", "Contact number", applicant.contactNumber, selectable: true)
             detailRow("envelope", "Email", applicant.email, selectable: true)
-            
+
             if applicant.status != .toReview, let interview {
                 Divider()
                 detailRow("calendar", "Interview",
@@ -218,12 +213,12 @@ struct EmpAplDetailsPage: View {
         .background(Color.siriusSurface)
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
-    
+
     private func locationNote(_ applicant: EmpApplicant) -> String? {
         guard let matches = applicant.breakdown?.locationMatches else { return nil }
         return matches ? "In the preferred area" : "Outside the preferred area (not part of the score)"
     }
-    
+
     private func detailRow(_ icon: String, _ title: String, _ value: String, note: String? = nil, selectable: Bool = false) -> some View {
         let shown = value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Not provided" : value
         return HStack(alignment: .top, spacing: 10) {
@@ -251,10 +246,9 @@ struct EmpAplDetailsPage: View {
         }
         .accessibilityElement(children: .combine)
     }
-    
+
     // MARK: - Projects
-    
-    // The applicant's projects (title, description, pictures); replaces the old resume row
+
     private var projectsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Projects")
@@ -267,7 +261,7 @@ struct EmpAplDetailsPage: View {
         .background(Color.siriusSurface)
         .clipShape(RoundedRectangle(cornerRadius: 24))
     }
-    
+
     private func scoreRow(_ title: String, _ points: Int, _ outOf: Int, _ caption: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
@@ -284,15 +278,15 @@ struct EmpAplDetailsPage: View {
                 .foregroundStyle(Color.siriusMuted)
         }
     }
-    
+
     // MARK: - Actions
-    
+
     @ViewBuilder
     private func actions(_ applicant: EmpApplicant) -> some View {
         VStack(spacing: 10) {
             if applicant.status == .toReview {
                 SiriusButton(title: "Schedule Interview") {
-                    aplController.beginScheduling(applicant)        // opens the dialog on this page
+                    aplController.beginScheduling(applicant)
                 }
             }
             if applicant.status == .interview {
@@ -308,7 +302,7 @@ struct EmpAplDetailsPage: View {
             }
         }
     }
-    
+
     private func color(for tier: MatchTier) -> Color {
         switch tier {
         case .high: return Color.siriusMatchBar
@@ -318,17 +312,16 @@ struct EmpAplDetailsPage: View {
     }
 }
 
-// Simple wrapping row (chips that do not fit move to the next line)
 struct FlowLayout: Layout {
     var spacing: CGFloat = 6
-    
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let maxWidth = proposal.width ?? .infinity
         var x: CGFloat = 0
         var y: CGFloat = 0
         var rowHeight: CGFloat = 0
         var widest: CGFloat = 0
-        
+
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
             if x > 0 && x + size.width > maxWidth {
@@ -342,12 +335,12 @@ struct FlowLayout: Layout {
         }
         return CGSize(width: proposal.width ?? widest, height: y + rowHeight)
     }
-    
+
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         var x = bounds.minX
         var y = bounds.minY
         var rowHeight: CGFloat = 0
-        
+
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
             if x > bounds.minX && x + size.width > bounds.maxX {

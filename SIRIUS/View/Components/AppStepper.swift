@@ -7,14 +7,13 @@
 
 import SwiftUI
 
-// "−  1  +" stepper used for Years of Experience and Maximum Hire
 struct AppStepper: View {
     let title: String
     @Binding var value: Int
     var range: ClosedRange<Int> = 0...50
-    var borderColor: Color = .siriusFieldBorder
+    var borderColor: Color = .siriusBorder
     var buttonFill: Color = .siriusFill
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
@@ -22,32 +21,32 @@ struct AppStepper: View {
                 .fontWeight(.medium)
                 .foregroundStyle(Color.siriusInk)
                 .padding(.leading, 11)
-            
+
             HStack(spacing: 0) {
                 stepButton(symbol: "minus", isEnabled: value > range.lowerBound) {
                     value -= 1
                 }
-                
+
                 Text("\(value)")
                     .scaledFont(size: 12)
                     .foregroundStyle(Color.siriusText)
                     .frame(maxWidth: .infinity)
-                
+
                 stepButton(symbol: "plus", isEnabled: value < range.upperBound) {
                     value += 1
                 }
             }
             .frame(width: 300)
                     .frame(minHeight: 35)
-            .background(Color.siriusFieldFill)
-            .cornerRadius(14)
+            .background(Color.siriusSurface)
+            .cornerRadius(10)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(borderColor, lineWidth: 1)
             )
         }
     }
-    
+
     private func stepButton(symbol: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)

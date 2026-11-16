@@ -7,22 +7,20 @@
 
 import SwiftUI
 
-// Home "Average Qualification Match" (100 high, big %) when subtext is given;
-// otherwise the 37pt "N% Qualification Match · status" banner used on job details.
 struct QualiMatchCard: View {
     var percentage: String
     var title: String
     var subtext: String?
-    var endColor: Color = Color.siriusMatchGreen.opacity(0.8)       // gradient end (green / orange / red by tier)
-    
+    var endColor: Color = Color.siriusMatchGreen.opacity(0.8)
+
     private var hasSubtext: Bool {
         if let subtext = subtext {
             return !subtext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
-        
+
         return false
     }
-    
+
     private var gradient: LinearGradient {
         LinearGradient(
             stops: [
@@ -33,7 +31,7 @@ struct QualiMatchCard: View {
             endPoint: .trailing
         )
     }
-    
+
     var body: some View {
         Group {
             if hasSubtext, let subtext = subtext {
@@ -44,12 +42,12 @@ struct QualiMatchCard: View {
                         .frame(width: 94)
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
-                    
+
                     VStack(alignment: .leading, spacing: 6) {
                         Text(title)
                             .scaledFont(size: 14, weight: .bold)
                             .foregroundColor(.white)
-                        
+
                         Text(subtext)
                             .scaledFont(size: 13, weight: .medium)
                             .foregroundColor(.white)

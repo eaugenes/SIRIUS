@@ -8,24 +8,24 @@
 import SwiftUI
 
 struct EmpManageJobsPage: View {
-    
+
     @EnvironmentObject private var jobController: EmpJobController
     @EnvironmentObject private var aplController: EmpAplStatusController
     @EnvironmentObject private var infoController: EmpInfoController
-    
-    @State private var selectedJobID: String?       // pushes job's details
+
+    @State private var selectedJobID: String?
     @State private var jobPostingScreen = false
     @State private var jobToDelete: Job?
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Manage Jobs")
                     .scaledFont(size: 30, weight: .medium)
                     .foregroundStyle(Color.white)
-                
+
                 Spacer()
-                
+
                 Button {
                     jobPostingScreen = true
                 } label: {
@@ -40,7 +40,7 @@ struct EmpManageJobsPage: View {
             .padding(.horizontal, 32)
             .padding(.top, 20)
             .padding(.bottom, 14)
-            
+
             EmployerSegmentedTabs(
                 items: JobListTab.allCases,
                 title: { $0.rawValue },
@@ -48,7 +48,7 @@ struct EmpManageJobsPage: View {
             )
             .frame(maxWidth: .infinity)
             .padding(.bottom, 28)
-            
+
             if jobController.filteredJobs.isEmpty {
                 emptyState
             } else {
@@ -71,7 +71,7 @@ struct EmpManageJobsPage: View {
                                         Label("Mark as Active", systemImage: "play.circle")
                                     }
                                 }
-                                
+
                                 Button(role: .destructive) {
                                     jobToDelete = job
                                 } label: {
@@ -82,7 +82,7 @@ struct EmpManageJobsPage: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 4)
-                    .padding(.bottom, 100)          // room for the bottom bar
+                    .padding(.bottom, 100)
                 }
                 .scrollIndicators(.hidden)
             }
@@ -91,8 +91,6 @@ struct EmpManageJobsPage: View {
         .appBg()
         .boardLoadState()
         .navigationDestination(item: $selectedJobID) { jobID in
-            // Pass the objects in: tab pages live in a TabView, so SwiftUI hosts this page outside the
-            // tab's environment and it would not find them otherwise (crash: "No ObservableObject ... found")
             EmpJobDetailsPage(jobID: jobID)
                 .environmentObject(jobController)
                 .environmentObject(aplController)
@@ -120,7 +118,7 @@ struct EmpManageJobsPage: View {
             Text("\"\(job.jobPos)\" will be removed from your job list.")
         }
     }
-    
+
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "briefcase")

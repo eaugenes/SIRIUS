@@ -8,33 +8,31 @@
 import Foundation
 import Combine
 
-// Sign up / log in / log out against Supabase Auth (email + password).
-// Passwords are sent to Supabase only; the app never stores them.
 final class AuthController: ObservableObject {
-    
+
     static let shared = AuthController()
-    
+
     @Published private(set) var currentAccount: UserAccount?
-    
+
     private var didRestoreSession = false
-    
+
     init() {}
-    
+
     // MARK: - Validation
-    
+
     static let minimumPasswordLength = 6
-    
+
     static func normalizedEmail(_ email: String) -> String {
         email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
-    
+
     static func isValidEmail(_ email: String) -> Bool {
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let at = trimmed.firstIndex(of: "@") else { return false }
         let domain = trimmed[trimmed.index(after: at)...]
         return at != trimmed.startIndex && domain.contains(".") && !domain.hasSuffix(".") && !trimmed.contains(" ")
     }
-    
+
     func validateCredentials(email: String, password: String, confirm: String) -> AccountError? {
         let address = Self.normalizedEmail(email)
         if address.isEmpty { return .missingEmail }
@@ -44,9 +42,9 @@ final class AuthController: ObservableObject {
         if password != confirm { return .passwordMismatch }
         return nil
     }
-    
+
     // MARK: - Sign up
-    
+
     @MainActor
     func sendSignUpCode(email: String, password: String, confirm: String) async -> Result<Void, AccountError> {
         if let error = validateCredentials(email: email, password: password, confirm: confirm) {
@@ -69,7 +67,7 @@ final class AuthController: ObservableObject {
             return .failure(SupabaseAuthService.accountError(from: error))
         }
     }
-    
+
     @MainActor
     func registerApplicant(_ applicant: Applicant, password: String, confirm: String, code: String) async -> Result<UserAccount, AccountError> {
         if let error = validateCredentials(email: applicant.email, password: password, confirm: confirm) {
@@ -82,15 +80,13 @@ final class AuthController: ObservableObject {
             let userID = try await SupabaseAuthService.verifySignUpCode(email: email, code: token, role: .applicant)
 
             var profile = applicant
-            profile.id = userID                          // the applicant id IS the Supabase user id
+            profile.id = userID
             profile.email = email
-            profile.password = ""                        // never kept
+            profile.password = ""
             profile.username = email.split(separator: "@").first.map(String.init) ?? ""
             try await SupabaseStore.saveApplicant(profile)
             if let image = applicant.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: userID) }
-            
-            // Projects (title, description, pictures). The account already exists at this point, so a
-            // failure here is reported on the banner instead of failing the whole sign up.
+
             if !profile.projects.isEmpty {
                 do {
                     profile.projects = try await SupabaseStore.saveProjects(profile.projects, applicantID: userID)
@@ -106,7 +102,7 @@ final class AuthController: ObservableObject {
             return .failure(SupabaseAuthService.accountError(from: error))
         }
     }
-    
+
     @MainActor
     func registerEmployer(_ employer: Employer, company: Company, password: String, confirm: String, code: String) async -> Result<UserAccount, AccountError> {
         if let error = validateCredentials(email: employer.email, password: password, confirm: confirm) {
@@ -124,7 +120,7 @@ final class AuthController: ObservableObject {
             profile.password = ""
             profile.username = email.split(separator: "@").first.map(String.init) ?? ""
             var companyProfile = company
-            companyProfile.id = userID.uuidString.lowercased()      // the company id IS the employer's user id
+            companyProfile.id = userID.uuidString.lowercased()
             try await SupabaseStore.saveEmployer(profile, company: companyProfile, userID: userID)
             if let image = employer.profilePicture { try? await SupabaseStore.uploadAvatar(image, userID: userID) }
 
@@ -135,9 +131,9 @@ final class AuthController: ObservableObject {
             return .failure(SupabaseAuthService.accountError(from: error))
         }
     }
-    
+
     // MARK: - Log in / out
-    
+
     @MainActor
     func login(email: String, password: String) async -> Result<UserAccount, AccountError> {
         let address = Self.normalizedEmail(email)
@@ -152,8 +148,7 @@ final class AuthController: ObservableObject {
             return .failure(SupabaseAuthService.accountError(from: error))
         }
     }
-    
-    // Opens the saved session when the app starts (only tried once per launch)
+
     @MainActor
     func restoreSession() async -> UserAccount? {
         guard !didRestoreSession else { return nil }
@@ -163,8 +158,7 @@ final class AuthController: ObservableObject {
         currentAccount = account
         return account
     }
-    
-    // Builds the account (applicant, or employer + company) from the database rows
+
     @MainActor
     private func loadAccount(_ profile: ProfileRow, fallbackEmail: String) async throws -> UserAccount {
         let email = profile.email ?? fallbackEmail
@@ -185,7 +179,7 @@ final class AuthController: ObservableObject {
         applicant.projects = await SupabaseStore.fetchProjects(applicantID: profile.id)
         return UserAccount(id: profile.id, role: .applicant, email: email, applicant: applicant)
     }
-    
+
     func signOut() {
         currentAccount = nil
         JobBoard.shared.clear()
@@ -193,11 +187,9 @@ final class AuthController: ObservableObject {
         InterviewReminders.cancelAll()
         Task { try? await SupabaseAuthService.signOut() }
     }
-    
+
     // MARK: - Profile updates
-    
-    // Saves the profile, the photo and the projects. Returns the saved applicant (projects now hold their
-    // picture paths), or nil when something could not be saved.
+
     @MainActor
     func updateApplicant(_ applicant: Applicant) async -> Applicant? {
         do {
@@ -215,7 +207,7 @@ final class AuthController: ObservableObject {
             return nil
         }
     }
-    
+
     @MainActor
     @discardableResult
     func updateEmployer(_ employer: Employer, company: Company) async -> Bool {

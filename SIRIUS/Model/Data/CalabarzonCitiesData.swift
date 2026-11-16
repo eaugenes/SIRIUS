@@ -8,7 +8,7 @@
 import Foundation
 
 struct CalabarzonCitiesData {
-    
+
     static let cities: [City] = [
         City(id: 1, name:"Antipolo"),
         City(id: 2, name:"Bacoor"),
