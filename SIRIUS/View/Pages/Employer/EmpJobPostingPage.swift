@@ -68,7 +68,7 @@ struct EmpJobPostingPage: View {
                         placeholder: "Enter job description",
                         text: $jobDescription,
                         isMultiline: true,
-                        multilineHeight: 105
+                        multilineHeight: 190
                     )
 
                     ProgramMultiDropdown(

@@ -26,7 +26,7 @@ struct EmployerSegmentedTabs<Item: Hashable>: View {
                     }
                 } label: {
                     Text(title(item))
-                        .scaledFont(size: 15, weight: .medium)
+                        .scaledFont(size: items.count > 4 ? 12 : 15, weight: .medium)
                         .foregroundStyle(isSelected ? Color.white : Color.black)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)

@@ -104,6 +104,26 @@ struct AplSignUpPage: View {
                         unselectedFill: .siriusFieldFill
                     )
 
+                    AppTextField(
+                        title: "GitHub Link (optional)",
+                        placeholder: ProfileLink.Kind.github.placeholder,
+                        text: $applicantController.applicant.githubURL,
+                        isSecure: false,
+                        keyboardType: .URL
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
+                    AppTextField(
+                        title: "LinkedIn Link (optional)",
+                        placeholder: ProfileLink.Kind.linkedin.placeholder,
+                        text: $applicantController.applicant.linkedinURL,
+                        isSecure: false,
+                        keyboardType: .URL
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
                     ProjectsEditor(projects: $applicantController.applicant.projects)
                         .padding(.top, 4)
 

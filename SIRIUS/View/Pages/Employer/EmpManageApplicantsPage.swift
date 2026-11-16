@@ -191,6 +191,12 @@ struct EmpManageApplicantsPage: View {
                     actionTitle: "Reset filters",
                     action: { aplController.resetFilters() }
                 )
+            } else if aplController.selectedFilter == .rejected {
+                EmptyStateView(
+                    icon: "person.crop.circle.badge.xmark",
+                    title: "No rejected applicants",
+                    message: "Applicants you reject are kept here with their qualification match."
+                )
             } else {
                 EmptyStateView(
                     icon: "person.2",

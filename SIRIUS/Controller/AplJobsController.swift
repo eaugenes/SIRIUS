@@ -21,6 +21,7 @@ struct AplJobListing: Identifiable {
 final class AplJobsController: ObservableObject {
 
     @Published var searchText = ""
+    @Published var pendingJobID: String?
 
     private let info: AplInfoController
     private let board: JobBoard

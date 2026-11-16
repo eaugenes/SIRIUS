@@ -185,6 +185,8 @@ struct AplHomePage: View {
 
             if let top = jobsController.topListing {
                 Button {
+                    jobsController.searchText = ""
+                    jobsController.pendingJobID = top.id
                     selectedTab = .jobs
                 } label: {
                     AplJobCard(
@@ -308,7 +310,7 @@ struct AplHomePage: View {
                         Button {
                             selectedApplicationID = app.id
                         } label: {
-                            JobApplicationCard(application: app, showsNewBadge: controller.hasNewInterview(app))
+                            JobApplicationCard(application: app)
                         }
                         .buttonStyle(.plain)
                     }

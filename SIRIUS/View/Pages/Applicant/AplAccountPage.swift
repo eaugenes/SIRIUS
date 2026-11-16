@@ -68,7 +68,10 @@ struct AplAccountPage: View {
             .navigationDestination(item: $route) { destination in
                 switch destination {
                 case .editProfile:
-                    AplEditProfilePage(onClose: { route = nil })
+                    AplEditProfilePage(onClose: {
+                        route = nil
+                        applicantController.objectWillChange.send()
+                    })
                         .environmentObject(applicantController)
                 case .logIn:
                     LogInPage()
@@ -150,6 +153,10 @@ struct AplAccountPage: View {
             line
             row("Work Setup", value(applicant.workSetUp))
             line
+            linkRow("GitHub", applicant.githubURL)
+            line
+            linkRow("LinkedIn", applicant.linkedinURL)
+            line
             HStack(alignment: .top) {
                 label("Core Languages")
                 Spacer()
@@ -186,6 +193,28 @@ struct AplAccountPage: View {
 
     private func label(_ text: String) -> some View {
         Text(text).scaledFont(size: 12, weight: .heavy)
+    }
+
+    @ViewBuilder
+    private func linkRow(_ title: String, _ text: String) -> some View {
+        if let url = ProfileLink.url(from: text) {
+            HStack(spacing: 12) {
+                label(title)
+                Spacer(minLength: 8)
+                Link(destination: url) {
+                    Text(ProfileLink.trimmed(text))
+                        .scaledFont(size: 12, weight: .medium)
+                        .foregroundStyle(Color.siriusAction)
+                        .underline()
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.7)
+                        .multilineTextAlignment(.trailing)
+                }
+            }
+            .frame(minHeight: 46)
+        } else {
+            row(title, "\u{2014}")
+        }
     }
 
     private func row(_ title: String, _ text: String) -> some View {

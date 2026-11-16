@@ -10,6 +10,7 @@ import SwiftUI
 struct JobDetailsView: View {
 
     let listing: AplJobListing
+    var onBack: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
 
@@ -54,7 +55,11 @@ struct JobDetailsView: View {
                 .padding(.top, 135)
 
             Button{
-                dismiss()
+                if let onBack {
+                    onBack()
+                } else {
+                    dismiss()
+                }
             } label: {
                 Image(systemName: "chevron.backward")
                     .scaledFont(size: 20)
@@ -150,8 +155,6 @@ struct JobDetailsView: View {
                         chipRow(job.requiredLang, width: 100)
                     }
                 }
-
-                MatchExplanationCard(job: job, profile: listing.profile, breakdown: breakdown, onNavy: true)
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 20)

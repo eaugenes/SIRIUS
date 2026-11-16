@@ -27,10 +27,12 @@ struct Applicant: Codable {
     var birthDate: String = ""
     var username: String = ""
     var projects: [Project] = []
+    var githubURL: String = ""
+    var linkedinURL: String = ""
 
     private enum CodingKeys: String, CodingKey {
         case id, firstName, middleName, lastName, contactNumber, location, program
-        case yrExp, coreLang, workSetUp, email, password, birthDate, username
+        case yrExp, coreLang, workSetUp, email, password, birthDate, username, githubURL, linkedinURL
     }
 
     var fullName: String {

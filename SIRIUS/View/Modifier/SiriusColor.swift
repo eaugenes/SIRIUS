@@ -58,4 +58,9 @@ extension Color {
     static let siriusMatchGreenText = Color(red: 0/255, green: 126/255, blue: 6/255)
     static let siriusBarAmber = Color(red: 245/255, green: 166/255, blue: 36/255)
     static let siriusBarTrack = Color(light: Color(red: 219/255, green: 229/255, blue: 237/255), dark: .rgb(46, 68, 84))
+    static let siriusStatusApplied = Color(red: 3/255, green: 82/255, blue: 123/255)
+    static let siriusStatusInterview = Color(red: 109/255, green: 62/255, blue: 181/255)
+    static let siriusStatusAccepted = Color(red: 20/255, green: 130/255, blue: 27/255)
+    static let siriusStatusRejected = Color(red: 190/255, green: 40/255, blue: 40/255)
+    static let siriusStatusWithdrawn = Color(red: 110/255, green: 120/255, blue: 130/255)
 }

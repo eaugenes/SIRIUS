@@ -21,6 +21,8 @@ struct ApplicationRecord: Identifiable, Codable, Equatable {
     var contactNumber: String = ""
     var email: String = ""
     var workSetup: String = ""
+    var githubURL: String = ""
+    var linkedinURL: String = ""
     var rejectionReason: String = ""
     var isWithdrawn: Bool = false
     var isRemoved: Bool = false

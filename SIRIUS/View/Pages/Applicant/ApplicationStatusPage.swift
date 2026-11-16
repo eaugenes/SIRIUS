@@ -73,7 +73,7 @@ struct ApplicationStatusPage: View {
                             Button {
                                 selectedApplicationID = app.id
                             } label: {
-                                JobApplicationCard(application: app, showsNewBadge: controller.hasNewInterview(app))
+                                JobApplicationCard(application: app)
                             }
                             .buttonStyle(.plain)
                         }

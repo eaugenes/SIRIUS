@@ -114,7 +114,7 @@ struct EmpEditProfilePage: View {
     private func save() {
         guard !isSaving else { return }
         isSaving = true
-        Task {
+        Task { @MainActor in
             let saved = await infoController.saveProfile(employer: employerDraft, company: companyDraft)
             isSaving = false
             if saved { close() }

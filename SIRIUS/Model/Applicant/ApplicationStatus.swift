@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 enum ApplicationStatus: String, CaseIterable, Identifiable {
     case all = "All"
@@ -18,6 +19,16 @@ enum ApplicationStatus: String, CaseIterable, Identifiable {
     var id: String { self.rawValue }
 
     static let tabs: [ApplicationStatus] = [.all, .applied, .interview, .accepted, .rejected]
+
+    var color: Color {
+        switch self {
+        case .all, .applied: return Color.siriusStatusApplied
+        case .interview: return Color.siriusStatusInterview
+        case .accepted: return Color.siriusStatusAccepted
+        case .rejected: return Color.siriusStatusRejected
+        case .withdrawn: return Color.siriusStatusWithdrawn
+        }
+    }
 }
 
 struct JobApplication: Identifiable {

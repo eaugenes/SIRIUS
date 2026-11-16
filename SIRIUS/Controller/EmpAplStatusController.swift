@@ -11,6 +11,7 @@ import Combine
 final class EmpAplStatusController: ObservableObject {
 
     @Published var applicants: [EmpApplicant]
+    @Published var rejectedApplicants: [EmpApplicant] = []
     @Published var interviews: [Interview] = []
     @Published var selectedFilter: EmpApplicantFilter = .all
     @Published var selectedApplicantID: UUID?
@@ -34,12 +35,14 @@ final class EmpAplStatusController: ObservableObject {
         } else {
             self.board = board
             self.applicants = EmpAplStatusController.makeApplicants(jobs: board.jobs, records: board.applications, companyID: companyID)
+            self.rejectedApplicants = EmpAplStatusController.makeApplicants(jobs: board.jobs, records: board.applications, companyID: companyID, rejected: true)
             self.interviews = board.interviews
             board.$jobs
                 .combineLatest(board.$applications)
                 .sink { [weak self] jobs, records in
                     guard let self else { return }
                     self.applicants = EmpAplStatusController.makeApplicants(jobs: jobs, records: records, companyID: self.companyID)
+                    self.rejectedApplicants = EmpAplStatusController.makeApplicants(jobs: jobs, records: records, companyID: self.companyID, rejected: true)
                     if let id = self.selectedApplicantID, !self.applicants.contains(where: { $0.id == id }) {
                         self.selectedApplicantID = nil
                     }
@@ -54,11 +57,11 @@ final class EmpAplStatusController: ObservableObject {
         }
     }
 
-    private static func makeApplicants(jobs: [Job], records: [ApplicationRecord], companyID: String?) -> [EmpApplicant] {
+    private static func makeApplicants(jobs: [Job], records: [ApplicationRecord], companyID: String?, rejected: Bool = false) -> [EmpApplicant] {
         let companyJobs = jobs.filter { companyID == nil || $0.companyID == companyID }
         var result: [EmpApplicant] = []
         for job in companyJobs {
-            for record in records where record.jobID == job.jobID && !record.isRemoved && !record.isWithdrawn {
+            for record in records where record.jobID == job.jobID && !record.isWithdrawn && record.isRemoved == rejected {
                 result.append(
                     EmpApplicant(
                         id: record.id,
@@ -80,7 +83,11 @@ final class EmpAplStatusController: ObservableObject {
                         location: record.location,
                         contactNumber: record.contactNumber,
                         email: record.email,
-                        workSetup: record.workSetup
+                        workSetup: record.workSetup,
+                        githubURL: record.githubURL,
+                        linkedinURL: record.linkedinURL,
+                        isRejected: rejected,
+                        rejectionReason: record.rejectionReason
                     )
                 )
             }
@@ -145,8 +152,12 @@ final class EmpAplStatusController: ObservableObject {
         filteredApplicants(forPosition: nil)
     }
 
+    func applicant(withID id: UUID) -> EmpApplicant? {
+        applicants.first { $0.id == id } ?? rejectedApplicants.first { $0.id == id }
+    }
+
     func filteredApplicants(forPosition position: String?) -> [EmpApplicant] {
-        var list = applicants
+        var list = selectedFilter == .rejected ? rejectedApplicants : applicants
 
         if let position {
             list = list.filter { $0.jobPosition == position }
@@ -158,7 +169,7 @@ final class EmpAplStatusController: ObservableObject {
     }
 
     func filteredApplicants(forJobID jobID: String) -> [EmpApplicant] {
-        var list = applicants.filter { $0.jobID == jobID }
+        var list = (selectedFilter == .rejected ? rejectedApplicants : applicants).filter { $0.jobID == jobID }
         if let status = selectedFilter.status {
             list = list.filter { $0.status == status }
         }
@@ -177,6 +188,7 @@ final class EmpAplStatusController: ObservableObject {
     var toReviewCount: Int { applicants.filter { $0.status == .toReview }.count }
     var interviewCount: Int { applicants.filter { $0.status == .interview }.count }
     var hiredCount: Int { applicants.filter { $0.status == .hired }.count }
+    var rejectedCount: Int { rejectedApplicants.count }
 
     var averageMatch: Int {
         guard !applicants.isEmpty else { return 0 }

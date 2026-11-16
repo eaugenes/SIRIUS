@@ -40,11 +40,6 @@ struct ApplicationDetailsPage: View {
                     if application.status == .rejected {
                         rejectionCard(application)
                     }
-                    if let job = application.job, let profile = application.profile, let breakdown = application.breakdown {
-                        panel {
-                            MatchExplanationCard(job: job, profile: profile, breakdown: breakdown)
-                        }
-                    }
                     if application.canWithdraw {
                         Button {
                             confirmWithdraw = true
@@ -118,7 +113,7 @@ struct ApplicationDetailsPage: View {
                         .foregroundStyle(Color.white)
                         .padding(.horizontal, 12)
                         .frame(height: 22)
-                        .background(Capsule().fill(statusColor(application.status)))
+                        .background(Capsule().fill(application.status.color))
                 }
             }
             if let job = application.job {
@@ -150,15 +145,6 @@ struct ApplicationDetailsPage: View {
                 .scaledFont(size: 13, weight: .semibold)
                 .foregroundStyle(Color.siriusInk)
                 .multilineTextAlignment(.trailing)
-        }
-    }
-
-    private func statusColor(_ status: ApplicationStatus) -> Color {
-        switch status {
-        case .accepted: return Color.siriusMatchBar
-        case .rejected: return Color.siriusDanger
-        case .withdrawn: return Color.siriusMuted
-        default: return Color.siriusPanel
         }
     }
 }

@@ -109,6 +109,10 @@ final class EmpInfoController: ObservableObject {
             signUpError = "Please select your date of birth."
             return false
         }
+        if !AgeRule.isOldEnough(employer.birthDate) {
+            signUpError = AgeRule.errorMessage
+            return false
+        }
         if isBlank(employer.contactNumber) {
             signUpError = "Please enter your contact number."
             return false

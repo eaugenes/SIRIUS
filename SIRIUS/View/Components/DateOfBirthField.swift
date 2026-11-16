@@ -13,7 +13,7 @@ struct DateOfBirthField: View {
     var borderColor: Color = .siriusBorder
 
     @State private var showPicker = false
-    @State private var pickedDate = Calendar.current.date(byAdding: .year, value: -18, to: Date()) ?? Date()
+    @State private var pickedDate = AgeRule.latestBirthDate()
 
     private static let formatter: DateFormatter = {
         let f = DateFormatter()
@@ -59,7 +59,7 @@ struct DateOfBirthField: View {
         .sheet(isPresented: $showPicker) {
             NavigationStack {
                 VStack {
-                    DatePicker("", selection: $pickedDate, in: ...Date(), displayedComponents: .date)
+                    DatePicker("", selection: $pickedDate, in: ...AgeRule.latestBirthDate(), displayedComponents: .date)
                         .datePickerStyle(.graphical)
                         .labelsHidden()
                         .padding()

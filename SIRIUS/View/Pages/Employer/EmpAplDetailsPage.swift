@@ -18,7 +18,7 @@ struct EmpAplDetailsPage: View {
     @State private var projects: [Project] = []
 
     private var applicant: EmpApplicant? {
-        aplController.applicants.first { $0.id == applicantID }
+        aplController.applicant(withID: applicantID)
     }
 
     var body: some View {
@@ -200,6 +200,8 @@ struct EmpAplDetailsPage: View {
 
             detailRow("phone", "Contact number", applicant.contactNumber, selectable: true)
             detailRow("envelope", "Email", applicant.email, selectable: true)
+            linkRow("chevron.left.forwardslash.chevron.right", "GitHub", applicant.githubURL)
+            linkRow("link", "LinkedIn", applicant.linkedinURL)
 
             if applicant.status != .toReview, let interview {
                 Divider()
@@ -217,6 +219,33 @@ struct EmpAplDetailsPage: View {
     private func locationNote(_ applicant: EmpApplicant) -> String? {
         guard let matches = applicant.breakdown?.locationMatches else { return nil }
         return matches ? "In the preferred area" : "Outside the preferred area (not part of the score)"
+    }
+
+    private func linkRow(_ icon: String, _ title: String, _ value: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .foregroundStyle(Color.siriusAction)
+                .frame(width: 20)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).scaledFont(size: 12).foregroundStyle(Color.siriusMuted)
+                if let url = ProfileLink.url(from: value) {
+                    Link(destination: url) {
+                        Text(ProfileLink.trimmed(value))
+                            .scaledFont(size: 14, weight: .semibold)
+                            .foregroundStyle(Color.siriusAction)
+                            .underline()
+                            .multilineTextAlignment(.leading)
+                    }
+                } else {
+                    Text("Not provided")
+                        .scaledFont(size: 14, weight: .semibold)
+                        .foregroundStyle(Color.siriusInk)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private func detailRow(_ icon: String, _ title: String, _ value: String, note: String? = nil, selectable: Bool = false) -> some View {
@@ -284,12 +313,14 @@ struct EmpAplDetailsPage: View {
     @ViewBuilder
     private func actions(_ applicant: EmpApplicant) -> some View {
         VStack(spacing: 10) {
-            if applicant.status == .toReview {
+            if applicant.isRejected {
+                rejectionCard(applicant)
+            } else if applicant.status == .toReview {
                 SiriusButton(title: "Schedule Interview") {
                     aplController.beginScheduling(applicant)
                 }
             }
-            if applicant.status == .interview {
+            if !applicant.isRejected, applicant.status == .interview {
                 SiriusButton(title: "Hire") {
                     aplController.hire(applicant)
                 }
@@ -297,10 +328,28 @@ struct EmpAplDetailsPage: View {
                     aplController.beginRescheduling(applicant)
                 }
             }
-            SiriusButton(title: "Reject Applicant", isFilled: false) {
-                showReject = true
+            if !applicant.isRejected {
+                SiriusButton(title: "Reject Applicant", isFilled: false) {
+                    showReject = true
+                }
             }
         }
+    }
+
+    private func rejectionCard(_ applicant: EmpApplicant) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Rejected", systemImage: "xmark.circle")
+                .scaledFont(size: 14, weight: .semibold)
+                .foregroundStyle(Color.siriusDanger)
+            Text(applicant.rejectionReason.isEmpty ? "No reason was given." : applicant.rejectionReason)
+                .scaledFont(size: 12)
+                .foregroundStyle(Color.siriusInk)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: 370, alignment: .leading)
+        .background(Color.siriusSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 
     private func color(for tier: MatchTier) -> Color {

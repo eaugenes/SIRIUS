@@ -102,7 +102,7 @@ struct EmpAplCard: View {
                         .onEnded { value in
                             let horizontal = value.translation.width
                             guard abs(horizontal) > abs(value.translation.height) else { return }
-                            if horizontal < -30 && !isSelected { onSelect() }
+                            if horizontal < -30 && !isSelected && !applicant.isRejected { onSelect() }
                             if horizontal > 30 && isSelected { onSelect() }
                         }
                 )
@@ -115,10 +115,20 @@ struct EmpAplCard: View {
     private var card: some View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(applicant.name)
-                    .scaledFont(size: 13, weight: .medium)
-                    .foregroundStyle(Color.siriusText)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(applicant.name)
+                        .scaledFont(size: 13, weight: .medium)
+                        .foregroundStyle(Color.siriusText)
+                        .lineLimit(1)
+                    if applicant.isRejected {
+                        Text("Rejected")
+                            .scaledFont(size: 9, weight: .semibold)
+                            .foregroundStyle(Color.siriusDanger)
+                            .padding(.horizontal, 6)
+                            .frame(height: 16)
+                            .background(Capsule().fill(Color.siriusDanger.opacity(0.12)))
+                    }
+                }
 
                 Text(applicant.degree)
                     .scaledFont(size: 10)

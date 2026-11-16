@@ -85,9 +85,15 @@ struct AplJobDiscoveryPage: View {
             .appBg()
             .boardLoadState()
             .navigationBarBackButtonHidden(true)
+            .task(id: jobsController.pendingJobID) {
+                if let pending = jobsController.pendingJobID {
+                    jobsController.pendingJobID = nil
+                    selectedJobID = pending
+                }
+            }
             .navigationDestination(item: $selectedJobID) { jobID in
                 if let listing = jobsController.allListings.first(where: { $0.id == jobID }) {
-                    JobDetailsView(listing: listing)
+                    JobDetailsView(listing: listing, onBack: { selectedJobID = nil })
                 }
             }
         }

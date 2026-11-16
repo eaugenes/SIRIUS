@@ -72,6 +72,26 @@ struct AplEditProfilePage: View {
                         unselectedFill: .siriusFieldFill
                     )
 
+                    AppTextField(
+                        title: "GitHub Link (optional)",
+                        placeholder: ProfileLink.Kind.github.placeholder,
+                        text: $draft.githubURL,
+                        isSecure: false,
+                        keyboardType: .URL
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
+                    AppTextField(
+                        title: "LinkedIn Link (optional)",
+                        placeholder: ProfileLink.Kind.linkedin.placeholder,
+                        text: $draft.linkedinURL,
+                        isSecure: false,
+                        keyboardType: .URL
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
                     ProjectsEditor(projects: $draft.projects)
                         .padding(.top, 4)
 
@@ -125,7 +145,7 @@ struct AplEditProfilePage: View {
         isSaving = true
         draft.yrExp = Double(years)
         draft.workSetUp = workSetup.rawValue
-        Task {
+        Task { @MainActor in
             let saved = await applicantController.saveProfile(draft, coreLanguageText: coreLang, city: selectedCity)
             isSaving = false
             if saved { close() }

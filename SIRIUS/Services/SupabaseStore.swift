@@ -22,6 +22,8 @@ struct ApplicantRow: Codable, Sendable {
     var workSetup: String
     var birthDate: String
     var email: String?
+    var githubURL: String?
+    var linkedinURL: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -35,6 +37,8 @@ struct ApplicantRow: Codable, Sendable {
         case workSetup = "work_setup"
         case birthDate = "birth_date"
         case email
+        case githubURL = "github_url"
+        case linkedinURL = "linkedin_url"
     }
 
     init(_ a: Applicant) {
@@ -50,6 +54,8 @@ struct ApplicantRow: Codable, Sendable {
         workSetup = a.workSetUp
         birthDate = a.birthDate
         email = a.email
+        githubURL = a.githubURL
+        linkedinURL = a.linkedinURL
     }
 
     func applicant(email accountEmail: String) -> Applicant {
@@ -60,6 +66,8 @@ struct ApplicantRow: Codable, Sendable {
             yrExp: yrsExp, coreLang: coreLang, workSetUp: workSetup, email: address, password: ""
         )
         a.birthDate = birthDate
+        a.githubURL = githubURL ?? ""
+        a.linkedinURL = linkedinURL ?? ""
         a.username = address.split(separator: "@").first.map(String.init) ?? ""
         return a
     }
@@ -572,6 +580,8 @@ enum SupabaseStore {
                 contactNumber: applicant.contactNumber,
                 email: applicant.email,
                 workSetup: applicant.workSetUp,
+                githubURL: applicant.githubURL,
+                linkedinURL: applicant.linkedinURL,
                 rejectionReason: row.rejectionReason,
                 isWithdrawn: row.isWithdrawn,
                 isRemoved: row.isRemoved,

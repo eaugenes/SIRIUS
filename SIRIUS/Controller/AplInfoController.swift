@@ -54,6 +54,7 @@ class AplInfoController: ObservableObject{
 
         if isSignUp {
             if isBlank(applicant.birthDate)     { signUpError = "Please select your date of birth.";   return false }
+            if !AgeRule.isOldEnough(applicant.birthDate) { signUpError = AgeRule.errorMessage; return false }
             if isBlank(applicant.contactNumber) { signUpError = "Please enter your contact number.";   return false }
         }
 
@@ -74,6 +75,11 @@ class AplInfoController: ObservableObject{
 
         guard validateProjects() else { return false }
 
+        if !ProfileLink.isValid(applicant.githubURL, kind: .github) { signUpError = ProfileLink.errorMessage(for: .github); return false }
+        if !ProfileLink.isValid(applicant.linkedinURL, kind: .linkedin) { signUpError = ProfileLink.errorMessage(for: .linkedin); return false }
+
+        applicant.githubURL = ProfileLink.normalized(applicant.githubURL)
+        applicant.linkedinURL = ProfileLink.normalized(applicant.linkedinURL)
         applicant.coreLang = languages
         applicant.program = ProgramCatalog.complete(applicant.program)
         applicant.location = city?.name ?? applicant.location

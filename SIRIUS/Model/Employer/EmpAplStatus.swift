@@ -46,12 +46,13 @@ enum EmpApplicantFilter: String, CaseIterable, Identifiable {
     case toReview = "To Review"
     case interview = "Interview"
     case hired = "Hired"
+    case rejected = "Rejected"
 
     var id: String { self.rawValue }
 
     var status: EmpAplStatus? {
         switch self {
-        case .all: return nil
+        case .all, .rejected: return nil
         case .toReview: return .toReview
         case .interview: return .interview
         case .hired: return .hired
@@ -80,6 +81,10 @@ struct EmpApplicant: Identifiable, Equatable {
     var contactNumber: String = ""
     var email: String = ""
     var workSetup: String = ""
+    var githubURL: String = ""
+    var linkedinURL: String = ""
+    var isRejected: Bool = false
+    var rejectionReason: String = ""
 
     var experienceText: String {
         let years = yearsExperience

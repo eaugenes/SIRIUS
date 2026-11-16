@@ -44,7 +44,10 @@ struct EmpAccountPage: View {
         .navigationDestination(item: $route) { destination in
             switch destination {
             case .editProfile:
-                EmpEditProfilePage(onClose: { route = nil })
+                EmpEditProfilePage(onClose: {
+                    route = nil
+                    infoController.objectWillChange.send()
+                })
                     .environmentObject(infoController)
             case .logIn:
                 LogInPage()
