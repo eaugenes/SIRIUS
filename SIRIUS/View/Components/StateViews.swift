@@ -5,8 +5,6 @@
 //  Created by Mac-LAB on 10/27/26.
 //
 
-// Shared empty / loading / error states and the offline banner.
-
 import SwiftUI
 import Network
 import Combine

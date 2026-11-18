@@ -1,5 +1,5 @@
 //
-//  ApplicationsController.swift
+//  AplApplicationsController.swift
 //  SIRIUS
 //
 //  Created by Mac-LAB on 9/15/26.
@@ -117,6 +117,7 @@ class AplApplicationsController: ObservableObject {
     }
 
     func count(of status: ApplicationStatus) -> Int {
-        allApplications.filter { $0.status == status }.count
+        if status == .all { return allApplications.count }
+        return allApplications.filter { $0.status == status }.count
     }
 }

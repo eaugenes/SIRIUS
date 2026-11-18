@@ -107,7 +107,7 @@ struct MainTabView: View {
                 .tag(AplNavigationTab.home)
                 .toolbar(.hidden, for: .tabBar)
 
-            AplJobDiscoveryPage()
+            AplJobDiscoveryPage(selectedTab: $aplTab)
                 .tag(AplNavigationTab.jobs)
                 .toolbar(.hidden, for: .tabBar)
 
@@ -128,7 +128,6 @@ struct MainTabView: View {
                 selectedTab: $aplTab,
                 badges: [.applications: applicationsController.newInterviewCount]
             )
-                .padding(10)
                 .transition(.opacity)
         }
     }
@@ -138,20 +137,32 @@ struct MainTabView: View {
     @ViewBuilder
     private var employerTabs: some View {
         TabView(selection: $empTab) {
-            EmpHomePage(selectedTab: $empTab)
-                .tag(EmpNavigationTab.home)
+            NavigationStack {
+                EmpHomePage(selectedTab: $empTab)
+                    .toolbar(.hidden, for: .navigationBar)
+            }
+            .tag(EmpNavigationTab.home)
                 .toolbar(.hidden, for: .tabBar)
 
-            EmpManageJobsPage()
-                .tag(EmpNavigationTab.jobs)
+            NavigationStack {
+                EmpManageJobsPage()
+                    .toolbar(.hidden, for: .navigationBar)
+            }
+            .tag(EmpNavigationTab.jobs)
                 .toolbar(.hidden, for: .tabBar)
 
-            EmpApplicantsOverviewPage()
-                .tag(EmpNavigationTab.applicants)
+            NavigationStack {
+                EmpApplicantsOverviewPage()
+                    .toolbar(.hidden, for: .navigationBar)
+            }
+            .tag(EmpNavigationTab.applicants)
                 .toolbar(.hidden, for: .tabBar)
 
-            EmpAccountPage()
-                .tag(EmpNavigationTab.profile)
+            NavigationStack {
+                EmpAccountPage()
+                    .toolbar(.hidden, for: .navigationBar)
+            }
+            .tag(EmpNavigationTab.profile)
                 .toolbar(.hidden, for: .tabBar)
         }
         .environmentObject(infoController)
@@ -160,20 +171,15 @@ struct MainTabView: View {
 
         if aplController.interviewTarget == nil && !navBarVisibility.isHidden {
             NavigationBar(selectedTab: $empTab)
-                .padding(10)
                 .transition(.opacity)
         }
     }
 }
 
 #Preview("Applicant") {
-    NavigationStack {
-        MainTabView()
-    }
+    MainTabView()
 }
 
 #Preview("Employer") {
-    NavigationStack {
-        MainTabView(role: .employer, infoController: EmpInfoController.sample())
-    }
+    MainTabView(role: .employer, infoController: EmpInfoController.sample())
 }

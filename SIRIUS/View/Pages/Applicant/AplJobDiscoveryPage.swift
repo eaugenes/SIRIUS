@@ -10,6 +10,7 @@ import SwiftUI
 struct AplJobDiscoveryPage: View {
 
     @EnvironmentObject private var jobsController: AplJobsController
+    @Binding var selectedTab: AplNavigationTab
     @State private var selectedJobID: String?
 
     var body: some View {
@@ -58,6 +59,7 @@ struct AplJobDiscoveryPage: View {
                         VStack(spacing: 17){
                             ForEach(jobsController.listings) { listing in
                                 Button {
+                                    jobsController.returnTab = nil
                                     selectedJobID = listing.id
                                 } label: {
                                     AplJobCard(
@@ -85,6 +87,7 @@ struct AplJobDiscoveryPage: View {
             .appBg()
             .boardLoadState()
             .navigationBarBackButtonHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .task(id: jobsController.pendingJobID) {
                 if let pending = jobsController.pendingJobID {
                     jobsController.pendingJobID = nil
@@ -93,7 +96,13 @@ struct AplJobDiscoveryPage: View {
             }
             .navigationDestination(item: $selectedJobID) { jobID in
                 if let listing = jobsController.allListings.first(where: { $0.id == jobID }) {
-                    JobDetailsView(listing: listing, onBack: { selectedJobID = nil })
+                    JobDetailsView(listing: listing, onBack: {
+                        selectedJobID = nil
+                        if let tab = jobsController.returnTab {
+                            jobsController.returnTab = nil
+                            selectedTab = tab
+                        }
+                    })
                 }
             }
         }
@@ -113,7 +122,7 @@ struct AplJobDiscoveryPage: View {
 }
 
 #Preview{
-    AplJobDiscoveryPage()
+    AplJobDiscoveryPage(selectedTab: .constant(.jobs))
         .environmentObject(AplJobsController(
             info: AplInfoController(applicant: AplInfoController.blankApplicant()),
             board: JobBoard()

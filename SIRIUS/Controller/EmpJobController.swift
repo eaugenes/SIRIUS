@@ -65,6 +65,13 @@ final class EmpJobController: ObservableObject {
         }
     }
 
+    func tabCount(_ tab: JobListTab) -> Int {
+        switch tab {
+        case .active: return jobs.filter { $0.isActive }.count
+        case .inactive: return jobs.filter { !$0.isActive }.count
+        }
+    }
+
     var activeJobCount: Int { jobs.filter { $0.isActive }.count }
 
     // MARK: - Job Posting form
@@ -116,7 +123,7 @@ final class EmpJobController: ObservableObject {
         if let existing {
             var updated = existing
             updated.jobPos = trimmedPosition
-            updated.jobDesc = description.trimmingCharacters(in: .whitespacesAndNewlines)
+            updated.jobDesc = String(description.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Job.maxDescriptionLength))
             updated.requiredProgram = program
             updated.requiredYrExp = Double(yearsOfExperience)
             updated.requiredLang = Matching.parseLanguages(coreLanguages)
@@ -129,7 +136,7 @@ final class EmpJobController: ObservableObject {
             postJob(
                 companyID: companyID,
                 position: trimmedPosition,
-                description: description.trimmingCharacters(in: .whitespacesAndNewlines),
+                description: String(description.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Job.maxDescriptionLength)),
                 program: program,
                 yearsOfExperience: yearsOfExperience,
                 coreLanguages: coreLanguages,

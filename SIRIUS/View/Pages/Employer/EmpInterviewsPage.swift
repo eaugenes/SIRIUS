@@ -31,7 +31,8 @@ struct EmpInterviewsPage: View {
             EmployerSegmentedTabs(
                 items: EmpInterviewFilter.allCases,
                 title: { $0.rawValue },
-                selection: $filter
+                selection: $filter,
+                count: { aplController.interviewItems(for: $0).count }
             )
             .frame(maxWidth: .infinity)
             .padding(.bottom, 14)

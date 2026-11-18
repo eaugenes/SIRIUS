@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct Interview: Identifiable {
-    let id = UUID()
+struct Interview: Identifiable, Codable {
+    var id = UUID()
     var applicantID: UUID
     var date: Date
     var location: String

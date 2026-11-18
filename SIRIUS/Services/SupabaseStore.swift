@@ -647,6 +647,17 @@ enum SupabaseStore {
         try await db.from("applications").update(update).eq("id", value: recordID).execute()
     }
 
+    static func setInterviews(recordIDs: [UUID], date: Date, location: String, message: String) async throws {
+        guard !recordIDs.isEmpty else { return }
+        let update = InterviewUpdate(
+            status: statusText(.interview),
+            interview_at: date,
+            interview_location: location,
+            interview_message: message
+        )
+        try await db.from("applications").update(update).in("id", values: recordIDs).execute()
+    }
+
     static func setStatus(recordID: UUID, status: EmpAplStatus) async throws {
         try await db.from("applications")
             .update(StatusUpdate(status: statusText(status)))

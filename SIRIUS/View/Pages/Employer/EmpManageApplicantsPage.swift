@@ -20,6 +20,10 @@ struct EmpManageApplicantsPage: View {
         aplController.filteredApplicants(forPosition: job?.jobPos)
     }
 
+    private var massCandidates: [EmpApplicant] {
+        aplController.massInterviewCandidates(forPosition: job?.jobPos)
+    }
+
     var body: some View {
         ZStack {
             VStack(alignment: .leading, spacing: 0) {
@@ -29,7 +33,8 @@ struct EmpManageApplicantsPage: View {
                 EmployerSegmentedTabs(
                     items: EmpApplicantFilter.allCases,
                     title: { $0.rawValue },
-                    selection: $aplController.selectedFilter
+                    selection: $aplController.selectedFilter,
+                    count: { aplController.tabCount($0, forPosition: job?.jobPos) }
                 )
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 8)
@@ -37,6 +42,12 @@ struct EmpManageApplicantsPage: View {
                 filterBar
                     .padding(.horizontal, 20)
                     .padding(.bottom, 10)
+
+                if !massCandidates.isEmpty {
+                    massInterviewButton
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 10)
+                }
 
                 if applicants.isEmpty {
                     emptyState
@@ -93,6 +104,28 @@ struct EmpManageApplicantsPage: View {
         } message: {
             Text(aplController.actionError ?? "")
         }
+    }
+
+    private var massInterviewButton: some View {
+        let count = massCandidates.count
+        return Button {
+            aplController.beginMassScheduling(massCandidates)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "paperplane.fill")
+                    .accessibilityHidden(true)
+                Text("Send Interview Message to All (\(count))")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .scaledFont(size: 14, weight: .semibold)
+            .foregroundStyle(Color.siriusNavy)
+            .frame(maxWidth: .infinity)
+            .frame(height: 38)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.siriusSurface))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.siriusBorder, lineWidth: 1))
+        }
+        .accessibilityLabel("Send interview message to all \(count) applicants to review")
     }
 
     private var filterBar: some View {

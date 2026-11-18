@@ -39,6 +39,7 @@ struct EmpJobDetailsPage: View {
             }
         }
         .appBg()
+        .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .navigationDestination(isPresented: $showApplicants) {
             if let job {

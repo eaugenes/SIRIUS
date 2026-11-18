@@ -66,10 +66,21 @@ struct EmpJobPostingPage: View {
                     AppTextField(
                         title: "Job Description",
                         placeholder: "Enter job description",
-                        text: $jobDescription,
+                        text: Binding(
+                            get: { jobDescription },
+                            set: { jobDescription = String($0.prefix(Job.maxDescriptionLength)) }
+                        ),
                         isMultiline: true,
                         multilineHeight: 190
                     )
+                    .overlay(alignment: .bottomTrailing) {
+                        Text("\(jobDescription.count)/\(Job.maxDescriptionLength)")
+                            .scaledFont(size: 11)
+                            .foregroundStyle(Color.siriusMuted)
+                            .padding(.trailing, 10)
+                            .padding(.bottom, 6)
+                            .allowsHitTesting(false)
+                    }
 
                     ProgramMultiDropdown(
                         title: "Program",

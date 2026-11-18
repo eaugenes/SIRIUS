@@ -44,7 +44,8 @@ struct EmpManageJobsPage: View {
             EmployerSegmentedTabs(
                 items: JobListTab.allCases,
                 title: { $0.rawValue },
-                selection: $jobController.selectedTab
+                selection: $jobController.selectedTab,
+                count: { jobController.tabCount($0) }
             )
             .frame(maxWidth: .infinity)
             .padding(.bottom, 28)

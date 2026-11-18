@@ -12,7 +12,7 @@ struct SIRIUSApp: App {
     var body: some Scene {
         WindowGroup {
             AdaptiveRoot {
-                LogInPage()
+                AppRoot()
             }
         }
     }

@@ -10,6 +10,7 @@ import SwiftUI
 struct ApplicationDetailsPage: View {
 
     let applicationID: UUID
+    var onBack: (() -> Void)? = nil
 
     @EnvironmentObject private var controller: AplApplicationsController
     @Environment(\.dismiss) private var dismiss
@@ -24,7 +25,7 @@ struct ApplicationDetailsPage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 14) {
-                    CircleBackButton { dismiss() }
+                    CircleBackButton { close() }
                     Text("Application")
                         .scaledFont(size: 24, weight: .medium)
                         .foregroundStyle(Color.white)
@@ -71,12 +72,16 @@ struct ApplicationDetailsPage: View {
         .alert("Withdraw this application?", isPresented: $confirmWithdraw) {
             Button("Withdraw", role: .destructive) {
                 if let application { controller.withdraw(application) }
-                dismiss()
+                close()
             }
             Button("Keep", role: .cancel) {}
         } message: {
             Text("The employer will no longer see your application. You won't be applied to this job again automatically.")
         }
+    }
+
+    private func close() {
+        if let onBack { onBack() } else { dismiss() }
     }
 
     private func markSeen() {

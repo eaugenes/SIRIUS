@@ -5,6 +5,7 @@
 //  Created by Mac-LAB on 9/8/26.
 //
 
+import Combine
 import SwiftUI
 
 struct AplAccountPage: View {
@@ -13,7 +14,6 @@ struct AplAccountPage: View {
 
     private enum Route: Hashable {
         case editProfile
-        case logIn
     }
     @State private var route: Route?
 
@@ -46,7 +46,6 @@ struct AplAccountPage: View {
 
                 Button {
                     applicantController.signOut()
-                    route = .logIn
                 } label: {
                     Text("Sign Out")
                         .scaledFont(size: 12)
@@ -73,8 +72,6 @@ struct AplAccountPage: View {
                         applicantController.objectWillChange.send()
                     })
                         .environmentObject(applicantController)
-                case .logIn:
-                    LogInPage()
                 }
             }
         }

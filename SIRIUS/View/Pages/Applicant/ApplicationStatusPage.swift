@@ -1,5 +1,5 @@
 //
-//  ApplicationsView.swift
+//  ApplicationStatusPage.swift
 //  SIRIUS
 //
 //  Created by Mac-LAB on 9/8/26.
@@ -13,6 +13,17 @@ struct ApplicationStatusPage: View {
     @State private var selectedApplicationID: UUID?
 
     var body: some View {
+        NavigationStack {
+            content
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(item: $selectedApplicationID) { id in
+                    ApplicationDetailsPage(applicationID: id, onBack: { selectedApplicationID = nil })
+                        .environmentObject(controller)
+                }
+        }
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("My Applications")
                 .scaledFont(size: 32, weight: .medium)
@@ -27,16 +38,22 @@ struct ApplicationStatusPage: View {
                             controller.selectedStatus = status
                         }
                     }) {
-                        Text(status.rawValue)
-                            .accessibilityAddTraits(controller.selectedStatus == status ? .isSelected : [])
-                            .scaledFont(size: 12, weight: .medium)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 38)
-                            .background(controller.selectedStatus == status ? Color.siriusNavy : Color.clear)
-                            .foregroundStyle(controller.selectedStatus == status ? Color.white : Color.siriusText)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        HStack(spacing: 3) {
+                            Text(status.rawValue)
+                                .scaledFont(size: 12, weight: .medium)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+
+                            CountBadge(count: controller.count(of: status))
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(status.rawValue), \(controller.count(of: status))")
+                        .accessibilityAddTraits(controller.selectedStatus == status ? .isSelected : [])
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(controller.selectedStatus == status ? Color.siriusNavy : Color.clear)
+                        .foregroundStyle(controller.selectedStatus == status ? Color.white : Color.siriusText)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
             }
@@ -90,10 +107,6 @@ struct ApplicationStatusPage: View {
         .ignoresSafeArea(.container, edges: .top)
         .appBg()
         .boardLoadState()
-        .navigationDestination(item: $selectedApplicationID) { id in
-            ApplicationDetailsPage(applicationID: id)
-                .environmentObject(controller)
-        }
     }
 }
 

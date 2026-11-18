@@ -15,7 +15,26 @@ private struct ScheduleInterviewOverlay: ViewModifier {
         ZStack {
             content
 
-            if let target = controller.interviewTarget {
+            if controller.isMassScheduling {
+                let count = controller.massTargets.count
+                Color.black.opacity(0.45)
+                    .ignoresSafeArea()
+                    .onTapGesture { controller.cancelScheduling() }
+                    .transition(.opacity)
+
+                ScheduleInterviewDialog(
+                    applicantName: count == 1 ? "1 applicant" : "\(count) applicants",
+                    title: "Mass Interview Message",
+                    sendTitle: "Send to All (\(count))",
+                    onSend: { date, location, message in
+                        controller.scheduleInterviewForAll(date: date, location: location, message: message)
+                    },
+                    onCancel: {
+                        controller.cancelScheduling()
+                    }
+                )
+                .transition(.scale(scale: 0.9).combined(with: .opacity))
+            } else if let target = controller.interviewTarget {
                 Color.black.opacity(0.45)
                     .ignoresSafeArea()
                     .onTapGesture { controller.cancelScheduling() }
@@ -37,6 +56,7 @@ private struct ScheduleInterviewOverlay: ViewModifier {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: controller.interviewTarget?.id)
+        .animation(.easeInOut(duration: 0.2), value: controller.massTargets.count)
     }
 }
 

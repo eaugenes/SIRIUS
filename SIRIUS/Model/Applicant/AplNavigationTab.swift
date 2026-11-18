@@ -1,5 +1,5 @@
 //
-//  NavigationTab.swift
+//  AplNavigationTab.swift
 //  SIRIUS
 //
 //  Created by Mac-LAB on 9/14/26.

@@ -20,6 +20,12 @@ struct AutoApplyOutcome {
     var failed = false
 }
 
+private struct BoardSnapshot: Codable {
+    var jobs: [Job]
+    var applications: [ApplicationRecord]
+    var interviews: [Interview]
+}
+
 final class JobBoard: ObservableObject {
 
     static let shared = JobBoard()
@@ -37,6 +43,18 @@ final class JobBoard: ObservableObject {
     // MARK: - Supabase sync
 
     private var lastOperation: Task<Void, Never>?
+    private var cachedUserID: UUID?
+
+    @MainActor
+    private func restoreCache(for userID: UUID) {
+        guard cachedUserID != userID else { return }
+        cachedUserID = userID
+        guard jobs.isEmpty, applications.isEmpty,
+              let snapshot = LocalSnapshot.load(BoardSnapshot.self, name: "board", userID: userID) else { return }
+        jobs = snapshot.jobs
+        applications = snapshot.applications
+        interviews = snapshot.interviews
+    }
 
     private func remote(_ operation: @escaping () async throws -> Void) {
         let previous = lastOperation
@@ -53,10 +71,11 @@ final class JobBoard: ObservableObject {
 
     @MainActor
     func reload(silent: Bool = false) async {
-        guard await SupabaseAuthService.currentUserID() != nil else {
+        guard let userID = await SupabaseAuthService.currentUserID() else {
             loadState = .loaded
             return
         }
+        restoreCache(for: userID)
         if !silent && jobs.isEmpty && applications.isEmpty {
             loadState = .loading
         }
@@ -67,8 +86,17 @@ final class JobBoard: ObservableObject {
             interviews = board.interviews
             loadState = .loaded
             didLoad = true
+            LocalSnapshot.save(
+                BoardSnapshot(jobs: board.jobs, applications: board.applications, interviews: board.interviews),
+                name: "board",
+                userID: userID
+            )
         } catch {
             if silent { return }
+            if !jobs.isEmpty || !applications.isEmpty {
+                loadState = .loaded
+                return
+            }
             loadState = .failed(SupabaseAuthService.accountError(from: error).errorDescription ?? "Couldn't load your data.")
         }
     }
@@ -76,6 +104,8 @@ final class JobBoard: ObservableObject {
     func clear() {
         lastOperation?.cancel()
         lastOperation = nil
+        if let userID = cachedUserID { LocalSnapshot.remove(name: "board", userID: userID) }
+        cachedUserID = nil
         jobs = []
         applications = []
         interviews = []
@@ -242,6 +272,23 @@ final class JobBoard: ObservableObject {
         interviews.append(Interview(applicantID: recordID, date: date, location: location, message: message))
         applications[index].status = .interview
         remote { try await SupabaseStore.setInterview(recordID: recordID, date: date, location: location, message: message) }
+    }
+
+    @discardableResult
+    func scheduleInterviews(recordIDs: [UUID], date: Date, location: String, message: String) -> Int {
+        var sent: [UUID] = []
+        for id in recordIDs {
+            guard let index = applications.firstIndex(where: { $0.id == id }),
+                  applications[index].status == .toReview,
+                  !applications[index].isRemoved,
+                  !applications[index].isWithdrawn else { continue }
+            interviews.append(Interview(applicantID: id, date: date, location: location, message: message))
+            applications[index].status = .interview
+            sent.append(id)
+        }
+        guard !sent.isEmpty else { return 0 }
+        remote { try await SupabaseStore.setInterviews(recordIDs: sent, date: date, location: location, message: message) }
+        return sent.count
     }
 
     func hire(recordID: UUID) -> HireResult {

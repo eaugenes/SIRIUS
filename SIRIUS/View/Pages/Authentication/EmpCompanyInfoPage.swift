@@ -15,10 +15,17 @@ struct EmpCompanyInfoPage: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: Company
     @State private var nextScreen = false
+    @StateObject private var cityController: CitySelectionController
 
     init(infoController: EmpInfoController) {
         self.infoController = infoController
         _draft = State(initialValue: infoController.company)
+
+        let controller = CitySelectionController()
+        controller.selectedCity = controller.cities.first {
+            $0.name.caseInsensitiveCompare(infoController.company.loc) == .orderedSame
+        }
+        _cityController = StateObject(wrappedValue: controller)
     }
 
     var body: some View {
@@ -49,10 +56,10 @@ struct EmpCompanyInfoPage: View {
                         keyboardType: .numbersAndPunctuation
                     )
 
-                    AppTextField(
+                    CitiesDropdown(
                         title: "Location",
-                        placeholder: "Enter company location",
-                        text: $draft.loc
+                        cities: cityController.cities,
+                        selectedCity: $cityController.selectedCity
                     )
 
                     AppTextField(
@@ -72,6 +79,7 @@ struct EmpCompanyInfoPage: View {
                     .padding(.top, 10)
 
                 SiriusButton(title: "Continue") {
+                    draft.loc = cityController.selectedCity?.name ?? ""
                     infoController.company = draft
 
                     guard infoController.validateCompanyInfo(requireAll: true) else { return }

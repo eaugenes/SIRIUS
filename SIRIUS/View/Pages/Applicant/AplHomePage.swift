@@ -20,6 +20,7 @@ struct AplHomePage: View {
     @State private var resultTitle = ""
     @State private var resultMessage = ""
     @State private var selectedApplicationID: UUID?
+    @State private var showMatchSummary = false
 
     private var firstName: String {
         let name = applicantController.applicant.firstName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -34,6 +35,17 @@ struct AplHomePage: View {
     }
 
     var body: some View {
+        NavigationStack {
+            content
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(item: $selectedApplicationID) { id in
+                    ApplicationDetailsPage(applicationID: id, onBack: { selectedApplicationID = nil })
+                        .environmentObject(controller)
+                }
+        }
+    }
+
+    private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
@@ -55,13 +67,9 @@ struct AplHomePage: View {
                 .padding(.trailing, 32)
                 .padding(.top, 75)
 
-                QualiMatchCard(
-                    percentage: "\(jobsController.averageMatch)%",
-                    title: "Average Qualification Match",
-                    subtext: matchSubtext
-                )
-                .padding(.leading, 19)
-                .padding(.top, 25)
+                matchCard
+                    .padding(.leading, 19)
+                    .padding(.top, 25)
 
                 quickActions
                     .padding(.leading, 19)
@@ -90,10 +98,6 @@ struct AplHomePage: View {
         .refreshable { await JobBoard.shared.reload(silent: true) }
         .appBg()
         .navigationBarBackButtonHidden(true)
-        .navigationDestination(item: $selectedApplicationID) { id in
-            ApplicationDetailsPage(applicationID: id)
-                .environmentObject(controller)
-        }
         .alert(resultTitle, isPresented: $showResult) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -101,10 +105,44 @@ struct AplHomePage: View {
         }
     }
 
+    private var matchCard: some View {
+        VStack(spacing: 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { showMatchSummary.toggle() }
+            } label: {
+                QualiMatchCard(
+                    percentage: "\(jobsController.averageMatch)%",
+                    title: "Average Qualification Match",
+                    subtext: matchSubtext
+                )
+                .overlay(alignment: .bottomTrailing) {
+                    if jobsController.matchSummary != nil {
+                        Image(systemName: "chevron.down")
+                            .scaledFont(size: 11, weight: .semibold)
+                            .foregroundStyle(Color.white.opacity(0.8))
+                            .rotationEffect(.degrees(showMatchSummary ? 180 : 0))
+                            .padding(.trailing, 10)
+                            .padding(.bottom, 6)
+                            .accessibilityHidden(true)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .allowsHitTesting(jobsController.matchSummary != nil)
+            .accessibilityHint(showMatchSummary ? "Hides the score summary" : "Shows why the average is scored this way")
+
+            if showMatchSummary, let summary = jobsController.matchSummary {
+                MatchSummaryPanel(summary: summary)
+                    .fluidFrame(width: 360)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
     private var matchSubtext: String {
         let matched = jobsController.matchedListings
         let applied = matched.filter { $0.hasApplied }.count
-        return "\(matched.count) green match\(matched.count == 1 ? "" : "es") \u{00B7} \(applied) applied"
+        return "\(applied) Total Applied Jobs"
     }
 
     // MARK: - Quick actions (Auto-Apply)
@@ -187,6 +225,7 @@ struct AplHomePage: View {
                 Button {
                     jobsController.searchText = ""
                     jobsController.pendingJobID = top.id
+                    jobsController.returnTab = .home
                     selectedTab = .jobs
                 } label: {
                     AplJobCard(
@@ -225,11 +264,11 @@ struct AplHomePage: View {
             Spacer()
 
             HStack(spacing: 0) {
-                statusCell(count: controller.allApplications.count, label: "Applied")
+                statusCell(count: controller.allApplications.count, label: "Applied", status: .all)
                 Rectangle().fill(Color.black).frame(width: 0.5)
-                statusCell(count: controller.count(of: .interview), label: "Interview")
+                statusCell(count: controller.count(of: .interview), label: "Interview", status: .interview)
                 Rectangle().fill(Color.black).frame(width: 0.5)
-                statusCell(count: controller.count(of: .accepted), label: "Accepted")
+                statusCell(count: controller.count(of: .accepted), label: "Accepted", status: .accepted)
             }
             .frame(height: 53)
             .background(Color.siriusSurface)
@@ -239,15 +278,24 @@ struct AplHomePage: View {
         .fluidFrame(width: 333)
     }
 
-    private func statusCell(count: Int, label: String) -> some View {
-        VStack(spacing: 3) {
-            Text("\(count)")
-                .scaledFont(size: 15, weight: .bold)
-            Text(label)
-                .scaledFont(size: 8)
+    private func statusCell(count: Int, label: String, status: ApplicationStatus) -> some View {
+        Button {
+            controller.selectedStatus = status
+            selectedTab = .applications
+        } label: {
+            VStack(spacing: 3) {
+                Text("\(count)")
+                    .scaledFont(size: 15, weight: .bold)
+                Text(label)
+                    .scaledFont(size: 8)
+            }
+            .foregroundStyle(Color.siriusText)
+            .frame(width: 81, height: 53)
+            .contentShape(Rectangle())
         }
-        .foregroundStyle(Color.siriusText)
-        .frame(width: 81, height: 53)
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(count) \(label)")
+        .accessibilityHint("Opens your \(label.lowercased()) applications")
     }
 
     // MARK: - Panels

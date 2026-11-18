@@ -1,5 +1,5 @@
 //
-//  LogInView.swift
+//  LogInPage.swift
 //  SIRIUS
 //
 //  Created by Mac-LAB on 9/8/26.
@@ -12,7 +12,6 @@ struct LogInPage: View {
     @State private var logInEmail: String = ""
     @State private var logInPassword: String = ""
     @State private var signUpScreen = false
-    @State private var loggedInAccount: UserAccount?
     @State private var errorMessage: String?
     @State private var isWorking = false
 
@@ -70,14 +69,6 @@ struct LogInPage: View {
             .navigationDestination(isPresented: $signUpScreen) {
                 RoleSelectionPage()
             }
-            .navigationDestination(item: $loggedInAccount) { account in
-                MainTabView(account: account)
-            }
-            .task {
-                if let account = await auth.restoreSession() {
-                    loggedInAccount = account
-                }
-            }
         }
     }
 
@@ -88,9 +79,8 @@ struct LogInPage: View {
             switch await auth.login(email: logInEmail, password: logInPassword) {
             case .failure(let error):
                 errorMessage = error.errorDescription
-            case .success(let account):
+            case .success:
                 logInPassword = ""
-                loggedInAccount = account
             }
             isWorking = false
         }

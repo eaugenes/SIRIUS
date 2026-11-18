@@ -36,6 +36,7 @@ private struct HidesNavBarModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .toolbar(.hidden, for: .navigationBar)
             .onAppear {
                 guard hides, !isCounted else { return }
                 isCounted = true

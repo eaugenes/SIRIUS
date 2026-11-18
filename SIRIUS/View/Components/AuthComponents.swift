@@ -5,10 +5,6 @@
 //  Created by Mac-LAB on 10/27/26.
 //
 
-// Shared pieces of the Figma "Final" authentication screens
-// (Log In, Choose Role, Finish Sign Up): brand header, white panel,
-// panel text field and the panel action button.
-
 import SwiftUI
 
 struct AuthBrandHeader: View {

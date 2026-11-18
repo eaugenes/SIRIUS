@@ -5,8 +5,6 @@
 //  Created by Mac-LAB on 10/27/26.
 //
 
-// Email + password auth on Supabase Auth, plus the role row in `profiles`.
-
 import Foundation
 import Supabase
 

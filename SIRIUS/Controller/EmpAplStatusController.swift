@@ -22,6 +22,7 @@ final class EmpAplStatusController: ObservableObject {
     @Published var isRescheduling = false
 
     @Published var interviewTarget: EmpApplicant?
+    @Published var massTargets: [EmpApplicant] = []
 
     private let board: JobBoard?
     private let companyID: String?
@@ -48,6 +49,10 @@ final class EmpAplStatusController: ObservableObject {
                     }
                     if let target = self.interviewTarget, !self.applicants.contains(where: { $0.id == target.id }) {
                         self.interviewTarget = nil
+                    }
+                    if !self.massTargets.isEmpty {
+                        let waiting = Set(self.applicants.filter { $0.status == .toReview }.map(\.id))
+                        self.massTargets = self.massTargets.filter { waiting.contains($0.id) }
                     }
                 }
                 .store(in: &cancellables)
@@ -176,6 +181,17 @@ final class EmpAplStatusController: ObservableObject {
         return arranged(list)
     }
 
+    func tabCount(_ filter: EmpApplicantFilter, forPosition position: String?) -> Int {
+        var list = filter == .rejected ? rejectedApplicants : applicants
+        if let position {
+            list = list.filter { $0.jobPosition == position }
+        }
+        if let status = filter.status {
+            list = list.filter { $0.status == status }
+        }
+        return list.count
+    }
+
     func count(forJobID jobID: String, status: EmpAplStatus? = nil) -> Int {
         applicants.filter { $0.jobID == jobID && (status == nil || $0.status == status) }.count
     }
@@ -281,7 +297,45 @@ final class EmpAplStatusController: ObservableObject {
 
     func cancelScheduling() {
         interviewTarget = nil
+        massTargets = []
         isRescheduling = false
+    }
+
+    // MARK: - Mass interview message
+
+    var isMassScheduling: Bool { !massTargets.isEmpty }
+
+    func massInterviewCandidates(forPosition position: String?) -> [EmpApplicant] {
+        guard selectedFilter == .all || selectedFilter == .toReview else { return [] }
+        return filteredApplicants(forPosition: position).filter { $0.status == .toReview }
+    }
+
+    func beginMassScheduling(_ candidates: [EmpApplicant]) {
+        guard !candidates.isEmpty else { return }
+        isRescheduling = false
+        interviewTarget = nil
+        selectedApplicantID = nil
+        massTargets = candidates
+    }
+
+    func scheduleInterviewForAll(date: Date, location: String, message: String) {
+        let ids = massTargets.map(\.id)
+        guard !ids.isEmpty else { return }
+        let cleanLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let board {
+            board.scheduleInterviews(recordIDs: ids, date: date, location: cleanLocation, message: cleanMessage)
+        } else {
+            for id in ids {
+                interviews.append(Interview(applicantID: id, date: date, location: cleanLocation, message: cleanMessage))
+                if let index = applicants.firstIndex(where: { $0.id == id }) {
+                    applicants[index].status = .interview
+                }
+            }
+        }
+        massTargets = []
+        selectedApplicantID = nil
     }
 
     func interview(for applicant: EmpApplicant) -> Interview? {

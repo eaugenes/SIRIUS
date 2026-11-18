@@ -5,6 +5,7 @@
 //  Created by Mac-LAB on 10/13/26.
 //
 
+import Combine
 import SwiftUI
 import UIKit
 
@@ -14,7 +15,6 @@ struct EmpAccountPage: View {
 
     private enum Route: Hashable {
         case editProfile
-        case logIn
     }
     @State private var route: Route?
 
@@ -35,7 +35,6 @@ struct EmpAccountPage: View {
 
             SiriusButton(title: "Sign Out", isFilled: false, width: 333, height: 34, fontSize: 12) {
                 infoController.signOut()
-                route = .logIn
             }
             .padding(.bottom, NavBarMetrics.clearance)
         }
@@ -49,9 +48,6 @@ struct EmpAccountPage: View {
                     infoController.objectWillChange.send()
                 })
                     .environmentObject(infoController)
-            case .logIn:
-                LogInPage()
-                    .navigationBarBackButtonHidden(true)
             }
         }
     }

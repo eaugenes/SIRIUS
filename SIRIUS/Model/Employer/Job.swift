@@ -41,6 +41,8 @@ struct Job: Identifiable, Hashable, Codable {
     var isFilled: Bool = false
     var salary: Int = 0
 
+    static let maxDescriptionLength = 200
+
     var id: String { jobID }
 
     var salaryText: String {

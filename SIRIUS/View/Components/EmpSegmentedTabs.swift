@@ -12,6 +12,7 @@ struct EmployerSegmentedTabs<Item: Hashable>: View {
     let title: (Item) -> String
     @Binding var selection: Item
     var width: CGFloat = 370
+    var count: ((Item) -> Int)? = nil
 
     @Namespace private var pill
 
@@ -25,20 +26,26 @@ struct EmployerSegmentedTabs<Item: Hashable>: View {
                         selection = item
                     }
                 } label: {
-                    Text(title(item))
-                        .scaledFont(size: items.count > 4 ? 12 : 15, weight: .medium)
-                        .foregroundStyle(isSelected ? Color.white : Color.black)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 36)
-                        .background {
-                            if isSelected {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.siriusNavy)
-                                    .matchedGeometryEffect(id: "selectedPill", in: pill)
-                            }
+                    HStack(spacing: 4) {
+                        Text(title(item))
+                            .scaledFont(size: items.count > 4 ? 12 : 15, weight: .medium)
+                            .foregroundStyle(isSelected ? Color.white : Color.black)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+
+                        if let count {
+                            CountBadge(count: count(item))
                         }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 36)
+                    .background {
+                        if isSelected {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.siriusNavy)
+                                .matchedGeometryEffect(id: "selectedPill", in: pill)
+                        }
+                    }
                 }
                 .buttonStyle(.plain)
             }

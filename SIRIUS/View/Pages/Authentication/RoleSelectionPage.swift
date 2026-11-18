@@ -1,5 +1,5 @@
 //
-//  RoleSelectionView.swift
+//  RoleSelectionPage.swift
 //  SIRIUS
 //
 //  Created by Mac-LAB on 9/8/26.
@@ -15,7 +15,7 @@ struct RoleSelectionPage: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+        Group {
             GeometryReader { geo in
                 ScrollView {
                     VStack(spacing: 0) {

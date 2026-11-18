@@ -15,7 +15,6 @@ struct AplFinishSignUpPage: View {
     @State private var confirmPassword = ""
     @State private var otpCode = ""
     @State private var codeSent = false
-    @State private var homeScreen = false
     @State private var isWorking = false
 
     var body: some View {
@@ -97,9 +96,7 @@ struct AplFinishSignUpPage: View {
                         isWorking = true
                         Task {
                             if codeSent {
-                                if await applicantController.completeSignUp(confirmPassword: confirmPassword, code: otpCode) {
-                                    homeScreen = true
-                                }
+                                _ = await applicantController.completeSignUp(confirmPassword: confirmPassword, code: otpCode)
                             } else {
                                 codeSent = await applicantController.sendVerificationCode(confirmPassword: confirmPassword)
                             }
@@ -123,9 +120,6 @@ struct AplFinishSignUpPage: View {
         .scrollDismissesKeyboard(.interactively)
         .appBg()
         .navigationBarBackButtonHidden(true)
-        .navigationDestination(isPresented: $homeScreen) {
-            MainTabView(role: .applicant, applicantController: applicantController)
-        }
     }
 }
 

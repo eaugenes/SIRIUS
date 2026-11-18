@@ -141,7 +141,7 @@ final class EmpInfoController: ObservableObject {
                 return false
             }
             if isBlank(company.loc) {
-                signUpError = "Please enter your company location."
+                signUpError = "Please select your company location."
                 return false
             }
         }

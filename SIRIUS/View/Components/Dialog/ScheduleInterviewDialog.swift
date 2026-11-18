@@ -18,6 +18,7 @@ struct ScheduleInterviewDialog: View {
 
     @State private var date = Date()
     @State private var location = ""
+    @State private var locationVerified = false
     @State private var message = ""
     @State private var error: String?
     @State private var loadedInitial = false
@@ -68,10 +69,10 @@ struct ScheduleInterviewDialog: View {
             .padding(.bottom, 20)
 
             VStack(spacing: 10) {
-                AppTextField(
+                LocationPickerField(
                     title: "Location",
-                    placeholder: "Enter location",
                     text: $location,
+                    isVerified: $locationVerified,
                     titleColor: .white,
                     borderColor: .siriusBorder
                 )
@@ -96,9 +97,14 @@ struct ScheduleInterviewDialog: View {
 
             SiriusButton(title: sendTitle, isFilled: false) {
                 if location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    error = "Please enter the interview location."
+                    error = "Please choose the interview location."
                     return
                 }
+                if !locationVerified {
+                    error = "Pick a real place in the Philippines from the suggestions."
+                    return
+                }
+                error = nil
                 onSend(date, location, message)
             }
             .padding(.top, 22)
@@ -111,6 +117,7 @@ struct ScheduleInterviewDialog: View {
             loadedInitial = true
             date = max(initial.date, Date())
             location = initial.location
+            locationVerified = true
             message = initial.message
         }
         .background(Color.siriusPanel)

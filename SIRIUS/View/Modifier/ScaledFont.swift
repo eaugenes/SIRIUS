@@ -5,10 +5,6 @@
 //  Created by Mac-LAB on 10/27/26.
 //
 
-// Dynamic Type support for the fixed point sizes taken from the Figma design.
-// The design size is the size at the default text setting; it grows / shrinks with
-// the user's Text Size setting (capped at xxxLarge by AdaptiveRoot so fixed cards still fit).
-
 import SwiftUI
 import UIKit
 

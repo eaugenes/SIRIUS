@@ -5,9 +5,6 @@
 //  Created by Mac-LAB on 10/27/26.
 //
 
-// Single Supabase client for the whole app.
-// Requires the Swift package: https://github.com/supabase/supabase-swift (product "Supabase").
-
 import Foundation
 import Supabase
 
@@ -19,6 +16,9 @@ enum SupabaseConfig {
 enum SupabaseService {
     static let client = SupabaseClient(
         supabaseURL: SupabaseConfig.url,
-        supabaseKey: SupabaseConfig.anonKey
+        supabaseKey: SupabaseConfig.anonKey,
+        options: SupabaseClientOptions(
+            auth: SupabaseClientOptions.AuthOptions(emitLocalSessionAsInitialSession: true)
+        )
     )
 }

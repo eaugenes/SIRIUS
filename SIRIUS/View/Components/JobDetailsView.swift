@@ -76,6 +76,7 @@ struct JobDetailsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .ignoresSafeArea(.container, edges: .top)
         .appBg()
+        .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
     }
 

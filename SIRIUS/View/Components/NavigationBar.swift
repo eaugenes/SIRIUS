@@ -68,10 +68,16 @@ struct NavigationBar<Tab: SiriusNavigationTab>: View {
                 }
             }
         }
-        .frame(width: 270, height: 50)
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity)
+        .frame(height: 50)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20, style: .continuous)
                 .fill(Color.siriusNavy)
+                .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: -2)
+                .ignoresSafeArea(edges: .bottom)
         )
     }
 }
